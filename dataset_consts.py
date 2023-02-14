@@ -12,6 +12,9 @@ import ctypes as ct
 import math
 import numpy as np
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
+
+from nltk.tokenize import sent_tokenize, word_tokenize
+
 rouge = load_metric("rouge")
 
 max_length=1024
@@ -25,10 +28,42 @@ class MyBaseDataset(Dataset):
         self.labels=labels
 
     def __getitem__(self, index): 
-        return self.input_ids[index], self.attention_mask[index],self.labels[index]
+        return {"input_ids" : self.input_ids[index], "attention_mask" : self.attention_mask[index],"labels" : self.labels[index]}
         
     def __len__(self): 
         return self.input_ids.shape[0]
+
+def return_dataset_2(target,source): # target을 5분할 한다.
+    
+    for t in target:
+        whole_len=len(tokenizer(t).input_ids)
+
+        sentences_in_target=sent_tokenize(t)
+    
+        prev=0
+
+        for sentences in sentences_in_target:
+            t_s=tokenizer(sentences)
+            if len(t_s)+prev>int(whole_len/5):
+
+
+
+        labels=tokenizer(target,max_length=max_length,padding="max_length",
+            truncation=True,return_tensors="pt")
+    
+        inputs=tokenizer(source,max_length=max_length,padding="max_length",
+            truncation=True,return_tensors="pt")
+    
+        input_ids=inputs.input_ids
+        input_attention=inputs.attention_mask
+        encoder_input_ids=inputs.input_ids
+        encoder_input_ids=[
+        [-100 if token == tokenizer.pad_token_id else token for token in labels]
+        for labels in encoder_input_ids
+    ]
+    
+    
+    return MyBaseDataset(input_ids,input_attention,encoder_input_ids)
 
 def return_dataset(target,source):
     labels=tokenizer(target,max_length=max_length,padding="max_length",
@@ -38,10 +73,10 @@ def return_dataset(target,source):
     input_ids=inputs.input_ids
     input_attention=inputs.attention_mask
     encoder_input_ids=inputs.input_ids
-    encoder_input_ids=[
+    encoder_input_ids=torch.Tensor([
         [-100 if token == tokenizer.pad_token_id else token for token in labels]
         for labels in encoder_input_ids
-    ]
+    ])
     input_ids=torch.reshape(input_ids,(-1,batch_size,max_length))
     input_attention=torch.reshape(input_attention,(-1,batch_size,max_length))
     encoder_input_ids=torch.reshape(encoder_input_ids,(-1,batch_size,max_length))

@@ -7,19 +7,18 @@ from dataset_consts import *
 
 config = AutoConfig.from_pretrained('facebook/bart-large-cnn')
 model =  AutoModel.from_config(config) # not pretrained.
-tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-cnn")
 
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 
 
 TRAIN_RANGE=25000
 
-total_target=total_target[:TRAIN_RANGE]
-total_source=total_source[:TRAIN_RANGE]
+train_total_target=total_target[:TRAIN_RANGE]
+train_total_source=total_source[:TRAIN_RANGE]
 val_total_target=total_target[TRAIN_RANGE:]
 val_total_source=total_source[TRAIN_RANGE:]
 
-train_dataset=return_dataset(total_target,total_source)
+train_dataset=return_dataset(train_total_target,train_total_source)
 valid_dataset=return_dataset(val_total_target,val_total_source)
 
 training_args = Seq2SeqTrainingArguments(
