@@ -18,7 +18,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 rouge = load_metric("rouge")
 
 max_length=1024
-batch_size=2
+batch_size=4
 
 
 class MyBaseDataset(Dataset):
@@ -28,11 +28,11 @@ class MyBaseDataset(Dataset):
         self.labels=labels
 
     def __getitem__(self, index): 
-        return {"input_ids" : self.input_ids[index], "attention_mask" : self.attention_mask[index],"labels" : self.labels[index]}
+        return {"input_ids" : self.input_ids[index], "attention_mask" : self.attention_mask[index],"decoder_input_ids" : self.labels[index],"labels" : self.labels[index]}
         
     def __len__(self): 
         return self.input_ids.shape[0]
-
+"""
 def return_dataset_2(target,source): # target을 5분할 한다.
     
     for t in target:
@@ -64,7 +64,7 @@ def return_dataset_2(target,source): # target을 5분할 한다.
     
     
     return MyBaseDataset(input_ids,input_attention,encoder_input_ids)
-
+"""
 def return_dataset(target,source):
     labels=tokenizer(target,max_length=max_length,padding="max_length",
             truncation=True,return_tensors="pt")
@@ -73,13 +73,14 @@ def return_dataset(target,source):
     input_ids=inputs.input_ids
     input_attention=inputs.attention_mask
     encoder_input_ids=inputs.input_ids
-    encoder_input_ids=torch.Tensor([
+    """encoder_input_ids=torch.LongTensor([
         [-100 if token == tokenizer.pad_token_id else token for token in labels]
         for labels in encoder_input_ids
     ])
-    input_ids=torch.reshape(input_ids,(-1,batch_size,max_length))
-    input_attention=torch.reshape(input_attention,(-1,batch_size,max_length))
-    encoder_input_ids=torch.reshape(encoder_input_ids,(-1,batch_size,max_length))
+    """
+    #input_ids=torch.reshape(input_ids,(-1,batch_size,max_length))
+    #input_attention=torch.reshape(input_attention,(-1,batch_size,max_length))
+    #encoder_input_ids=torch.reshape(encoder_input_ids,(-1,batch_size,max_length))
 
     print(input_ids.shape)
     print(input_attention.shape)
@@ -116,14 +117,19 @@ f = open('wp_led_results.csv', 'r', encoding='utf-8')
 rdr = csv.reader(f)    
 first=True
 
+count=0
 
 for line in rdr:
         #print(line)
         #total_target.append(print(line[1]))
         #total_source.append(line[1])
+    
     if first:
         first=False
         continue
+#    count+=1
+#    if count>100:
+#        break
     # print(line[0])
     # print(line[1])
     # print(line[2])

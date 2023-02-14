@@ -5,8 +5,8 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModel
 from transformers import AutoConfig
 from dataset_consts import *
 
-config = AutoConfig.from_pretrained('facebook/bart-large-cnn')
-model =  AutoModel.from_config(config) # not pretrained.
+config = AutoConfig.from_pretrained('facebook/bart-large-cnn',gradient_checkpointing=True,)
+model =  AutoModelForSeq2SeqLM.from_config(config) # not pretrained.
 
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 
@@ -26,8 +26,8 @@ training_args = Seq2SeqTrainingArguments(
     evaluation_strategy="steps",
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size,
-    fp16=True,
-    fp16_backend="apex",
+    #fp16=True,
+    #fp16_backend="apex",
     output_dir="./",
     logging_steps=250,
     eval_steps=5000,
@@ -35,6 +35,7 @@ training_args = Seq2SeqTrainingArguments(
     warmup_steps=1500,
     save_total_limit=2,
     gradient_accumulation_steps=4,
+    num_train_epochs=5,
 )
 
 
