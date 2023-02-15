@@ -20,6 +20,8 @@ val_total_source=total_source[TRAIN_RANGE:]
 
 train_dataset=return_dataset(train_total_target,train_total_source)
 valid_dataset=return_dataset(val_total_target,val_total_source)
+import datetime
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 training_args = Seq2SeqTrainingArguments(
     predict_with_generate=True,
@@ -30,6 +32,8 @@ training_args = Seq2SeqTrainingArguments(
     #fp16_backend="apex",
     output_dir="./",
     logging_steps=250,
+    logging_strategy="steps",
+    logging_dir="output_dir/runs/"+current_time,
     eval_steps=5000,
     save_steps=500,
     warmup_steps=1500,
