@@ -5,7 +5,7 @@ from transformers import AutoTokenizer
 from torch.utils.data import Dataset
 from datasets import load_metric
 
-tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-cnn")
+tokenizer = AutoTokenizer.from_pretrained("t5-base")
 
 import csv
 import ctypes as ct
@@ -39,7 +39,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
     whole_dataset=[]
     for t in range(len(target)):
         whole_len=len(tokenizer(target[t]).input_ids)
-        print(whole_len)
+        #print(whole_len)
         sentences_in_target=sent_tokenize(target[t])
         
         prev=0
@@ -63,27 +63,27 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
             else:
                 split_s.append(now_sentences)
         
-        print(len(split_s))
+        #print(len(split_s))
         # 이렇게 하면 split_s에는 n개로 분할된 target이 있다.
 
         # for s in split_s:
         #     print(len(tokenizer(s).input_ids))
 
-        input=tokenizer(source[t],max_length=max_length-30,padding="max_length",
+        input=tokenizer(source[t],max_length=max_length-100,padding="max_length",
             truncation=True,return_tensors="pt")
     
-        labels=tokenizer(split_s,max_length=max_length,padding="max_length",
+        labels=tokenizer(split_s,max_length=max_length-100,padding="max_length",
             truncation=True,return_tensors="pt")
         
-        prompt=tokenizer(prompt[t],return_tensors="pt").input_ids
+        prompt_id=tokenizer(prompt[t],return_tensors="pt").input_ids
     
         input_ids=input.input_ids
         input_attention=input.attention_mask
         decoder_input_ids=labels.input_ids
-        print(input_ids.shape)
-        print(input_attention.shape)
-        print(decoder_input_ids.shape)
-        print(prompt.shape)
+        #print(input_ids.shape)
+        #print(input_attention.shape)
+        #print(decoder_input_ids.shape)
+        #print(prompt_id.shape)
         # input()
 
         """decoder_input_ids=[
@@ -91,7 +91,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         for labels in encoder_input_ids
     ]"""
     
-        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"prompt":prompt })
+        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"prompt":prompt_id })
     
     return whole_dataset
 
