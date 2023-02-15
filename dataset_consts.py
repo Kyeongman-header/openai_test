@@ -37,7 +37,7 @@ class MyBaseDataset(Dataset):
 
 def return_dataset_2(target,source,prompt): # target을 5분할 한다.
     whole_dataset=[]
-    for t in range(len(target)):
+    for t in trange(len(target)):
         whole_len=len(tokenizer(target[t]).input_ids)
         #print(whole_len)
         sentences_in_target=sent_tokenize(target[t])
