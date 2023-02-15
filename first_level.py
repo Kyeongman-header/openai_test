@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModel
 from transformers import AutoConfig
 from dataset_consts import *
 
-config = AutoConfig.from_pretrained('facebook/bart-large-cnn',gradient_checkpointing=True,)
+config = AutoConfig.from_pretrained('t5-base',gradient_checkpointing=True,)
 model =  AutoModelForSeq2SeqLM.from_config(config) # not pretrained.
 
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
