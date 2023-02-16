@@ -4,8 +4,6 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModel
 from transformers import AutoConfig
 from dataset_consts import *
 
-config = AutoConfig.from_pretrained('t5-base',gradient_checkpointing=True)
-t5 =  AutoModelForSeq2SeqLM.from_config(config).to('cuda:0') # not pretrained.
 
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 
@@ -40,6 +38,7 @@ with open("pickle_data/"+"valid"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 
+
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
@@ -47,8 +46,7 @@ from transformers import get_scheduler
 
 
 
-print(config.vocab_size)
-print(config.d_model)
+
 
 
 class Network(nn.Module): 
@@ -128,11 +126,17 @@ class Network(nn.Module):
        dummy_decoder_input_ids = torch.tensor([[tokenizer.pad_token_id]]).to('cuda')
        return self.t5.generate(inputs_embeds=inputs_embeds,attention_mask=attention_mask)#decoder_input_ids=dummy_decoder_input_ids)
 
+config = AutoConfig.from_pretrained('t5-small',gradient_checkpointing=True)
+if CONTINUOUSLY_TRAIN:
+    t5 =  AutoModelForSeq2SeqLM.from_config(config).to('cuda:0') # 이후부터는 내가 finetune한 t5를 사용(밑에서 torch로 불러온다.)
+else:
+    t5 = AutoModelForSeq2SeqLM.from_pretrained('t5-small').to('cuda:0') # 최초 학습에서는 pretrained 된 t5를 사용
+
 model = Network(config.vocab_size, config.d_model,t5).to('cuda:0')
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.AdamW(model.parameters(), lr=5e-6)
 num_epochs = 3
 num_training_steps = num_epochs * len(train_dataset)
 
@@ -160,7 +164,7 @@ def trainer():
             mini_running_loss=0.0
         
             input_ids,attention_mask,num_decoder_input_ids = (data['input_ids'],data['input_attention'],data['decoder_input_ids'])
-            sections=["first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth"]
+            
         
             count=0
         
@@ -174,8 +178,18 @@ def trainer():
 
             #input()
                 prev_predictions=prev_predictions.to('cuda:0')
+                
+                word=""
+                if count==0:
+                    word=str(count+1) + "st"
+                elif count==1:
+                    word=str(count+1) + "nd"
+                elif count==2:
+                    word=str(count+1) + "rd"
+                else:
+                    word=str(count+1) + "th"
             
-                prompt="MAKE A " + sections[count] + " PART OF THE ENTIRE ARTICLE."
+                prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot. : "
                 count+=1
                 prompt=tokenizer(prompt,return_tensors="pt")
                 prompt_attention=prompt.attention_mask.to('cuda:0')
@@ -238,7 +252,7 @@ metric = evaluate.load("rouge")
 model.eval()
 for data in valid_dataset:
     input_ids,attention_mask,num_decoder_input_ids = (data['input_ids'],data['input_attention'],data['decoder_input_ids'])
-    sections=["first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth"]
+    
 
     count=0
 
@@ -252,8 +266,19 @@ for data in valid_dataset:
 
             #input()
         prev_predictions=prev_predictions.to('cuda:0')
+        
+        word=""
+        if count==0:
+            word=str(count+1) + "st"
+        elif count==1:
+            word=str(count+1) + "nd"
+        elif count==2:
+            word=str(count+1) + "rd"
+        else:
+            word=str(count+1) + "th"
 
-        prompt="MAKE A " + sections[count] + " PART OF THE ENTIRE ARTICLE."
+        prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot. : "
+        
         count+=1
         prompt=tokenizer(prompt,return_tensors="pt")
         prompt_attention=prompt.attention_mask.to('cuda:0')
