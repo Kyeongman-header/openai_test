@@ -92,7 +92,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
     ]"""
     
         whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"prompt":prompt_id })
-    
+     
     return whole_dataset
 
 def return_dataset(target,source):
@@ -144,10 +144,12 @@ total_source=[]
 last_target=[]
 
 f = open('wp_led_results.csv', 'r', encoding='utf-8')
-rdr = csv.reader(f)    
+rdr = csv.reader(f)
 first=True
 
 count=0
+
+file="train"
 
 for line in rdr:
         #print(line)
@@ -170,6 +172,34 @@ for line in rdr:
     # input()
 
 
-
 # dataset 전처리.
+def createFolder(directory):
+        try:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+        except OSError:
+            print('Error Creating directory. ' + directory)
 
+import pickle
+
+def save_tokenize_pickle_data(file,total_source,total_target,last_target):
+    
+    createFolder("pickle_data/"+file)
+    dataset=return_dataset(total_target,total_source)
+
+
+    with open("pickle_data/"+file+"/level_1.pickle","wb") as f:
+        pickle.dump(dataset, f)
+    
+    """    
+    with open("level_1_"+file+".pickle","rb") as fi:
+        test = pickle.load(fi)
+    """
+    
+    dataset2=return_dataset_2(last_target,total_target,total_source)
+    with open("pickle_data/"+file+"/level_2.pickle","wb") as f:
+        pickle.dump(dataset2,f)
+    
+
+
+save_tokenize_pickle_data(file,total_source,total_target,last_target)
