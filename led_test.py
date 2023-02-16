@@ -12,7 +12,8 @@ csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 T="train"
 
 total_source=[]
-with open("/home/intern22/NovelGenerator/writingPrompts/"+ T +".wp_source", encoding='UTF8') as f:
+
+with open("/home/ubuntu/research/writingPrompts/"+ T +".wp_source", encoding='UTF8') as f:
     stories = f.readlines()
     stories = [" ".join(i.split()[0:1000]) for i in stories]
     temp_stories=[]
@@ -22,7 +23,7 @@ with open("/home/intern22/NovelGenerator/writingPrompts/"+ T +".wp_source", enco
 
 total_target=[]
 
-with open("/home/intern22/NovelGenerator/writingPrompts/"+ T +".wp_target", encoding='UTF8') as f:
+with open("/home/ubuntu/research/writingPrompts/"+ T +".wp_target", encoding='UTF8') as f:
     stories = f.readlines()
     stories = [" ".join(i.split()[0:1000]) for i in stories]
     temp_stories=[]
@@ -33,27 +34,27 @@ with open("/home/intern22/NovelGenerator/writingPrompts/"+ T +".wp_target", enco
 
 RANGE=0
 START=0 # 마지막으로 끝난 라인부터 다시 만든다.
-
+max_length=2000
 
 if RANGE !=0:
-    whole_data=total_target[START:START+RANGE]
+    whole_data=total_target[0][START:START+RANGE]
 else:
-    whole_data=total_target[START:]
+    whole_data=total_target[0][START:]
 
 # load tokenizer
-tokenizer = AutoTokenizer.from_pretrained("pszemraj/led-large-book-summary")
+tokenizer = AutoTokenizer.from_pretrained("pszemraj/led-base-book-summary")
 
-model = AutoModelForSeq2SeqLM.from_pretrained("pszemraj/led-large-book-summary").to("cuda").half()
+model = AutoModelForSeq2SeqLM.from_pretrained("pszemraj/led-base-book-summary").to("cuda").half()
 
 
 def generate_answer(batch):
-  inputs_dict = tokenizer(batch, padding="max_length", max_length=2000, return_tensors="pt", truncation=True)
-  input_ids = inputs_dict.input_ids.to("cuda:0")
-  attention_mask = inputs_dict.attention_mask.to("cuda:1")
+  inputs_dict = tokenizer(batch, padding="max_length", max_length=max_length, return_tensors="pt", truncation=True)
+  input_ids = inputs_dict.input_ids.to("cuda")
+  attention_mask = inputs_dict.attention_mask.to("cuda")
   global_attention_mask = torch.zeros_like(attention_mask)
   # put global attention on <s> token
   global_attention_mask[:, 0] = 1
-  predicted_abstract_ids = model.generate(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask,max_length=256,encoder_no_repeat_ngram_size=3,no_repeat_ngram_size=3,repetition_penalty=3.5,num_beams=4,early_stopping=True,)
+  predicted_abstract_ids = model.generate(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask,max_length=512,encoder_no_repeat_ngram_size=3,no_repeat_ngram_size=3,repetition_penalty=3.5,num_beams=4,early_stopping=True,)
   return tokenizer.batch_decode(predicted_abstract_ids, skip_special_tokens=True)
   """predicted_abstract_ids = model.generate(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask)
   batch["predicted_abstract"] = tokenizer.batch_decode(predicted_abstract_ids, skip_special_tokens=True)
@@ -65,17 +66,22 @@ def generate_answer(batch):
   """
 f.close()
 
-f = open('led_results.csv','a', newline='')
+f = open('wp_led_results_large.csv','w', newline='')
 wr = csv.writer(f)
-wr.writerow(["index","whole text","summary result"])
+wr.writerow(["index","whole text","summary result","prompt"])
 count=0
+
 for t in tqdm(whole_data):
     #print("whole text : " + t)
     #print()
     count+=1
-    result=generate_answer(t)
-    print("summary len " + str(len(result[0])) + " : " + result[0])
-    wr.writerow([str(count),t,result[0]])
+    try:
+        result=generate_answer(t)
+        print("summary token len " + str(len(tokenizer(result[0]).input_ids)))
+        wr.writerow([str(count),t,result[0],total_source[0][count-1]])
+    except:
+        print("an error occur in index " + str(count))
+        continue
 
 
 
