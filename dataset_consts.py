@@ -13,6 +13,7 @@ import math
 import numpy as np
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 import nltk
+
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize, word_tokenize
 
@@ -139,37 +140,7 @@ def compute_metrics(pred):
 
 
 
-total_target=[]
-total_source=[]
-last_target=[]
 
-f = open('wp_led_results.csv', 'r', encoding='utf-8')
-rdr = csv.reader(f)
-first=True
-
-count=0
-
-file="train"
-
-for line in rdr:
-        #print(line)
-        #total_target.append(print(line[1]))
-        #total_source.append(line[1])
-    
-    if first:
-        first=False
-        continue
-#    count+=1
-#    if count>100:
-#        break
-    # print(line[0])
-    # print(line[1])
-    # print(line[2])
-    # print(line[3])
-    last_target.append(line[1])
-    total_target.append(line[2])
-    total_source.append(line[3])
-    # input()
 
 
 # dataset 전처리.
@@ -200,6 +171,3 @@ def save_tokenize_pickle_data(file,total_source,total_target,last_target):
     with open("pickle_data/"+file+"/level_2.pickle","wb") as f:
         pickle.dump(dataset2,f)
     
-
-
-save_tokenize_pickle_data(file,total_source,total_target,last_target)

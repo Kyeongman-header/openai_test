@@ -13,13 +13,19 @@ from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 
 TRAIN_RANGE=25000
 
-train_total_target=total_target[:TRAIN_RANGE]
-train_total_source=total_source[:TRAIN_RANGE]
-val_total_target=total_target[TRAIN_RANGE:]
-val_total_source=total_source[TRAIN_RANGE:]
+# train_total_target=total_target[:TRAIN_RANGE]
+# train_total_source=total_source[:TRAIN_RANGE]
+# val_total_target=total_target[TRAIN_RANGE:]
+# val_total_source=total_source[TRAIN_RANGE:]
 
-train_dataset=return_dataset(train_total_target,train_total_source)
-valid_dataset=return_dataset(val_total_target,val_total_source)
+# train_dataset=return_dataset(train_total_target,train_total_source)
+# valid_dataset=return_dataset(val_total_target,val_total_source)
+
+with open("pickle_data/"+"train"+"/level_1.pickle","rb") as fi:
+        train_dataset = pickle.load(fi)
+with open("pickle_data/"+"valid"+"/level_1.pickle","rb") as fi:
+        valid_dataset = pickle.load(fi)
+
 import datetime
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 

@@ -23,15 +23,21 @@ PATH = './second_level/'+'all.tar'
 
 CONTINUOUSLY_TRAIN=False
 
-train_total_target=last_target[:TRAIN_RANGE]
-train_total_source=total_target[:TRAIN_RANGE]
-train_total_prompt=total_source[:TRAIN_RANGE]
-val_total_target=last_target[TRAIN_RANGE:]
-val_total_source=total_target[TRAIN_RANGE:]
-val_total_prompt=total_source[TRAIN_RANGE:]
+# train_total_target=last_target[:TRAIN_RANGE]
+# train_total_source=total_target[:TRAIN_RANGE]
+# train_total_prompt=total_source[:TRAIN_RANGE]
+# val_total_target=last_target[TRAIN_RANGE:]
+# val_total_source=total_target[TRAIN_RANGE:]
+# val_total_prompt=total_source[TRAIN_RANGE:]
 
-train_dataset=return_dataset_2(train_total_target,train_total_source,train_total_prompt)
-valid_dataset=return_dataset_2(val_total_target,val_total_source,val_total_prompt)
+# train_dataset=return_dataset_2(train_total_target,train_total_source,train_total_prompt)
+# valid_dataset=return_dataset_2(val_total_target,val_total_source,val_total_prompt)
+
+
+with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
+        train_dataset = pickle.load(fi)
+with open("pickle_data/"+"valid"+"/level_2.pickle","rb") as fi:
+        valid_dataset = pickle.load(fi)
 
 
 import torch.optim as optim
