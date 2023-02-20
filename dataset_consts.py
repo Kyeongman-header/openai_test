@@ -5,8 +5,8 @@ from transformers import AutoTokenizer
 from torch.utils.data import Dataset
 from datasets import load_metric
 
-tokenizer = AutoTokenizer.from_pretrained("t5-base")
-
+#tokenizer = AutoTokenizer.from_pretrained("t5-base")
+tokenizer=AutoTokenizer.from_pretrained("facebook/bart-large")
 import csv
 import ctypes as ct
 import math
