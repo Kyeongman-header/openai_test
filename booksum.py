@@ -160,3 +160,6 @@ text,summaries,analysis,num=loader(plot=False)
 prompts=[tokenizer.pad_token] * num
 
 whole_datasets=return_dataset_2(text,summaries,prompts)
+file="booksum"
+with open("pickle_data/"+file+"/level_2.pickle","wb") as f:
+    pickle.dump(whole_datasets,f)
