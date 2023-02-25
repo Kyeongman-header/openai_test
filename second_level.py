@@ -51,12 +51,12 @@ from transformers import get_scheduler
 
 
 class Network(nn.Module): 
-   def __init__(self, vocab_size, d_model,t5): 
+   def __init__(self, vocab_size, d_model,bart): 
        super(Network, self).__init__() 
         
-       self.shared = t5.get_input_embeddings()
+       self.shared = bart.get_input_embeddings()
        #nn.Embedding(config.vocab_size, config.d_model) 
-       self.t5 = t5
+       self.bart = bart
        self.grucell=nn.GRUCell(d_model,d_model).to('cuda:1')
        """
        self.wHr = nn.Linear(d_model,d_model).to('cuda:1')
@@ -112,7 +112,7 @@ class Network(nn.Module):
        #print(inputs_embeds.shape)
        #print("prev concat attention mask shape : ")
        #print(attention_mask.shape)
-       outputs = self.t5(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,labels=decoder_input_ids,output_hidden_states=True,memory=memory)
+       outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,labels=decoder_input_ids,output_hidden_states=True,memory=memory)
        return outputs,memory
     
    def generate(self, memory,input_ids,attention_mask,decoder_input_ids,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
@@ -152,17 +152,17 @@ class Network(nn.Module):
        source= tokenizer.batch_decode(input_ids,skip_special_tokens=True)
        print("source")
        print(source)
-       return self.t5.generate(max_length=512,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,decoder_input_ids=dummy_decoder_input_ids),memory
+       return self.bart.generate(max_length=512,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,decoder_input_ids=dummy_decoder_input_ids),memory
 
 config = AutoConfig.from_pretrained('facebook/bart-base',gradient_checkpointing=True)
 if CONTINUOUSLY_TRAIN:
-    t5 =  AutoModelForSeq2SeqLM.from_config(config).to('cuda:1') # 이후부터는 내가 finetune한 t5를 사용(밑에서 torch로 불러온다.)
+    bart =  AutoModelForSeq2SeqLM.from_config(config).to('cuda:1') # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
 else:
-    t5 = AutoModelForSeq2SeqLM.from_pretrained('facebook/bart-base').to('cuda:1') # 최초 학습에서는 pretrained 된 t5를 사용
+    bart = AutoModelForSeq2SeqLM.from_pretrained('facebook/bart-base').to('cuda:1') # 최초 학습에서는 pretrained 된 bart를 사용
 
-t5.get_input_embeddings().requires_grad = False # embedding layer는 학습을 안한다. 얘가 변동되면 prev_predictions에 대한 표현도 계속 변하기 때문.
+bart.get_input_embeddings().requires_grad = False # embedding layer는 학습을 안한다. 얘가 변동되면 prev_predictions에 대한 표현도 계속 변하기 때문.
 
-model = Network(config.vocab_size, config.d_model,t5).to('cuda:1')
+model = Network(config.vocab_size, config.d_model,bart).to('cuda:1')
 
 
 criterion = nn.CrossEntropyLoss()
