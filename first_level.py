@@ -5,8 +5,9 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModel
 from transformers import AutoConfig
 from dataset_consts import *
 
-config = AutoConfig.from_pretrained('t5-base',gradient_checkpointing=True,)
-model =  AutoModelForSeq2SeqLM.from_config(config) # not pretrained.
+#config = AutoConfig.from_pretrained('./checkpoint-',gradient_checkpointing=True,)
+#model =  AutoModelForSeq2SeqLM.from_config(config) # pretrained from myself.
+model=AutoModelForSeq2SeqLM.from_pretrained('facebook/bart-large',)
 
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 
@@ -21,27 +22,29 @@ TRAIN_RANGE=25000
 # train_dataset=return_dataset(train_total_target,train_total_source)
 # valid_dataset=return_dataset(val_total_target,val_total_source)
 
-with open("pickle_data/"+"train"+"/level_1.pickle","rb") as fi:
+with open("pickle_data/"+"ROCStories_train"+"/level_1.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
-with open("pickle_data/"+"valid"+"/level_1.pickle","rb") as fi:
+with open("pickle_data/"+"ROCStories_valid"+"/level_1.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 import datetime
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
+createFolder("logs")
+
 training_args = Seq2SeqTrainingArguments(
     predict_with_generate=True,
-    evaluation_strategy="steps",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size,
     #fp16=True,
     #fp16_backend="apex",
     output_dir="./",
-    logging_steps=250,
+    logging_steps=100,
     logging_strategy="steps",
-    logging_dir="output_dir/runs/"+current_time,
-    eval_steps=5000,
-    save_steps=500,
+    logging_dir="./logs/"+current_time,
+    eval_delay=5,
     warmup_steps=1500,
     save_total_limit=2,
     gradient_accumulation_steps=4,
