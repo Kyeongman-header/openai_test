@@ -97,9 +97,9 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
     return whole_dataset
 
 def return_dataset(target,source):
-    labels=tokenizer.batch_encode_plus(target,max_length=max_length,padding="max_length",
+    labels=tokenizer(target,max_length=max_length,padding="max_length",
             truncation=True,return_tensors="pt")
-    inputs=tokenizer.batch_encode_plus(source,max_length=max_length,padding="max_length",
+    inputs=tokenizer(source,max_length=max_length,padding="max_length",
             truncation=True,return_tensors="pt")
     input_ids=inputs.input_ids
     input_attention=inputs.attention_mask
