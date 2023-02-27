@@ -103,7 +103,7 @@ def return_dataset(target,source):
             truncation=True,return_tensors="pt")
     input_ids=inputs.input_ids
     input_attention=inputs.attention_mask
-    encoder_input_ids=inputs.input_ids
+    decoder_input_ids=inputs.input_ids
     """encoder_input_ids=torch.LongTensor([
         [-100 if token == tokenizer.pad_token_id else token for token in labels]
         for labels in encoder_input_ids
@@ -115,9 +115,9 @@ def return_dataset(target,source):
 
     print(input_ids.shape)
     print(input_attention.shape)
-    print(encoder_input_ids.shape)
+    print(decoder_input_ids.shape)
     
-    return MyBaseDataset(input_ids,input_attention,encoder_input_ids)
+    return MyBaseDataset(input_ids,input_attention,decoder_input_ids)
 
 def compute_metrics(pred):
     labels_ids = pred.label_ids
