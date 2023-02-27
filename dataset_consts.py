@@ -97,13 +97,13 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
     return whole_dataset
 
 def return_dataset(target,source):
-    labels=tokenizer(target,max_length=max_length,padding="max_length",
+    labels=tokenizer.batch_encode_plus(target,max_length=max_length,padding="max_length",
             truncation=True,return_tensors="pt")
-    inputs=tokenizer(source,max_length=max_length,padding="max_length",
+    inputs=tokenizer.batch_encode_plus(source,max_length=max_length,padding="max_length",
             truncation=True,return_tensors="pt")
     input_ids=inputs.input_ids
     input_attention=inputs.attention_mask
-    decoder_input_ids=inputs.input_ids
+    decoder_input_ids=labels.input_ids
     """encoder_input_ids=torch.LongTensor([
         [-100 if token == tokenizer.pad_token_id else token for token in labels]
         for labels in encoder_input_ids
