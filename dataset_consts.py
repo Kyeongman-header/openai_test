@@ -24,13 +24,14 @@ batch_size=4
 
 
 class MyBaseDataset(Dataset):
-    def __init__(self, input_ids, attention_mask,labels):
+    def __init__(self, input_ids, attention_mask,labels,decoder_attention_mask):
         self.input_ids=input_ids
         self.attention_mask = attention_mask
         self.labels=labels
+        self.decoder_attention_mask=decoder_attention_mask
 
     def __getitem__(self, index): 
-        return {"input_ids" : self.input_ids[index], "attention_mask" : self.attention_mask[index],"decoder_input_ids" : self.labels[index],"labels" : self.labels[index]}
+        return {"input_ids" : self.input_ids[index], "attention_mask" : self.attention_mask[index],"decoder_input_ids" : self.labels[index],"decoder_attention_mask" :self.decoder_attention_mask[index], "labels" : self.labels[index]}
         
     def __len__(self): 
         return self.input_ids.shape[0]
@@ -81,6 +82,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         input_ids=input.input_ids
         input_attention=input.attention_mask
         decoder_input_ids=labels.input_ids
+        decoder_attention_mask=labels.attention_mask
         #print(input_ids.shape)
         #print(input_attention.shape)
         #print(decoder_input_ids.shape)
@@ -92,7 +94,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         for labels in encoder_input_ids
     ]"""
     
-        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"prompt":prompt_id })
+        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask, "prompt":prompt_id })
      
     return whole_dataset
 
@@ -104,6 +106,7 @@ def return_dataset(target,source):
     input_ids=inputs.input_ids
     input_attention=inputs.attention_mask
     decoder_input_ids=labels.input_ids
+    decoder_attention_mask=labels.attention_mask
     """encoder_input_ids=torch.LongTensor([
         [-100 if token == tokenizer.pad_token_id else token for token in labels]
         for labels in encoder_input_ids
@@ -117,7 +120,7 @@ def return_dataset(target,source):
     print(input_attention.shape)
     print(decoder_input_ids.shape)
     
-    return MyBaseDataset(input_ids,input_attention,decoder_input_ids)
+    return MyBaseDataset(input_ids=input_ids,attention_mask=input_attention,labels=decoder_input_ids,decoder_attention_mask=decoder_attention_mask)
 
 def compute_metrics(pred):
     labels_ids = pred.label_ids
