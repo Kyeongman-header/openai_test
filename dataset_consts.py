@@ -58,9 +58,10 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
                 prev=0
                 split_s.append(now_sentences)
                 now_sentences=""
+        
 
         if now_sentences:
-            if len(tokenizer(now_sentences).input_ids)<50:
+            if len(tokenizer(now_sentences).input_ids)<50 and len(split_s)!=0:
                 split_s[-1]+=now_sentences
             else:
                 split_s.append(now_sentences)
