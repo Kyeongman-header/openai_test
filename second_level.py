@@ -33,9 +33,9 @@ CONTINUOUSLY_TRAIN=False
 
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
-with open("pickle_data/"+"test_train"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"cnn_dailymail/train"+"/level_2.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
-with open("pickle_data/"+"valid"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"cnn_dailymail/validation"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 
@@ -67,7 +67,7 @@ class Network(nn.Module):
        self.wMn = nn.Linear(d_model,d_model).to('cuda:1')
        """
 
-   def forward(self, memory,input_ids,attention_mask,decoder_input_ids,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
+   def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
        #memory states update.
        
        
@@ -78,7 +78,7 @@ class Network(nn.Module):
        
        memory=self.grucell(torch.squeeze(prev_predictions),torch.squeeze(memory)).unsqueeze(dim=0)
        
-       print(memory.shape)
+       #print(memory.shape)
 
        #print("embedded prev prediction : ")
        #print(prev_predictions.shape)
@@ -87,8 +87,8 @@ class Network(nn.Module):
 
        # prev_predictions을 mean때리지 않고 마치 decoder에 encoder output을 prompt로 넣듯이 똑같이 해보자. 
 
-       print("embedded prev prediction : ")
-       print(prev_predictions.shape)
+       #print("embedded prev prediction : ")
+       #print(prev_predictions.shape)
        
 
        #print("before concat, prompt ids shape :")
@@ -99,7 +99,6 @@ class Network(nn.Module):
        input_ids=torch.cat((prompt_ids,input_ids),1)
        inputs_embeds=self.shared(input_ids)
        attention_mask=torch.cat((prompt_attention,attention_mask),1)
-
        #print("concat and embedded input ids shape :")
        #print(inputs_embeds.shape)
        #print("concat attention mask shape : ")
@@ -112,7 +111,7 @@ class Network(nn.Module):
        #print(inputs_embeds.shape)
        #print("prev concat attention mask shape : ")
        #print(attention_mask.shape)
-       outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,labels=decoder_input_ids,output_hidden_states=True,memory=memory)
+       outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,decoder_attention_mask=decoder_attention_mask,labels=decoder_input_ids,output_hidden_states=True,memory=memory)
        return outputs,memory
     
    def generate(self, memory,input_ids,attention_mask,decoder_input_ids,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
@@ -193,7 +192,7 @@ def trainer():
         # get the inputs; data is a list of [inputs, labels]
             mini_running_loss=0.0
         
-            input_ids,attention_mask,num_decoder_input_ids = (data['input_ids'],data['input_attention'],data['decoder_input_ids'])
+            input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
             
         
             count=0
@@ -205,11 +204,13 @@ def trainer():
             
 
             memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:1') # first memory.
-        #print(prev_predictions)        
+        #print(prev_predictions)
+            #torch.cuda.empty_cache() # manually freeing gpu memory.
             for d in num_decoder_input_ids:
 
                 #input()
                 prev_predictions=prev_predictions.to('cuda:1')
+                decoder_attention_mask=decoder_attention_masks[count]
                 
                 word=""
                 if count==0:
@@ -231,7 +232,7 @@ def trainer():
             #print(prompt_ids.shape)
             
                 d=torch.unsqueeze(d,dim=0).to('cuda:1')
-
+                decoder_attention_mask=torch.unsqueeze(d,dim=0).to('cuda:1')
             # input_ids 맨 앞에 이전 preceding context를 합친다.
                 
             
@@ -241,7 +242,7 @@ def trainer():
 
         # forward + backward + optimize
                 
-                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = d,labels=d,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
+                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = d,decoder_attention_mask=decoder_attention_mask,labels=d,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
                 loss = outputs.loss
                 loss.backward()
@@ -257,12 +258,16 @@ def trainer():
             running_loss +=mini_running_loss / count
             progress_bar.update(1)
             if i % 100 == 99:    # print every 2000 mini-batches
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 1000 :.8f}')
+                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 1000 :.8f}, torch saved.')
                 running_loss = 0.0
+
+                torch.save({'epoch':num_epochs,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                },PATH)
 
 
     print('Finished Training')
-
 
 
     torch.save({'epoch':num_epochs,
@@ -271,7 +276,7 @@ def trainer():
             },PATH)
 
 
-#trainer()
+trainer()
 
 # -----------train ends, eval starts.
 f = open('second_level_val_results.csv','w', newline='')
