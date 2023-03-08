@@ -31,7 +31,7 @@ class MyBaseDataset(Dataset):
         self.decoder_attention_mask=decoder_attention_mask
 
     def __getitem__(self, index): 
-        return {"input_ids" : self.input_ids[index], "attention_mask" : self.attention_mask[index],"decoder_input_ids" : self.labels[index],"decoder_attention_mask" :self.decoder_attention_mask[index], "labels" : self.labels[index]}
+        return {"input_ids" : self.input_ids[index], "attention_mask" : self.attention_mask[index],"decoder_input_ids" : self.labels[index][:-1],"decoder_attention_mask" :self.decoder_attention_mask[index][:-1], "labels" : self.labels[index][1:]}
         
     def __len__(self): 
         return self.input_ids.shape[0]
@@ -95,7 +95,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         for labels in encoder_input_ids
     ]"""
     
-        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids[:,1:],"decoder_attention_mask":decoder_attention_mask[:,1:], "prompt":prompt_id })
+        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids[:,:-1],"decoder_attention_mask":decoder_attention_mask[:,:-1],"labels":decoder_input_ids[:,1:], "prompt":prompt_id })
      
     return whole_dataset
 
@@ -106,8 +106,8 @@ def return_dataset(target,source):
             truncation=True,return_tensors="pt")
     input_ids=inputs.input_ids
     input_attention=inputs.attention_mask
-    decoder_input_ids=labels.input_ids[:,1:]
-    decoder_attention_mask=labels.attention_mask[:,1:]
+    decoder_input_ids=labels.input_ids
+    decoder_attention_mask=labels.attention_mask
     """encoder_input_ids=torch.LongTensor([
         [-100 if token == tokenizer.pad_token_id else token for token in labels]
         for labels in encoder_input_ids
