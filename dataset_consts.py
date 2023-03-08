@@ -95,7 +95,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         for labels in encoder_input_ids
     ]"""
     
-        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids[:,:-1],"decoder_attention_mask":decoder_attention_mask[:,:-1],"labels":decoder_input_ids[:,1:], "prompt":prompt_id })
+        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask, "prompt":prompt_id })
      
     return whole_dataset
 

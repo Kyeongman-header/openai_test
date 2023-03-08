@@ -111,7 +111,7 @@ class Network(nn.Module):
        #print(inputs_embeds.shape)
        #print("prev concat attention mask shape : ")
        #print(attention_mask.shape)
-       outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,decoder_attention_mask=decoder_attention_mask,labels=decoder_input_ids,output_hidden_states=True,memory=memory)
+       outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,decoder_attention_mask=decoder_attention_mask,labels=labels,output_hidden_states=True,memory=memory)
        return outputs,memory
     
    def generate(self, memory,input_ids,attention_mask,decoder_input_ids,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
@@ -192,7 +192,7 @@ def trainer():
         # get the inputs; data is a list of [inputs, labels]
             mini_running_loss=0.0
         
-            input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,labels= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['labels'])
+            input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
             
         
             count=0
@@ -231,10 +231,10 @@ def trainer():
             #print("before concat, prompt ids shape :")
             #print(prompt_ids.shape)
             
-                d=torch.unsqueeze(d,dim=0).to('cuda:1')
-                decoder_attention_mask=torch.unsqueeze(d,dim=0).to('cuda:1')
+                dd=torch.unsqueeze(d[:-1],dim=0).to('cuda:1')
+                decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to('cuda:1')
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-                label=torch.unsqueeze(labels[count],dim=0).to('cuda:1')
+                label=torch.unsqueeze(d[1:],dim=0).to('cuda:1')
             
 
         # zero the parameter gradients
@@ -242,7 +242,7 @@ def trainer():
 
         # forward + backward + optimize
                 
-                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
+                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
                 loss = outputs.loss
                 loss.backward()
