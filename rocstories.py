@@ -57,9 +57,11 @@ for line in rdr:
     # print(line[2])
     # print(line[3])
 
-    text=line[2]+" "+line[3]+" "+line[4]+" "+line[5]+" "+line[6]
+    #text=line[2]+" "+line[3]+" "+line[4]+" "+line[5]+" "+line[6]
+    text=line[3]+" "+line[4]+" "+line[5]+" "+line[6]
     text_len=len(tokenizer(text).input_ids)
-    prompt=line[1]
+
+    prompt=line[1] + ". " + line[2]
     prompt_len=len(tokenizer(prompt).input_ids)
     
     text_len_arr.append(text_len)
@@ -121,7 +123,8 @@ report()
 
 # stories,titles,num=loader(plot=True)
 
-whole_datasets=return_dataset(stories,titles)
+whole_datasets=return_dataset(stories[:50000],titles[:50000])
+#file="ROCStories_valid"
 
 createFolder("pickle_data/"+file)
 with open("pickle_data/"+file+"/level_1.pickle","wb") as f:
