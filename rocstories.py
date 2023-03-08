@@ -123,8 +123,8 @@ report()
 
 # stories,titles,num=loader(plot=True)
 
-whole_datasets=return_dataset(stories[:50000],titles[:50000])
-#file="ROCStories_valid"
+whole_datasets=return_dataset(stories[50000:],titles[50000:])
+file="ROCStories_valid"
 
 createFolder("pickle_data/"+file)
 with open("pickle_data/"+file+"/level_1.pickle","wb") as f:
