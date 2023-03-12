@@ -505,7 +505,7 @@ class GenerationMixin:
             return torch.ones(inputs.shape[:2], dtype=torch.long, device=inputs.device)
 
     def _prepare_encoder_decoder_kwargs_for_generation(
-        self, inputs_tensor: torch.Tensor, model_kwargs, model_input_name: Optional[str] = None
+        self, inputs_tensor: torch.Tensor, model_kwargs, model_input_name: Optional[str] = None, memory=None,
     ) -> Dict[str, Any]:
         # 1. get encoder
         encoder = self.get_encoder()
@@ -522,7 +522,11 @@ class GenerationMixin:
         model_input_name = model_input_name if model_input_name is not None else self.main_input_name
         encoder_kwargs["return_dict"] = True
         encoder_kwargs[model_input_name] = inputs_tensor
-        model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
+        # print("혹시 여긴가")
+        # print(encoder_kwargs)
+        # 그니까 여기서 일단 encoder output state를 먼저 뽑아놓고 뒤에서 greedy니 뭐니 할때 이놈을 사용하는 거였음...
+        # 때문에 memory를 사용하도록 인자에 넣을 때 여기에서 넣어줘야 함.
+        model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs,memory=memory)
 
         return model_kwargs
 
@@ -536,20 +540,32 @@ class GenerationMixin:
     ) -> torch.LongTensor:
 
         if model_kwargs is not None and "decoder_input_ids" in model_kwargs:
+            # print("첫번째 return?")
             return model_kwargs.pop("decoder_input_ids")
         else:
             decoder_start_token_id = self._get_decoder_start_token_id(decoder_start_token_id, bos_token_id)
             if device is None:
                 device = self.device
+            # print("두번째 return?")
+            # print("decoder start token id")
+            # print(decoder_start_token_id)
+
             return torch.ones((batch_size, 1), dtype=torch.long, device=device) * decoder_start_token_id
 
     def _get_decoder_start_token_id(self, decoder_start_token_id: int = None, bos_token_id: int = None) -> int:
+        # print("여기서?")
+        # print(decoder_start_token_id)
+        # print(self.config.decoder_start_token_id)
+        self.config.decoder_start_token_id=0
+        # 그냥 하드 코딩 하자...왜 이렇게 config가 되어있는거야
+
         decoder_start_token_id = (
             decoder_start_token_id if decoder_start_token_id is not None else self.config.decoder_start_token_id
         )
         bos_token_id = bos_token_id if bos_token_id is not None else self.config.bos_token_id
 
         if decoder_start_token_id is not None:
+            
             return decoder_start_token_id
         elif (
             hasattr(self.config, "decoder")
@@ -625,6 +641,16 @@ class GenerationMixin:
                 model_kwargs["attention_mask"] = torch.cat(
                     [attention_mask, attention_mask.new_ones((attention_mask.shape[0], 1))], dim=-1
                 )
+        # =========================
+        # BEGIN MODIFICATIONS
+        else:
+            if "decoder_attention_mask" in model_kwargs:
+                decoder_attention_mask = model_kwargs["decoder_attention_mask"]
+                model_kwargs["decoder_attention_mask"] = torch.cat(
+                    [decoder_attention_mask, decoder_attention_mask.new_ones((decoder_attention_mask.shape[0], 1))], dim=-1
+                )
+        # END MODIFICATIONS
+        # =========================
 
         return model_kwargs
 
@@ -1186,10 +1212,12 @@ class GenerationMixin:
             # if model is encoder decoder encoder_outputs are created
             # and added to `model_kwargs`
             model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
-                inputs_tensor, model_kwargs, model_input_name
+                inputs_tensor, model_kwargs, model_input_name,memory=memory,
             )
 
         # 4. Prepare `input_ids` which will be used for auto-regressive generation
+        # print("이게 왜 2냐")
+        # print(decoder_start_token_id)
         if self.config.is_encoder_decoder:
             input_ids = self._prepare_decoder_input_ids_for_generation(
                 batch_size,
@@ -1372,6 +1400,7 @@ class GenerationMixin:
                 do_early_stopping=early_stopping,
                 num_beam_hyps_to_keep=num_return_sequences,
             )
+           
             # 11. interleave input_ids with `num_beams` additional sequences per batch
             input_ids, model_kwargs = self._expand_inputs_for_generation(
                 input_ids, expand_size=num_beams, is_encoder_decoder=self.config.is_encoder_decoder, **model_kwargs
@@ -1709,11 +1738,18 @@ class GenerationMixin:
 
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, memory=memory, **model_kwargs)
+            # print("model_inputs")
+            # print(model_inputs)
+            # print("gene- there is memory ? :" )
+            # print(memory is not None)
+            # print("modelinput memory")
+            # print(model_inputs["memory"])
 
             # forward pass to get next token
             outputs = self(
-                input_ids=input_ids,
-                memory=memory,
+                **model_inputs,
+                #input_ids=input_ids,
+                #memory=memory,
                 return_dict=True,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
@@ -1969,8 +2005,9 @@ class GenerationMixin:
 
             # forward pass to get next token
             outputs = self(
-                input_ids=input_ids,
-                memory=memory,
+                **model_inputs,
+                #input_ids=input_ids,
+                #memory=memory,
                 return_dict=True,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
@@ -2169,6 +2206,7 @@ class GenerationMixin:
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ['Wie alt bist du?']
         ```"""
+        
         # init values
         logits_processor = logits_processor if logits_processor is not None else LogitsProcessorList()
         stopping_criteria = stopping_criteria if stopping_criteria is not None else StoppingCriteriaList()
@@ -2234,11 +2272,12 @@ class GenerationMixin:
                 # did all peers finish? the reduced sum will be 0.0 then
                 if this_peer_finished_flag.item() == 0.0:
                     break
-
+            
             model_inputs = self.prepare_inputs_for_generation(input_ids,memory=memory, **model_kwargs)
             outputs = self(
-                input_ids=input_ids,
-                memory=memory,
+                **model_inputs,
+                #input_ids=input_ids,
+                #memory=memory,
                 return_dict=True,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
@@ -2552,8 +2591,9 @@ class GenerationMixin:
             model_inputs = self.prepare_inputs_for_generation(input_ids,memory=memory, **model_kwargs)
 
             outputs = self(
-                input_ids=input_ids,
-                memory=memory,
+                **model_inputs,
+                #input_ids=input_ids,
+                #memory=memory,
                 return_dict=True,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
@@ -2884,8 +2924,9 @@ class GenerationMixin:
             # do one decoder step on all beams of all sentences in batch
             model_inputs = self.prepare_inputs_for_generation(input_ids,memory=memory, **model_kwargs)
             outputs = self(
-                input_ids=input_ids,
-                memory=memory,
+                **model_inputs,
+                #input_ids=input_ids,
+                #memory=memory,
                 return_dict=True,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
@@ -3240,8 +3281,9 @@ class GenerationMixin:
             model_inputs = self.prepare_inputs_for_generation(input_ids,memory=memory, **model_kwargs)
 
             outputs = self(
-                input_ids=input_ids,
-                memory=memory,
+                **model_inputs,
+                #input_ids=input_ids,
+                #memory=memory,
                 return_dict=True,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
