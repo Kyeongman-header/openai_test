@@ -155,7 +155,7 @@ def compute_metrics(pred):
         bleu_score_four+=bleu_score['fourgram'][0]
         bleu_score_fif+=bleu_score['fifthgram'][0]
         
-        self_bleu = SelfBLEU(ref, weights).get_score()
+        self_bleu = SelfBLEU(hyp, weights).get_score()
         self_bleu_bi+=self_bleu['bigram'][0]
         self_bleu_tri+=self_bleu['trigram'][0]
         self_bleu_four+=self_bleu['fourgram'][0]

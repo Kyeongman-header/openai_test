@@ -3,10 +3,14 @@ from tqdm import tqdm, trange
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModel
 from transformers import AutoConfig
 from dataset_consts import *
-
-
+import random
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter()
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 
+import evaluate
+
+metric = evaluate.load("rouge")
 
 TRAIN_RANGE=25000
 def createFolder(directory):
@@ -33,8 +37,8 @@ CONTINUOUSLY_TRAIN=True
 
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
-#with open("pickle_data/"+"cnn_dailymail/train"+"/level_2.pickle","rb") as fi:
-#        train_dataset = pickle.load(fi)
+with open("pickle_data/"+"cnn_dailymail/train"+"/level_2.pickle","rb") as fi:
+        train_dataset = pickle.load(fi)
 with open("pickle_data/"+"cnn_dailymail/validation"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
@@ -149,8 +153,8 @@ class Network(nn.Module):
        #attention_mask=torch.cat((torch.LongTensor([[1]*prev_predictions.shape[1]]).to('cuda:1'),attention_mask),1)
        #dummy_decoder_input_ids = torch.tensor([[tokenizer.pad_token_id]]).to('cuda:1')
        source= tokenizer.batch_decode(input_ids,skip_special_tokens=True)
-       print("source")
-       print(source)
+       #print("source")
+       #print(source)
        return self.bart.generate(max_length=512,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4),memory
 
 config = AutoConfig.from_pretrained('facebook/bart-base')
@@ -163,11 +167,167 @@ bart.get_input_embeddings().requires_grad = False # embedding layer는 학습을
 
 model = Network(config.vocab_size, config.d_model,bart).to('cuda:1')
 
+# -----------train ends, eval starts.
+f = open('second_level_val_results.csv','w', newline='')
+wr = csv.writer(f)
+wr.writerow(["steps","index","source","real text","generated_results"])
+
+def do_eval(steps):
+    #f = open('second_level_val_results.csv','w', newline='')
+    #wr = csv.writer(f)
+    #wr.writerow(["steps","index","source","real text","generated_results"])
+    index=0
+    bleu_score_bi=0
+    bleu_score_tri=0
+    bleu_score_four=0
+    bleu_score_fif=0
+    self_bleu_bi=0
+    self_bleu_tri=0
+    self_bleu_four=0
+    self_bleu_fif=0
+    whole_num=0
+    weights = {'bigram': (1/2., 1/2.), 'trigram': (1/3., 1/3., 1/3.), 'fourgram' : (1/4.,1/4.,1/4.,1/4.), 'fifthgram' : (1/5.,1/5.,1/5.,1/5.,1/5.)}
+
+
+    model.eval()
+
+    for data in tqdm(random.sample(valid_dataset,128)):
+        input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
+    
+
+        count=0
+
+        prev_predictions=data['prompt']
+
+        input_ids=input_ids.to('cuda:1')
+        attention_mask=attention_mask.to('cuda:1')
+        memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:1') # first memory.
+        #print(prev_predictions)
+        for d in num_decoder_input_ids:
+        
+        
+            prev_predictions=prev_predictions.to('cuda:1')
+        
+            word=""
+            if count==0:
+                word=str(count+1) + "st"
+            elif count==1:
+                word=str(count+1) + "nd"
+            elif count==2:
+                word=str(count+1) + "rd"
+            else:
+                word=str(count+1) + "th"
+        
+            prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
+        
+            count+=1
+            prompt=tokenizer(prompt,return_tensors="pt")
+            prompt_attention=prompt.attention_mask.to('cuda:1')
+            prompt_ids=prompt.input_ids.to('cuda:1')
+
+            #print("before concat, prompt ids shape :")
+            #print(prompt_ids.shape)
+
+        #print(d)
+        #ex_d=torch.unsqueeze(d[:-1],dim=0).to('cuda:1')
+        #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][:-1],dim=0).to('cuda:1')
+            # input_ids 맨 앞에 이전 preceding context를 합친다.
+        #label=torch.unsqueeze(d[1:],dim=0).to('cuda:1')
+            ex_d=torch.unsqueeze(d,dim=0).to('cuda:1')
+        
+        #print(decoder_attention_masks[count-1][0])
+
+            decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1],dim=0).to('cuda:1')
+            label=torch.unsqueeze(d,dim=0).to('cuda:1')
+            # input_ids 맨 앞에 이전 preceding context를 합친다.
+            """with torch.no_grad():
+            outputs,memory = model(input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,labels=label,decoder_attention_mask=decoder_attention_mask,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention,memory=memory.detach())
+        
+        
+
+        #prev_predictions =  torch.argmax(outputs.logits, dim=-1)
+        
+        loss = outputs.loss
+        outputs=torch.argmax(outputs.logits, dim=-1)
+        predictions = tokenizer.batch_decode(outputs,)#skip_special_tokens=True)
+        print("predictions")
+        print(predictions)
+        l = tokenizer.batch_decode(label,)#skip_special_tokens=True)
+        print("golden label")
+        print(l)
+
+        print("decoder input")
+        exd = tokenizer.batch_decode(ex_d,)
+        print(exd)
+
+        print("loss")
+        print(loss)
+            """
+
+            outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention)
+        
+            prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
+        
+        
+        
+            predictions = tokenizer.batch_decode(outputs,skip_special_tokens=True)
+            # print("predictions")
+            # print(predictions) 
+            #label = tokenizer.batch_decode(label,skip_special_tokens=True)
+            # print("golden label")
+            # print(label)
+        
+            #print("decoder input")
+            ex_d = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
+            # print(ex_d)
+
+        #print("loss")
+        #print(loss)
+            wr.writerow([str(steps),str(index),tokenizer.batch_decode(input_ids,skip_special_tokens=True),ex_d,predictions])
+            index+=1
+            metric.add_batch(predictions=predictions, references=ex_d)
+            whole_num+=1
+            bleu = BLEU(ex_d)
+            bleu_score=bleu.get_score(predictions,weights)
+            bleu_score_bi+=bleu_score['bigram'][0]
+            bleu_score_tri+=bleu_score['trigram'][0]
+            bleu_score_four+=bleu_score['fourgram'][0]
+            bleu_score_fif+=bleu_score['fifthgram'][0]
+            self_bleu = SelfBLEU(predictions, weights).get_score()
+            self_bleu_bi+=self_bleu['bigram'][0]
+            self_bleu_tri+=self_bleu['trigram'][0]
+            self_bleu_four+=self_bleu['fourgram'][0]
+            self_bleu_fif+=self_bleu['fifthgram'][0]
+        
+            #input()
+    result=metric.compute()
+    print(result)
+    bleu_score_bi=bleu_score_bi/whole_num
+    bleu_score_tri=bleu_score_tri/whole_num
+    bleu_score_four=bleu_score_four/whole_num
+    bleu_score_fif=bleu_score_fif/whole_num
+    self_bleu_bi=self_bleu_bi/whole_num
+    self_bleu_tri=self_bleu_tri/whole_num
+    self_bleu_four=self_bleu_four/whole_num
+    self_bleu_fif=self_bleu_fif/whole_num
+
+    writer.add_scalar("rouge1/train", result['rouge1'], steps)
+    writer.add_scalar("rouge2/train", result['rouge2'], steps)
+    writer.add_scalar("rougeL/train", result['rougeL'], steps)
+    writer.add_scalar("rougeLsum/train", result['rougeLsum'], steps)
+    writer.add_scalar("bleu bi/train", bleu_score_bi, steps)
+    writer.add_scalar("bleu tri/train", bleu_score_tri, steps)
+    writer.add_scalar("bleu four/train", bleu_score_four, steps)
+    writer.add_scalar("bleu fif/train", bleu_score_fif, steps)
+    writer.add_scalar("self bleu bi/train", self_bleu_bi, steps)
+    writer.add_scalar("self bleu tri/train", self_bleu_tri, steps)
+    writer.add_scalar("self bleu four/train", self_bleu_four, steps)
+    writer.add_scalar("self bleu fif/train", self_bleu_fif, steps)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=5e-6)
-num_epochs = 3
-"""num_training_steps = num_epochs * len(train_dataset)
+num_epochs = 5
+num_training_steps = num_epochs * len(train_dataset)
 
 lr_scheduler = get_scheduler(
     name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
@@ -175,7 +335,7 @@ lr_scheduler = get_scheduler(
 )
 
 progress_bar = tqdm(range(num_training_steps))
-"""
+
 
 if CONTINUOUSLY_TRAIN:
     checkpoint= torch.load(PATH)
@@ -257,134 +417,29 @@ def trainer():
         
             running_loss +=mini_running_loss / count
             progress_bar.update(1)
-            if i % 100 == 99:    # print every 2000 mini-batches
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 1000 :.8f}, torch saved.')
-                running_loss = 0.0
-
+            if i % 10 == 9:    # print every 2000 mini-batches
+                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 10 :.8f}, torch saved.')
+                
+                writer.add_scalar("Loss/train", running_loss/10, epoch * len(train_dataset) + i)
+                
+                running_loss=0.0
                 torch.save({'epoch':num_epochs,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 },PATH)
 
+            if i % 500 == 0:
+                do_eval(epoch * len(train_dataset)+i)
+                writer.flush()
 
     print('Finished Training')
 
-
+    writer.flush()
     torch.save({'epoch':num_epochs,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             },PATH)
 
 
-#trainer()
-
-# -----------train ends, eval starts.
-f = open('second_level_val_results.csv','w', newline='')
-wr = csv.writer(f)
-wr.writerow(["index","source","real text","generated_results"])
-index=0
-
-import evaluate
-
-metric = evaluate.load("rouge")
-model.eval()
-
-for data in valid_dataset:
-    input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
-    
-
-    count=0
-
-    prev_predictions=data['prompt']
-
-    input_ids=input_ids.to('cuda:1')
-    attention_mask=attention_mask.to('cuda:1')
-    memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:1') # first memory.
-        #print(prev_predictions)
-    for d in num_decoder_input_ids:
-        
-        
-        prev_predictions=prev_predictions.to('cuda:1')
-        
-        word=""
-        if count==0:
-            word=str(count+1) + "st"
-        elif count==1:
-            word=str(count+1) + "nd"
-        elif count==2:
-            word=str(count+1) + "rd"
-        else:
-            word=str(count+1) + "th"
-        
-        prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
-        
-        count+=1
-        prompt=tokenizer(prompt,return_tensors="pt")
-        prompt_attention=prompt.attention_mask.to('cuda:1')
-        prompt_ids=prompt.input_ids.to('cuda:1')
-
-            #print("before concat, prompt ids shape :")
-            #print(prompt_ids.shape)
-
-        #print(d)
-        #ex_d=torch.unsqueeze(d[:-1],dim=0).to('cuda:1')
-        #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][:-1],dim=0).to('cuda:1')
-            # input_ids 맨 앞에 이전 preceding context를 합친다.
-        #label=torch.unsqueeze(d[1:],dim=0).to('cuda:1')
-        ex_d=torch.unsqueeze(d[0:1],dim=0).to('cuda:1')
-        
-        #print(decoder_attention_masks[count-1][0])
-
-        decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][0:1],dim=0).to('cuda:1')
-        label=torch.unsqueeze(d[1:2],dim=0).to('cuda:1')
-            # input_ids 맨 앞에 이전 preceding context를 합친다.
-        """with torch.no_grad():
-            outputs,memory = model(input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,labels=label,decoder_attention_mask=decoder_attention_mask,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention,memory=memory.detach())
-        
-        
-
-        #prev_predictions =  torch.argmax(outputs.logits, dim=-1)
-        
-        loss = outputs.loss
-        outputs=torch.argmax(outputs.logits, dim=-1)
-        predictions = tokenizer.batch_decode(outputs,)#skip_special_tokens=True)
-        print("predictions")
-        print(predictions)
-        l = tokenizer.batch_decode(label,)#skip_special_tokens=True)
-        print("golden label")
-        print(l)
-
-        print("decoder input")
-        exd = tokenizer.batch_decode(ex_d,)
-        print(exd)
-
-        print("loss")
-        print(loss)
-"""
-
-        outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention)
-        
-        prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
-        
-        
-        
-        predictions = tokenizer.batch_decode(outputs,)#skip_special_tokens=True)
-        print("predictions")
-        print(predictions) 
-        label = tokenizer.batch_decode(label,)#skip_special_tokens=True)
-        print("golden label")
-        print(label)
-        
-        print("decoder input")
-        ex_d = tokenizer.batch_decode(ex_d,)
-        print(ex_d)
-
-        #print("loss")
-        #print(loss)
-        wr.writerow([str(index),tokenizer.batch_decode(input_ids,skip_special_tokens=True),ex_d,predictions])
-        index+=1
-        metric.add_batch(predictions=predictions, references=ex_d)
-        
-        input()
-
-print(metric.compute())
+trainer()
+writer.close()
