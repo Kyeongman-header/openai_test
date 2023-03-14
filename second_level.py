@@ -19,7 +19,7 @@ def createFolder(directory):
 createFolder('second_level')
 PATH = './second_level/'+'all.tar'
 
-CONTINUOUSLY_TRAIN=False
+CONTINUOUSLY_TRAIN=True
 
 # train_total_target=last_target[:TRAIN_RANGE]
 # train_total_source=total_target[:TRAIN_RANGE]
@@ -33,8 +33,8 @@ CONTINUOUSLY_TRAIN=False
 
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
-with open("pickle_data/"+"cnn_dailymail/train"+"/level_2.pickle","rb") as fi:
-        train_dataset = pickle.load(fi)
+#with open("pickle_data/"+"cnn_dailymail/train"+"/level_2.pickle","rb") as fi:
+#        train_dataset = pickle.load(fi)
 with open("pickle_data/"+"cnn_dailymail/validation"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
@@ -114,7 +114,7 @@ class Network(nn.Module):
        outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,decoder_attention_mask=decoder_attention_mask,labels=labels,output_hidden_states=True,memory=memory)
        return outputs,memory
     
-   def generate(self, memory,input_ids,attention_mask,decoder_input_ids,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
+   def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
        
        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to('cuda:1'),prev_predictions),1)
        prev_predictions = self.shared(prev_predictions)
@@ -147,13 +147,13 @@ class Network(nn.Module):
 
        #inputs_embeds=torch.cat((prev_predictions,inputs_embeds),1)
        #attention_mask=torch.cat((torch.LongTensor([[1]*prev_predictions.shape[1]]).to('cuda:1'),attention_mask),1)
-       dummy_decoder_input_ids = torch.tensor([[tokenizer.pad_token_id]]).to('cuda:1')
+       #dummy_decoder_input_ids = torch.tensor([[tokenizer.pad_token_id]]).to('cuda:1')
        source= tokenizer.batch_decode(input_ids,skip_special_tokens=True)
        print("source")
        print(source)
-       return self.bart.generate(max_length=512,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,decoder_input_ids=dummy_decoder_input_ids),memory
+       return self.bart.generate(max_length=512,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4),memory
 
-config = AutoConfig.from_pretrained('facebook/bart-base',gradient_checkpointing=True)
+config = AutoConfig.from_pretrained('facebook/bart-base')
 if CONTINUOUSLY_TRAIN:
     bart =  AutoModelForSeq2SeqLM.from_config(config).to('cuda:1') # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
 else:
@@ -167,7 +167,7 @@ model = Network(config.vocab_size, config.d_model,bart).to('cuda:1')
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=5e-6)
 num_epochs = 3
-num_training_steps = num_epochs * len(train_dataset)
+"""num_training_steps = num_epochs * len(train_dataset)
 
 lr_scheduler = get_scheduler(
     name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
@@ -175,7 +175,7 @@ lr_scheduler = get_scheduler(
 )
 
 progress_bar = tqdm(range(num_training_steps))
-
+"""
 
 if CONTINUOUSLY_TRAIN:
     checkpoint= torch.load(PATH)
@@ -223,21 +223,21 @@ def trainer():
                     word=str(count+1) + "th"
             
                 prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
-                count+=1
+                
                 prompt=tokenizer(prompt,return_tensors="pt")
                 prompt_attention=prompt.attention_mask.to('cuda:1')
                 prompt_ids=prompt.input_ids.to('cuda:1')
 
             #print("before concat, prompt ids shape :")
             #print(prompt_ids.shape)
-            
+                #print(decoder_attention_masks.shape) 
                 dd=torch.unsqueeze(d[:-1],dim=0).to('cuda:1')
                 decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to('cuda:1')
             # input_ids 맨 앞에 이전 preceding context를 합친다.
                 label=torch.unsqueeze(d[1:],dim=0).to('cuda:1')
             
-
-        # zero the parameter gradients
+                count+=1
+                # zero the parameter gradients
                 optimizer.zero_grad()
 
         # forward + backward + optimize
@@ -276,7 +276,7 @@ def trainer():
             },PATH)
 
 
-trainer()
+#trainer()
 
 # -----------train ends, eval starts.
 f = open('second_level_val_results.csv','w', newline='')
@@ -290,7 +290,7 @@ metric = evaluate.load("rouge")
 model.eval()
 
 for data in valid_dataset:
-    input_ids,attention_mask,num_decoder_input_ids = (data['input_ids'],data['input_attention'],data['decoder_input_ids'])
+    input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
     
 
     count=0
@@ -302,8 +302,8 @@ for data in valid_dataset:
     memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:1') # first memory.
         #print(prev_predictions)
     for d in num_decoder_input_ids:
-
-            #input()
+        
+        
         prev_predictions=prev_predictions.to('cuda:1')
         
         word=""
@@ -315,7 +315,7 @@ for data in valid_dataset:
             word=str(count+1) + "rd"
         else:
             word=str(count+1) + "th"
-
+        
         prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
         
         count+=1
@@ -326,29 +326,65 @@ for data in valid_dataset:
             #print("before concat, prompt ids shape :")
             #print(prompt_ids.shape)
 
-        ex_d=torch.unsqueeze(d,dim=0).to('cuda:1')
-
+        #print(d)
+        #ex_d=torch.unsqueeze(d[:-1],dim=0).to('cuda:1')
+        #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][:-1],dim=0).to('cuda:1')
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-        #with torch.no_grad():
-        #    outputs = model(input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,labels=ex_d,output_hidden_states=True,
-        #            prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention)
+        #label=torch.unsqueeze(d[1:],dim=0).to('cuda:1')
+        ex_d=torch.unsqueeze(d[0:1],dim=0).to('cuda:1')
+        
+        #print(decoder_attention_masks[count-1][0])
+
+        decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][0:1],dim=0).to('cuda:1')
+        label=torch.unsqueeze(d[1:2],dim=0).to('cuda:1')
+            # input_ids 맨 앞에 이전 preceding context를 합친다.
+        """with torch.no_grad():
+            outputs,memory = model(input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,labels=label,decoder_attention_mask=decoder_attention_mask,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention,memory=memory.detach())
+        
+        
 
         #prev_predictions =  torch.argmax(outputs.logits, dim=-1)
         
-        outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,labels=ex_d,output_hidden_states=True,
-                    prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention)
+        loss = outputs.loss
+        outputs=torch.argmax(outputs.logits, dim=-1)
+        predictions = tokenizer.batch_decode(outputs,)#skip_special_tokens=True)
+        print("predictions")
+        print(predictions)
+        l = tokenizer.batch_decode(label,)#skip_special_tokens=True)
+        print("golden label")
+        print(l)
+
+        print("decoder input")
+        exd = tokenizer.batch_decode(ex_d,)
+        print(exd)
+
+        print("loss")
+        print(loss)
+"""
+
+        outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention)
+        
         prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
-        #predictions = torch.argmax(logits, dim=-1)
         
         
-        predictions = tokenizer.batch_decode(outputs,skip_special_tokens=True)
+        
+        predictions = tokenizer.batch_decode(outputs,)#skip_special_tokens=True)
         print("predictions")
         print(predictions) 
-        ex_d = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
+        label = tokenizer.batch_decode(label,)#skip_special_tokens=True)
         print("golden label")
-        print(ex_d) 
+        print(label)
+        
+        print("decoder input")
+        ex_d = tokenizer.batch_decode(ex_d,)
+        print(ex_d)
+
+        #print("loss")
+        #print(loss)
         wr.writerow([str(index),tokenizer.batch_decode(input_ids,skip_special_tokens=True),ex_d,predictions])
         index+=1
         metric.add_batch(predictions=predictions, references=ex_d)
+        
+        input()
 
 print(metric.compute())

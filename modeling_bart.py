@@ -799,8 +799,9 @@ class BartEncoder(BartPretrainedModel):
                 Whether or not to return a [`~utils.ModelOutput`] instead of a plain tuple.
         """
 
-        # print("there is memory ? :" )
+        # print("encoder - there is memory ? :" )
         # print(memory is not None)
+
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -865,7 +866,6 @@ class BartEncoder(BartPretrainedModel):
                         hidden_states,
                         attention_mask,
                         (head_mask[idx] if head_mask is not None else None),
-                        memory=memory,
                     )
                 else:
                     layer_outputs = encoder_layer(
@@ -1226,6 +1226,9 @@ class BartModel(BartPretrainedModel):
 
         # different to other models, Bart automatically creates decoder_input_ids from
         # input_ids if no decoder_input_ids are provided
+        # print("bartmodel-there is memory ? :" )
+        # print(memory is not None)
+
         if decoder_input_ids is None and decoder_inputs_embeds is None:
             if input_ids is None:
                 raise ValueError(
@@ -1380,6 +1383,10 @@ class BartForConditionalGeneration(BartPretrainedModel):
                 decoder_input_ids = shift_tokens_right(
                     labels, self.config.pad_token_id, self.config.decoder_start_token_id
                 )
+        # print("in bart code, decoder input ids")
+        # print(decoder_input_ids)
+        # print("conditional - there is memory ? :" )
+        # print(memory is not None)
 
         outputs = self.model(
             input_ids,
@@ -1432,9 +1439,12 @@ class BartForConditionalGeneration(BartPretrainedModel):
         cross_attn_head_mask=None,
         use_cache=None,
         encoder_outputs=None,
+        memory=None,
         **kwargs
     ):
         # cut decoder_input_ids if past is used
+        # print("prepare_inputs_for_generation에서 decoder_input_ids")
+        # print(decoder_input_ids)
         if past is not None:
             decoder_input_ids = decoder_input_ids[:, -1:]
 
@@ -1447,6 +1457,7 @@ class BartForConditionalGeneration(BartPretrainedModel):
             "head_mask": head_mask,
             "decoder_head_mask": decoder_head_mask,
             "cross_attn_head_mask": cross_attn_head_mask,
+            "memory":memory,
             "use_cache": use_cache,  # change this to avoid caching (presumably for debugging)
         }
 
