@@ -123,22 +123,70 @@ def return_dataset(target,source):
     
     return MyBaseDataset(input_ids=input_ids,attention_mask=input_attention,labels=decoder_input_ids,decoder_attention_mask=decoder_attention_mask)
 
+from fast_bleu import BLEU, SelfBLEU
+
 def compute_metrics(pred):
     labels_ids = pred.label_ids
     pred_ids = pred.predictions
-
+    
     pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     labels_ids[labels_ids == -100] = tokenizer.pad_token_id
     label_str = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
+    
+    bleu_score_bi=0
+    bleu_score_tri=0
+    bleu_score_four=0
+    bleu_score_fif=0
+    self_bleu_bi=0
+    self_bleu_tri=0
+    self_bleu_four=0
+    self_bleu_fif=0
 
+    weights = {'bigram': (1/2., 1/2.), 'trigram': (1/3., 1/3., 1/3.), 'fourgram' : (1/4.,1/4.,1/4.,1/4.), 'fifthgram' : (1/5.,1/5.,1/5.,1/5.,1/5.)}
+    for i in range(len(label_str)):
+
+        ref=[label_str[i]]
+        hyp=[pred_str[i]]
+        bleu = BLEU(ref)
+        bleu_score=bleu.get_score(hyp,weights)
+        
+        bleu_score_bi+=bleu_score['bigram'][0]
+        bleu_score_tri+=bleu_score['trigram'][0]
+        bleu_score_four+=bleu_score['fourgram'][0]
+        bleu_score_fif+=bleu_score['fifthgram'][0]
+        
+        self_bleu = SelfBLEU(ref, weights).get_score()
+        self_bleu_bi+=self_bleu['bigram'][0]
+        self_bleu_tri+=self_bleu['trigram'][0]
+        self_bleu_four+=self_bleu['fourgram'][0]
+        self_bleu_fif+=self_bleu['fifthgram'][0]
+        
+
+    bleu_score_bi=bleu_score_bi/len(label_str)
+    bleu_score_tri=bleu_score_tri/len(label_str)
+    bleu_score_four=bleu_score_four/len(label_str)
+    bleu_score_fif=bleu_score_fif/len(label_str)
+    self_bleu_bi=self_bleu_bi/len(label_str)
+    self_bleu_tri=self_bleu_tri/len(label_str)
+    self_bleu_four=self_bleu_four/len(label_str)
+    self_bleu_fif=self_bleu_fif/len(label_str)
+    
     rouge_output = rouge.compute(
-        predictions=pred_str, references=label_str, rouge_types=["rouge2"]
-    )["rouge2"].mid
-
+        predictions=pred_str, references=label_str)
+    
     return {
-        "rouge2_precision": round(rouge_output.precision, 4),
-        "rouge2_recall": round(rouge_output.recall, 4),
-        "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
+        "rouge1": round(rouge_output["rouge1"], 4),
+        "rouge2": round(rouge_output["rouge2"], 4),
+        "rougeL": round(rouge_output["rougeL"], 4),
+        "rougeLsum":round(rouge_output["rougeLsum"], 4),
+        "bleu_bigram":round(bleu_score_bi,4),
+        "bleu_trigram":round(bleu_score_tri,4),
+        "bleu_fourgram":round(bleu_score_four,4),
+        "bleu_fifthgram":round(bleu_score_fif,4),
+        "self_bleu_bigram":round(self_bleu_bi,4),
+        "self_bleu_trigram":round(self_bleu_tri,4),
+        "self_bleu_fourgram":round(self_bleu_four,4),
+        "self_bleu_fifthgram":round(self_bleu_fif,4),
     }
 
 
