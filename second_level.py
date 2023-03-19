@@ -11,6 +11,7 @@ from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 import evaluate
 
 metric = evaluate.load("rouge")
+meteor=evaluate.load("meteor")
 
 TRAIN_RANGE=25000
 def createFolder(directory):
@@ -21,9 +22,12 @@ def createFolder(directory):
         print('Error Creating directory. ' + directory)
 
 createFolder('second_level')
-PATH = './second_level/'+'all.tar'
+PATH = './second_level/'+'all_2.tar'
 
-CONTINUOUSLY_TRAIN=True
+CONTINUOUSLY_TRAIN=False
+USE_MEMORY=True
+USE_CUMULATIVE=True
+CUMUL_NUM=3
 
 # train_total_target=last_target[:TRAIN_RANGE]
 # train_total_source=total_target[:TRAIN_RANGE]
@@ -74,14 +78,17 @@ class Network(nn.Module):
    def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
        #memory states update.
        
-       
+       for_concat_prev_predictions=prev_predictions
+       #print("prev_predictions shape:")
+       #print(for_concat_prev_predictions.shape)
        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to('cuda:1'),prev_predictions),1)
        prev_predictions = self.shared(prev_predictions)
        #print(prev_predictions.shape)
 
-       
-       memory=self.grucell(torch.squeeze(prev_predictions),torch.squeeze(memory)).unsqueeze(dim=0)
-       
+       if USE_MEMORY :
+           memory=self.grucell(torch.squeeze(prev_predictions),torch.squeeze(memory)).unsqueeze(dim=0)
+       else:
+           memory=memory
        #print(memory.shape)
 
        #print("embedded prev prediction : ")
@@ -99,10 +106,26 @@ class Network(nn.Module):
        #print(prompt_ids.shape)
        #print("before concat, input ids shape :")
        #print(input_ids.shape)
-       
+
        input_ids=torch.cat((prompt_ids,input_ids),1)
+       input_ids=torch.cat((input_ids,for_concat_prev_predictions),1)
+       #print("input id shape")
+       #print(input_ids)
+       
        inputs_embeds=self.shared(input_ids)
-       attention_mask=torch.cat((prompt_attention,attention_mask),1)
+       #print(inputs_embeds.shape)
+       list_attention_mask=[[0]*input_ids.shape[1]]
+       for i in range(1024):
+           if i == input_ids.shape[1]:
+               break
+           if input_ids[0][i]!=1: # pad token id는 1이다. pad가 아니면 1로 해야 한다.
+               list_attention_mask[0][i]=1
+
+       #attention_mask=torch.cat((prompt_attention,attention_mask),1)
+       attention_mask=torch.LongTensor(list_attention_mask).to('cuda:1')
+       
+       #print("attention mask")
+       #print(attention_mask)
        #print("concat and embedded input ids shape :")
        #print(inputs_embeds.shape)
        #print("concat attention mask shape : ")
@@ -120,12 +143,14 @@ class Network(nn.Module):
     
    def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,prompt_ids,prompt_attention):
        
+       for_concat_prev_predictions=prev_predictions
        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to('cuda:1'),prev_predictions),1)
        prev_predictions = self.shared(prev_predictions)
-       #print(prev_predictions.shape)
-
-
-       memory=self.grucell(torch.squeeze(prev_predictions),torch.squeeze(memory)).unsqueeze(dim=0)
+       #print(for_concat_prev_predictions.shape)
+       if USE_MEMORY :
+           memory=self.grucell(torch.squeeze(prev_predictions),torch.squeeze(memory)).unsqueeze(dim=0)
+       else:
+           memory=memory
        #print("embedded prev prediction : ")
        #print(prev_predictions.shape)
 
@@ -140,10 +165,28 @@ class Network(nn.Module):
        #print("before concat, input ids shape :")
        #print(input_ids.shape)
 
+       #input_ids=torch.cat((prompt_ids,input_ids),1)
+       #inputs_embeds=self.shared(input_ids)
+       
        input_ids=torch.cat((prompt_ids,input_ids),1)
-       inputs_embeds=self.shared(input_ids)
-       attention_mask=torch.cat((prompt_attention,attention_mask),1)
+       input_ids=torch.cat((input_ids,for_concat_prev_predictions),1)
+       #print("input id shape")
+       #print(input_ids.shape)
 
+       inputs_embeds=self.shared(input_ids)
+       #print(inputs_embeds.shape)
+       list_attention_mask=[[0]*input_ids.shape[1]]
+       
+       for i in range(1024):
+           if i == input_ids.shape[1]:
+               break
+           if input_ids[0][i]!=1: # pad token id는 1이다. pad가 아니면 1로 해야 한다.
+               list_attention_mask[0][i]=1
+
+       #attention_mask=torch.cat((prompt_attention,attention_mask),1)
+       attention_mask=torch.LongTensor(list_attention_mask).to('cuda:1')
+
+       #attention_mask=torch.cat((prompt_attention,attention_mask),1)
        #print("concat and embedded input ids shape :")
        #print(inputs_embeds.shape)
        #print("concat attention mask shape : ")
@@ -155,7 +198,7 @@ class Network(nn.Module):
        source= tokenizer.batch_decode(input_ids,skip_special_tokens=True)
        #print("source")
        #print(source)
-       return self.bart.generate(max_length=512,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4),memory
+       return self.bart.generate(max_length=250,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4),memory
 
 config = AutoConfig.from_pretrained('facebook/bart-base')
 if CONTINUOUSLY_TRAIN:
@@ -186,6 +229,9 @@ def do_eval(steps):
     self_bleu_four=0
     self_bleu_fif=0
     whole_num=0
+    whole_predictions=[]
+    met_result=0
+
     weights = {'bigram': (1/2., 1/2.), 'trigram': (1/3., 1/3., 1/3.), 'fourgram' : (1/4.,1/4.,1/4.,1/4.), 'fifthgram' : (1/5.,1/5.,1/5.,1/5.,1/5.)}
 
 
@@ -203,6 +249,7 @@ def do_eval(steps):
         attention_mask=attention_mask.to('cuda:1')
         memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:1') # first memory.
         #print(prev_predictions)
+        cumul_prev_predictions=[]
         for d in num_decoder_input_ids:
         
         
@@ -215,12 +262,13 @@ def do_eval(steps):
                 word=str(count+1) + "nd"
             elif count==2:
                 word=str(count+1) + "rd"
-            else:
+            elif count>2 and count!=len(num_decoder_input_ids)-1:
                 word=str(count+1) + "th"
+            else:
+                word='last'
         
             prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
-        
-            count+=1
+            
             prompt=tokenizer(prompt,return_tensors="pt")
             prompt_attention=prompt.attention_mask.to('cuda:1')
             prompt_ids=prompt.input_ids.to('cuda:1')
@@ -263,14 +311,25 @@ def do_eval(steps):
         print("loss")
         print(loss)
             """
+            if USE_CUMULATIVE and count>0:
+                length=len(cumul_prev_predictions)
+                
+                for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
+                    if prompt_ids.shape[1]+input_ids.shape[1]+(cumul_prev_predictions[j].shape[1])+prev_predictions.shape[1]>1000:
+                            break
+                    prev_predictions=torch.cat((prev_predictions,cumul_prev_predictions[j]),1)
+
+            count+=1
+
 
             outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention)
-        
+            
             prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
-        
-        
-        
+            
             predictions = tokenizer.batch_decode(outputs,skip_special_tokens=True)
+            cumul_prev_predictions.insert(0,prev_predictions)
+
+            whole_predictions.append(predictions[0])
             # print("predictions")
             # print(predictions) 
             #label = tokenizer.batch_decode(label,skip_special_tokens=True)
@@ -287,42 +346,77 @@ def do_eval(steps):
             index+=1
             metric.add_batch(predictions=predictions, references=ex_d)
             whole_num+=1
-            bleu = BLEU(ex_d)
-            bleu_score=bleu.get_score(predictions,weights)
+            bleu = BLEU(ex_d,weights)
+            bleu_score=bleu.get_score(predictions)
             bleu_score_bi+=bleu_score['bigram'][0]
             bleu_score_tri+=bleu_score['trigram'][0]
             bleu_score_four+=bleu_score['fourgram'][0]
             bleu_score_fif+=bleu_score['fifthgram'][0]
+            met_result += meteor.compute(predictions=predictions, references=ex_d)["meteor"]
+            """
             self_bleu = SelfBLEU(predictions, weights).get_score()
             self_bleu_bi+=self_bleu['bigram'][0]
             self_bleu_tri+=self_bleu['trigram'][0]
             self_bleu_four+=self_bleu['fourgram'][0]
             self_bleu_fif+=self_bleu['fifthgram'][0]
-        
+            """
             #input()
     result=metric.compute()
     print(result)
+    
     bleu_score_bi=bleu_score_bi/whole_num
     bleu_score_tri=bleu_score_tri/whole_num
     bleu_score_four=bleu_score_four/whole_num
     bleu_score_fif=bleu_score_fif/whole_num
-    self_bleu_bi=self_bleu_bi/whole_num
-    self_bleu_tri=self_bleu_tri/whole_num
-    self_bleu_four=self_bleu_four/whole_num
-    self_bleu_fif=self_bleu_fif/whole_num
+    print("bleu_score_bi : " + str(bleu_score_bi) + " bleu_score_tri : " + str(bleu_score_tri) + " bleu_score_four : " + str(bleu_score_four) + " bleu_score_fif : " + str(bleu_score_fif))
+    
+    met_result=met_result/whole_num
+    
+    self_bleu = SelfBLEU(whole_predictions, weights).get_score()
+    for s in range(len(self_bleu['bigram'])):
 
-    writer.add_scalar("rouge1/train", result['rouge1'], steps)
-    writer.add_scalar("rouge2/train", result['rouge2'], steps)
-    writer.add_scalar("rougeL/train", result['rougeL'], steps)
-    writer.add_scalar("rougeLsum/train", result['rougeLsum'], steps)
-    writer.add_scalar("bleu bi/train", bleu_score_bi, steps)
-    writer.add_scalar("bleu tri/train", bleu_score_tri, steps)
-    writer.add_scalar("bleu four/train", bleu_score_four, steps)
-    writer.add_scalar("bleu fif/train", bleu_score_fif, steps)
-    writer.add_scalar("self bleu bi/train", self_bleu_bi, steps)
-    writer.add_scalar("self bleu tri/train", self_bleu_tri, steps)
-    writer.add_scalar("self bleu four/train", self_bleu_four, steps)
-    writer.add_scalar("self bleu fif/train", self_bleu_fif, steps)
+        self_bleu_bi+=self_bleu['bigram'][s]
+        self_bleu_tri+=self_bleu['trigram'][s]
+        self_bleu_four+=self_bleu['fourgram'][s]
+        self_bleu_fif+=self_bleu['fifthgram'][s]
+    
+
+
+    """
+    print(len(self_bleu['bigram']))
+    print(len(self_bleu['trigram']))
+    print(len(self_bleu['fourgram']))
+    print(len(self_bleu['fifthgram']))
+    print(whole_num)
+    #print(self_bleu)
+    """
+    print("meteor : " + str(met_result))
+    
+    self_bleu_bi=self_bleu_bi/len(self_bleu['bigram'])
+    self_bleu_tri=self_bleu_tri/len(self_bleu['bigram'])
+    self_bleu_four=self_bleu_four/len(self_bleu['bigram'])
+    self_bleu_fif=self_bleu_fif/len(self_bleu['bigram'])
+    
+    print("self_bleu bi : " + str(self_bleu_bi))
+    print("self_bleu tri : " + str(self_bleu_tri))
+    print("self_bleu four : " + str(self_bleu_four))
+    print("self_bleu fif : " + str(self_bleu_fif))
+
+
+
+    writer.add_scalar("rouge1/eval", result['rouge1'], steps)
+    writer.add_scalar("rouge2/eval", result['rouge2'], steps)
+    writer.add_scalar("rougeL/eval", result['rougeL'], steps)
+    writer.add_scalar("rougeLsum/eval", result['rougeLsum'], steps)
+    writer.add_scalar("bleu bi/eval", bleu_score_bi, steps)
+    writer.add_scalar("bleu tri/eval", bleu_score_tri, steps)
+    writer.add_scalar("bleu four/eval", bleu_score_four, steps)
+    writer.add_scalar("bleu fif/eval", bleu_score_fif, steps)
+    writer.add_scalar("self bleu bi/eval", self_bleu_bi, steps)
+    writer.add_scalar("self bleu tri/eval", self_bleu_tri, steps)
+    writer.add_scalar("self bleu four/eval", self_bleu_four, steps)
+    writer.add_scalar("self bleu fif/eval", self_bleu_fif, steps)
+    writer.add_scalar("meteor",met_result,steps)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=5e-6)
@@ -364,6 +458,8 @@ def trainer():
             
 
             memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:1') # first memory.
+            #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to('cuda:1')
+            cumul_prev_predictions=[]
         #print(prev_predictions)
             #torch.cuda.empty_cache() # manually freeing gpu memory.
             for d in num_decoder_input_ids:
@@ -396,19 +492,31 @@ def trainer():
             # input_ids 맨 앞에 이전 preceding context를 합친다.
                 label=torch.unsqueeze(d[1:],dim=0).to('cuda:1')
             
-                count+=1
+                
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
         # forward + backward + optimize
-                
+                if USE_CUMULATIVE and count>0:
+                    length=len(cumul_prev_predictions)
+                    #print("one step." + str(length))
+                    for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
+                        #print(prev_predictions.shape)
+                        if prompt_ids.shape[1]+input_ids.shape[1]+(cumul_prev_predictions[j].shape[1])+prev_predictions.shape[1]>1000:
+                            #print("break")
+                            #print(cumul_prev_predictions[j].shape)
+                            break
+                        prev_predictions=torch.cat((prev_predictions,cumul_prev_predictions[j]),1)       
+                count+=1
+
                 outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
                 loss = outputs.loss
                 loss.backward()
                 
                 prev_predictions =  torch.argmax(outputs.logits, dim=-1)
-                
+                cumul_prev_predictions.insert(0,prev_predictions)
+
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
@@ -428,7 +536,7 @@ def trainer():
                 'optimizer_state_dict': optimizer.state_dict(),
                 },PATH)
 
-            if i % 500 == 0:
+            if i % 500 == 499:
                 do_eval(epoch * len(train_dataset)+i)
                 writer.flush()
 
