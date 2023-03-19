@@ -74,10 +74,9 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         # for s in split_s:
         #     print(len(tokenizer(s).input_ids))
 
-        input=tokenizer(source[t],max_length=max_length-100,padding="max_length",
-            truncation=True,return_tensors="pt")
+        input=tokenizer(source[t],return_tensors="pt")
     
-        labels=tokenizer(split_s,max_length=max_length-100,padding="max_length",
+        labels=tokenizer(split_s,max_length=250,padding="max_length",
             truncation=True,return_tensors="pt")
         
         prompt_id=tokenizer(prompt[t],return_tensors="pt").input_ids
