@@ -3,8 +3,8 @@ import torch
 from tqdm import tqdm, trange
 from transformers import AutoTokenizer
 from torch.utils.data import Dataset
-from datasets import load_metric
-
+#from datasets import load_metric
+import evaluate
 #tokenizer = AutoTokenizer.from_pretrained("t5-base")
 tokenizer=AutoTokenizer.from_pretrained("facebook/bart-large")
 import csv
@@ -13,12 +13,14 @@ import math
 import numpy as np
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 import nltk
+import random
 
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize, word_tokenize
 
-rouge = load_metric("rouge")
-
+#rouge = load_metric("rouge")
+rouge = evaluate.load('rouge')
+meteor= evaluate.load('meteor')
 max_length=1024
 batch_size=4
 
@@ -141,44 +143,72 @@ def compute_metrics(pred):
     self_bleu_tri=0
     self_bleu_four=0
     self_bleu_fif=0
+    r_self_bleu_bi=0
+    r_self_bleu_tri=0
+    r_self_bleu_four=0
+    r_self_bleu_fif=0
+    met_result=0
 
     weights = {'bigram': (1/2., 1/2.), 'trigram': (1/3., 1/3., 1/3.), 'fourgram' : (1/4.,1/4.,1/4.,1/4.), 'fifthgram' : (1/5.,1/5.,1/5.,1/5.,1/5.)}
     for i in range(len(label_str)):
 
         ref=[label_str[i]]
         hyp=[pred_str[i]]
-        bleu = BLEU(ref)
-        bleu_score=bleu.get_score(hyp,weights)
+        bleu = BLEU(ref,weights)
+        bleu_score=bleu.get_score(hyp)
         
         bleu_score_bi+=bleu_score['bigram'][0]
         bleu_score_tri+=bleu_score['trigram'][0]
         bleu_score_four+=bleu_score['fourgram'][0]
         bleu_score_fif+=bleu_score['fifthgram'][0]
-        
+        met_result += meteor.compute(predictions=hyp, references=ref)["meteor"]
+        """
         self_bleu = SelfBLEU(hyp, weights).get_score()
         self_bleu_bi+=self_bleu['bigram'][0]
         self_bleu_tri+=self_bleu['trigram'][0]
         self_bleu_four+=self_bleu['fourgram'][0]
         self_bleu_fif+=self_bleu['fifthgram'][0]
-        
+        """
 
     bleu_score_bi=bleu_score_bi/len(label_str)
     bleu_score_tri=bleu_score_tri/len(label_str)
     bleu_score_four=bleu_score_four/len(label_str)
     bleu_score_fif=bleu_score_fif/len(label_str)
-    self_bleu_bi=self_bleu_bi/len(label_str)
-    self_bleu_tri=self_bleu_tri/len(label_str)
-    self_bleu_four=self_bleu_four/len(label_str)
-    self_bleu_fif=self_bleu_fif/len(label_str)
+    sample_pred=random.sample(pred_str,1000)
+    self_bleu = SelfBLEU(sample_pred, weights).get_score()
+    real_self_bleu = SelfBLEU(sample_pred,weights).get_score()
     
+    for s in range(len(self_bleu['bigram'])):
+
+        self_bleu_bi+=self_bleu['bigram'][s]
+        self_bleu_tri+=self_bleu['trigram'][s]
+        self_bleu_four+=self_bleu['fourgram'][s]
+        self_bleu_fif+=self_bleu['fifthgram'][s]
+        r_self_bleu_bi+=real_self_bleu['bigram'][s]
+        r_self_bleu_tri+=real_self_bleu['trigram'][s]
+        r_self_bleu_four+=real_self_bleu['fourgram'][s]
+        r_self_bleu_fif+=real_self_bleu['fifthgram'][s]
+
+    met_result=met_result/len(label_str)
+    
+    self_bleu_bi=self_bleu_bi/(len(self_bleu['bigram']))
+    self_bleu_tri=self_bleu_tri/(len(self_bleu['bigram']))
+    self_bleu_four=self_bleu_four/(len(self_bleu['bigram']))
+    self_bleu_fif=self_bleu_fif/(len(self_bleu['bigram']))
+    
+    r_self_bleu_bi=self_bleu_bi/(len(self_bleu['bigram']))
+    r_self_bleu_tri=self_bleu_tri/(len(self_bleu['bigram']))
+    r_self_bleu_four=self_bleu_four/(len(self_bleu['bigram']))
+    r_self_bleu_fif=self_bleu_fif/(len(self_bleu['bigram']))
+
     rouge_output = rouge.compute(
         predictions=pred_str, references=label_str)
     
     return {
-        "rouge1": round(rouge_output["rouge1"], 4),
-        "rouge2": round(rouge_output["rouge2"], 4),
-        "rougeL": round(rouge_output["rougeL"], 4),
-        "rougeLsum":round(rouge_output["rougeLsum"], 4),
+        "rouge1": rouge_output["rouge1"],
+        "rouge2": rouge_output["rouge2"],
+        "rougeL": rouge_output["rougeL"],
+        "rougeLsum":rouge_output["rougeLsum"],
         "bleu_bigram":round(bleu_score_bi,4),
         "bleu_trigram":round(bleu_score_tri,4),
         "bleu_fourgram":round(bleu_score_four,4),
@@ -187,6 +217,11 @@ def compute_metrics(pred):
         "self_bleu_trigram":round(self_bleu_tri,4),
         "self_bleu_fourgram":round(self_bleu_four,4),
         "self_bleu_fifthgram":round(self_bleu_fif,4),
+        "real_self_bleu_bigram":round(r_self_bleu_bi,4),
+        "real_self_bleu_trigram":round(r_self_bleu_tri,4),
+        "real_self_bleu_fourgram":round(r_self_bleu_four,4),
+        "real_self_bleu_fifthgram":round(r_self_bleu_fif,4),
+        "meteor":round(met_result,4),
     }
 
 
@@ -205,12 +240,12 @@ def createFolder(directory):
 
 import pickle
 
-def save_tokenize_pickle_data(file,total_source,total_target,last_target):
+def save_tokenize_pickle_data_1(file,total_source,total_target,last_target):
     
     createFolder("pickle_data/"+file)
     dataset=return_dataset(total_target,total_source)
-
-
+    
+    print("dataset 1 making end")
     with open("pickle_data/"+file+"/level_1.pickle","wb") as f:
         pickle.dump(dataset, f)
     
@@ -218,8 +253,11 @@ def save_tokenize_pickle_data(file,total_source,total_target,last_target):
     with open("level_1_"+file+".pickle","rb") as fi:
         test = pickle.load(fi)
     """
+def save_tokenize_pickle_data_2(file,total_source,total_target,last_target):
     
+    createFolder("pickle_data/"+file)
     dataset2=return_dataset_2(last_target,total_target,total_source)
+    print("dataset 2 making end")
     with open("pickle_data/"+file+"/level_2.pickle","wb") as f:
         pickle.dump(dataset2,f)
     
