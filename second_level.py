@@ -115,9 +115,7 @@ class Network(nn.Module):
        inputs_embeds=self.shared(input_ids)
        #print(inputs_embeds.shape)
        list_attention_mask=[[0]*input_ids.shape[1]]
-       for i in range(1024):
-           if i == input_ids.shape[1]:
-               break
+       for i in range(input_ids.shape[1]):
            if input_ids[0][i]!=1: # pad token id는 1이다. pad가 아니면 1로 해야 한다.
                list_attention_mask[0][i]=1
 
@@ -177,9 +175,7 @@ class Network(nn.Module):
        #print(inputs_embeds.shape)
        list_attention_mask=[[0]*input_ids.shape[1]]
        
-       for i in range(1024):
-           if i == input_ids.shape[1]:
-               break
+       for i in range(input_ids.shape[1]):
            if input_ids[0][i]!=1: # pad token id는 1이다. pad가 아니면 1로 해야 한다.
                list_attention_mask[0][i]=1
 
@@ -198,9 +194,10 @@ class Network(nn.Module):
        source= tokenizer.batch_decode(input_ids,skip_special_tokens=True)
        #print("source")
        #print(source)
-       return self.bart.generate(max_length=250,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4,no_repeat_ngram_size=3,
-    encoder_no_repeat_ngram_size=3,
-    repetition_penalty=3.5,early_stopping=True),memory
+       return self.bart.generate(max_length=250,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4,
+               no_repeat_ngram_size=3,
+                encoder_no_repeat_ngram_size=3,
+                repetition_penalty=3.5,early_stopping=True),memory
 
 config = AutoConfig.from_pretrained('facebook/bart-base')
 if CONTINUOUSLY_TRAIN:
@@ -230,8 +227,13 @@ def do_eval(steps):
     self_bleu_tri=0
     self_bleu_four=0
     self_bleu_fif=0
+    r_self_bleu_bi=0
+    r_self_bleu_tri=0
+    r_self_bleu_four=0
+    r_self_bleu_fif=0
     whole_num=0
     whole_predictions=[]
+    whole_labels=[]
     met_result=0
 
     weights = {'bigram': (1/2., 1/2.), 'trigram': (1/3., 1/3., 1/3.), 'fourgram' : (1/4.,1/4.,1/4.,1/4.), 'fifthgram' : (1/5.,1/5.,1/5.,1/5.,1/5.)}
@@ -330,8 +332,8 @@ def do_eval(steps):
             
             predictions = tokenizer.batch_decode(outputs,skip_special_tokens=True)
             cumul_prev_predictions.insert(0,prev_predictions)
-
             whole_predictions.append(predictions[0])
+            
             # print("predictions")
             # print(predictions) 
             #label = tokenizer.batch_decode(label,skip_special_tokens=True)
@@ -340,6 +342,7 @@ def do_eval(steps):
         
             #print("decoder input")
             ex_d = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
+            whole_labels.append(ex_d[0])
             # print(ex_d)
 
         #print("loss")
@@ -370,18 +373,24 @@ def do_eval(steps):
     bleu_score_tri=bleu_score_tri/whole_num
     bleu_score_four=bleu_score_four/whole_num
     bleu_score_fif=bleu_score_fif/whole_num
+
     print("bleu_score_bi : " + str(bleu_score_bi) + " bleu_score_tri : " + str(bleu_score_tri) + " bleu_score_four : " + str(bleu_score_four) + " bleu_score_fif : " + str(bleu_score_fif))
     
     met_result=met_result/whole_num
-    
+    print("len of sample generation : " + str(len(whole_predictions)))
     self_bleu = SelfBLEU(whole_predictions, weights).get_score()
+    real_self_bleu = SelfBLEU(whole_labels, weights).get_score()
+    
     for s in range(len(self_bleu['bigram'])):
 
         self_bleu_bi+=self_bleu['bigram'][s]
         self_bleu_tri+=self_bleu['trigram'][s]
         self_bleu_four+=self_bleu['fourgram'][s]
         self_bleu_fif+=self_bleu['fifthgram'][s]
-    
+        r_self_bleu_bi+=real_self_bleu['bigram'][s]
+        r_self_bleu_tri+=real_self_bleu['trigram'][s]
+        r_self_bleu_four+=real_self_bleu['fourgram'][s]
+        r_self_bleu_fif+=real_self_bleu['fifthgram'][s]
 
 
     """
@@ -398,12 +407,19 @@ def do_eval(steps):
     self_bleu_tri=self_bleu_tri/len(self_bleu['bigram'])
     self_bleu_four=self_bleu_four/len(self_bleu['bigram'])
     self_bleu_fif=self_bleu_fif/len(self_bleu['bigram'])
-    
+    r_self_bleu_bi=self_bleu_bi/(len(r_self_bleu['bigram']))
+    r_self_bleu_tri=self_bleu_tri/(len(r_self_bleu['bigram']))
+    r_self_bleu_four=self_bleu_four/(len(r_self_bleu['bigram']))
+    r_self_bleu_fif=self_bleu_fif/(len(r_self_bleu['bigram']))
+
     print("self_bleu bi : " + str(self_bleu_bi))
     print("self_bleu tri : " + str(self_bleu_tri))
     print("self_bleu four : " + str(self_bleu_four))
     print("self_bleu fif : " + str(self_bleu_fif))
-
+    print("real self_bleu bi : " + str(r_self_bleu_bi))
+    print("real self_bleu tri : " + str(r_self_bleu_tri))
+    print("real self_bleu four : " + str(r_self_bleu_four))
+    print("real self_bleu fif : " + str(r_self_bleu_fif))
 
 
     writer.add_scalar("rouge1/eval", result['rouge1'], steps)
@@ -418,6 +434,10 @@ def do_eval(steps):
     writer.add_scalar("self bleu tri/eval", self_bleu_tri, steps)
     writer.add_scalar("self bleu four/eval", self_bleu_four, steps)
     writer.add_scalar("self bleu fif/eval", self_bleu_fif, steps)
+    writer.add_scalar("real_self bleu bi/eval", r_self_bleu_bi, steps)
+    writer.add_scalar("real_self bleu tri/eval", r_self_bleu_tri, steps)
+    writer.add_scalar("real_self bleu four/eval", r_self_bleu_four, steps)
+    writer.add_scalar("real_self bleu fif/eval", r_self_bleu_fif, steps)
     writer.add_scalar("meteor",met_result,steps)
 
 criterion = nn.CrossEntropyLoss()
