@@ -198,7 +198,9 @@ class Network(nn.Module):
        source= tokenizer.batch_decode(input_ids,skip_special_tokens=True)
        #print("source")
        #print(source)
-       return self.bart.generate(max_length=250,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4),memory
+       return self.bart.generate(max_length=250,memory=memory,inputs_embeds=inputs_embeds,attention_mask=attention_mask,num_beams=4,no_repeat_ngram_size=3,
+    encoder_no_repeat_ngram_size=3,
+    repetition_penalty=3.5,early_stopping=True),memory
 
 config = AutoConfig.from_pretrained('facebook/bart-base')
 if CONTINUOUSLY_TRAIN:
