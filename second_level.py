@@ -25,7 +25,7 @@ def createFolder(directory):
 createFolder('second_level')
 PATH = './second_level/'+'all_5.tar'
 
-CONTINUOUSLY_TRAIN=False
+CONTINUOUSLY_TRAIN=True
 USE_MEMORY=True
 USE_CUMULATIVE=True
 TEACHER_FORCING_MEMORY=True
@@ -466,7 +466,7 @@ def do_eval(steps):
             print("source : ")
             print(tokenizer.batch_decode(input_ids,skip_special_tokens=True))
             print("predictions : ")
-            print(one_predictions)
+            print(one_prediction)
             print("label : ")
             print(one_label)
             continue
