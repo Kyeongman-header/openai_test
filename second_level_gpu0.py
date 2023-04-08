@@ -287,10 +287,12 @@ def do_eval(steps):
     bleu_score_tri=0
     bleu_score_four=0
     bleu_score_fif=0
+    self_bleu_one=0
     self_bleu_bi=0
     self_bleu_tri=0
     self_bleu_four=0
     self_bleu_fif=0
+    r_self_bleu_one=0
     r_self_bleu_bi=0
     r_self_bleu_tri=0
     r_self_bleu_four=0
@@ -530,6 +532,7 @@ def do_eval(steps):
         
         #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
         self_bleu=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=5)
+        self_bleu_one+=self_bleu['precisions'][0]
         self_bleu_bi+=self_bleu['precisions'][1]
         self_bleu_tri+=self_bleu['precisions'][2]
         self_bleu_four+=self_bleu['precisions'][3]
@@ -546,6 +549,7 @@ def do_eval(steps):
         #for l in except_whole_labels:
         #real_self_bleu=BLEU([l],weights).get_score([whole_labels[j]])
         real_self_bleu=_bleu.compute(predictions=[whole_labels[j]],references=[except_whole_labels],max_order=5)
+        r_self_bleu_one+=real_self_bleu['precisions'][0]
         r_self_bleu_bi+=real_self_bleu['precisions'][1]
         r_self_bleu_tri+=real_self_bleu['precisions'][2]
         r_self_bleu_four+=real_self_bleu['precisions'][3]
@@ -578,21 +582,25 @@ def do_eval(steps):
     print("meteor : " + str(met_result))
     whole_predictions_len=whole_predictions_len/whole_num
     whole_labels_len=(whole_labels_len/whole_num)
+    self_bleu_one=self_bleu_one/len(whole_predictions)
     self_bleu_bi=self_bleu_bi/len(whole_predictions)
     self_bleu_tri=self_bleu_tri/len(whole_predictions)
     self_bleu_four=self_bleu_four/len(whole_predictions)
     self_bleu_fif=self_bleu_fif/len(whole_predictions)
+    r_self_bleu_one=r_self_bleu_one/(self_num)
     r_self_bleu_bi=r_self_bleu_bi/(self_num)
     r_self_bleu_tri=r_self_bleu_tri/(self_num)
     r_self_bleu_four=r_self_bleu_four/(self_num)
     r_self_bleu_fif=r_self_bleu_fif/(self_num)
 
     print("avg prediction len : " + str(whole_predictions_len))
+    print("self_bleu one : " + str(self_bleu_one))
     print("self_bleu bi : " + str(self_bleu_bi))
     print("self_bleu tri : " + str(self_bleu_tri))
     print("self_bleu four : " + str(self_bleu_four))
     print("self_bleu fif : " + str(self_bleu_fif))
     print("avg reference len : " + str(whole_labels_len))
+    print("real self_bleu one : " + str(r_self_bleu_one))
     print("real self_bleu bi : " + str(r_self_bleu_bi))
     print("real self_bleu tri : " + str(r_self_bleu_tri))
     print("real self_bleu four : " + str(r_self_bleu_four))
