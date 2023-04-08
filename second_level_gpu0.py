@@ -23,11 +23,11 @@ def createFolder(directory):
         print('Error Creating directory. ' + directory)
 
 createFolder('second_level')
-PATH = './second_level/'+'all_bert.tar'
-writer = SummaryWriter("./runs/bert")
+PATH = './second_level/'+'all_cnn_dailymail.tar'
+writer = SummaryWriter("./runs/")
 
-CONTINUOUSLY_TRAIN=True
-LAST_STEP=11032+17579
+CONTINUOUSLY_TRAIN=False
+LAST_STEP=0
 USE_MEMORY=True
 USE_CUMULATIVE=True
 TEACHER_FORCING_MEMORY=True
@@ -62,9 +62,9 @@ tail_token_tensor=torch.LongTensor([[tail_id]]).to('cuda:0')
 
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
-with open("pickle_data/"+"train_bert"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"cnn_dailymail/train"+"/level_2.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
-with open("pickle_data/"+"valid_bert"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"cnn_dailymail/validation"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 
@@ -274,7 +274,7 @@ bart.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedd
 model = Network(config.vocab_size, config.d_model,bart).to('cuda:0')
 
 # -----------train ends, eval starts.
-f = open('bert_second_level_val_results.csv','w', newline='')
+f = open('cnndailymail_second_level_val_results.csv','w', newline='')
 wr = csv.writer(f)
 wr.writerow(["steps","index","source","real text","generated_results"])
 
