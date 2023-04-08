@@ -33,23 +33,25 @@ USE_CUMULATIVE=True
 TEACHER_FORCING_MEMORY=True
 CUMUL_NUM=3
 
-num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<i>","<b>","<t>","<sep>"],special_tokens=True)
+num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<by>","<sep>"],special_tokens=True)
 soplot_id=tokenizer.convert_tokens_to_ids("<plot>")
 eoplot_id=tokenizer.convert_tokens_to_ids("</plot>")
 soprev_id=tokenizer.convert_tokens_to_ids("<prev>")
 eoprev_id=tokenizer.convert_tokens_to_ids("</prev>")
 sep_id=tokenizer.convert_tokens_to_ids("<sep>")
-intro_id=tokenizer.convert_tokens_to_ids("<i>")
-body_id=tokenizer.convert_tokens_to_ids("<b>")
-tail_id=tokenizer.convert_tokens_to_ids("<t>")
+#intro_id=tokenizer.convert_tokens_to_ids("<i>")
+#body_id=tokenizer.convert_tokens_to_ids("<b>")
+#tail_id=tokenizer.convert_tokens_to_ids("<t>")
+by_id=tokenizer.convert_tokens_to_ids("<by>")
 soplot_token_tensor=torch.LongTensor([[soplot_id]]).to('cuda:0')
 eoplot_token_tensor=torch.LongTensor([[eoplot_id]]).to('cuda:0')
 soprev_token_tensor=torch.LongTensor([[soprev_id]]).to('cuda:0')
 eoprev_token_tensor=torch.LongTensor([[eoprev_id]]).to('cuda:0')
 sep_token_tensor=torch.LongTensor([[sep_id]]).to('cuda:0')
-intro_token_tensor=torch.LongTensor([[intro_id]]).to('cuda:0')
-body_token_tensor=torch.LongTensor([[body_id]]).to('cuda:0')
-tail_token_tensor=torch.LongTensor([[tail_id]]).to('cuda:0')
+by_token_tensor=torch.LongTensor([[by_id]]).to('cuda:0')
+#intro_token_tensor=torch.LongTensor([[intro_id]]).to('cuda:0')
+#body_token_tensor=torch.LongTensor([[body_id]]).to('cuda:0')
+#tail_token_tensor=torch.LongTensor([[tail_id]]).to('cuda:0')
 #train_total_target=last_target[:TRAIN_RANGE]
 # train_total_source=total_target[:TRAIN_RANGE]
 # train_total_prompt=total_source[:TRAIN_RANGE]
@@ -98,7 +100,7 @@ class Network(nn.Module):
        self.wMn = nn.Linear(d_model,d_model).to('cuda:0')
        """
 
-   def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,intro,tail):#prompt_ids,prompt_attention):
+   def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,order,whole):#prompt_ids,prompt_attention):
        #memory states update.
        
        for_concat_prev_predictions=prev_predictions
@@ -132,21 +134,17 @@ class Network(nn.Module):
        #print(input_ids.shape)
 
        #input_ids=torch.cat((prompt_ids,input_ids),1)
-       if intro:
-           decoding_token_tensor=intro_token_tensor
-       elif tail:
-           decoding_token_tensor=tail_token_tensor
-       else:
-           decoding_token_tensor=body_token_tensor
-
+       
        #print("input id shape")
        #print(input_ids.shape)
+       order_token_tensor=torch.LongTensor([[order]]).to('cuda:0')
+       whole_token_tensor=torch.LongTensor([[whole]]).to('cuda:0')
        if input_ids.shape[1]+for_concat_prev_predictions.shape[1]+5 > 1020:
            print("no previous decoder output used because of too long summary.")
-           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor),1)
+           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
            
        else:
-           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,decoding_token_tensor),1)
+           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
        
        inputs_embeds=self.shared(input_ids)
        #print(inputs_embeds.shape)
@@ -186,7 +184,7 @@ class Network(nn.Module):
        
        return outputs,memory
     
-   def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,intro,tail):#prompt_ids,prompt_attention):
+   def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,order,whole):#prompt_ids,prompt_attention):
        
        for_concat_prev_predictions=prev_predictions
        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to('cuda:0'),prev_predictions),1)
@@ -215,19 +213,14 @@ class Network(nn.Module):
        
        #input_ids=torch.cat((prompt_ids,input_ids),1)
        
-       if intro:
-           decoding_token_tensor=intro_token_tensor
-       elif tail:
-           decoding_token_tensor=tail_token_tensor
-       else:
-           decoding_token_tensor=body_token_tensor
-
+       order_token_tensor=torch.LongTensor([[order]]).to('cuda:0')
+       whole_token_tensor=torch.LongTensor([[whole]]).to('cuda:0')
        if input_ids.shape[1]+for_concat_prev_predictions.shape[1]+5 > 1020:
            print("no previous decoder output used because of too long summary.")
-           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor),1)
+           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
 
        else:
-           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,decoding_token_tensor),1)
+           input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
        #print("input id shape")
        #print(input_ids.shape)
 
@@ -405,14 +398,17 @@ def do_eval(steps):
                     prev_predictions=torch.cat((prev_predictions,sep_token_tensor,cumul_prev_predictions[j]),1)
 
             count+=1
-
+            """
             intro=False
             tail=False
             if count==0:
                 intro=True
             elif count==len(num_decoder_input_ids):
                 tail=True
-            outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,intro=intro,tail=tail)#prompt_ids=prompt_ids,prompt_attention=prompt_attention)
+            """
+            order=count
+            whole=len(num_decoder_input_ids)
+            outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole)#prompt_ids=prompt_ids,prompt_attention=prompt_attention)
             with torch.no_grad():
                 dd = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
                 dd = tokenizer(dd,return_tensors="pt")
@@ -426,7 +422,7 @@ def do_eval(steps):
                 # input_ids 맨 앞에 이전 preceding context를 합친다.
                 dlabel=dd[:,1:].to('cuda:0')
                 
-                for_perplexity,_=model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ddd,decoder_attention_mask=dd_attention_mask,labels=dlabel,output_hidden_states=True,prev_predictions=prev_predictions,intro=intro,tail=tail)
+                for_perplexity,_=model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ddd,decoder_attention_mask=dd_attention_mask,labels=dlabel,output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole)
                 neg_log_likelihood=for_perplexity.loss
             
             nlls.append(neg_log_likelihood)
@@ -729,14 +725,18 @@ def trainer(LAST_STEP):
                             break
                         prev_predictions=torch.cat((prev_predictions,sep_token_tensor,cumul_prev_predictions[j]),1)       
                 count+=1
+                """
                 intro=False
                 tail=False
+                
                 if count==0:
                     intro=True
                 elif count==len(num_decoder_input_ids):
                     tail=True
-
-                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,intro=intro,tail=tail)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
+                """
+                order=count
+                whole=len(num_decoder_input_ids)
+                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
                 loss = outputs.loss
                 loss.backward()
