@@ -23,7 +23,7 @@ def createFolder(directory):
         print('Error Creating directory. ' + directory)
 
 createFolder('second_level')
-PATH = './second_level/'+'all_cnn_dailymail.tar'
+PATH = './second_level/'+'all_bart_num_whole.tar'
 writer = SummaryWriter("./runs/")
 
 CONTINUOUSLY_TRAIN=False
@@ -64,9 +64,9 @@ by_token_tensor=torch.LongTensor([[by_id]]).to('cuda:0')
 
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
-with open("pickle_data/"+"cnn_dailymail/train"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"train_bart"+"/level_2.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
-with open("pickle_data/"+"cnn_dailymail/validation"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"valid_bart"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 
@@ -267,7 +267,7 @@ bart.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedd
 model = Network(config.vocab_size, config.d_model,bart).to('cuda:0')
 
 # -----------train ends, eval starts.
-f = open('cnndailymail_second_level_val_results.csv','w', newline='')
+f = open('bart_num_whole_second_level_val_results.csv','w', newline='')
 wr = csv.writer(f)
 wr.writerow(["steps","index","source","real text","generated_results"])
 
@@ -644,18 +644,19 @@ if CONTINUOUSLY_TRAIN:
 
 def trainer(LAST_STEP):
     conti_first=False
+    whole_count_for_save=0
     model.train()
     for epoch in range(num_epochs):  # loop over the dataset multiple times
 
         running_loss = 0.0
-
+        
         if conti_first:
             LAST_STEP=0
         
         for i, data in enumerate(train_dataset[LAST_STEP:],0):
         # get the inputs; data is a list of [inputs, labels]
             mini_running_loss=0.0
-            whole_count_for_save=0
+            
             input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
             
             if input_ids.shape[1] > 1020:
@@ -763,6 +764,7 @@ def trainer(LAST_STEP):
                 writer.add_scalar("Loss/train", running_loss/whole_count_for_save, epoch * len(train_dataset) + i)
                 
                 running_loss=0.0
+                whole_count_for_save=0
                 torch.save({'epoch':num_epochs,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
