@@ -73,6 +73,13 @@ def eval(steps):
 
         _,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
         valid_loss += loss.item()
+        
+        del input_ids
+        del attention_mask
+        del global_attention_mask
+        del labels
+        if torch.cuda.is_available():
+             torch.cuda.empty_cache()
     
     valid_loss=(valid_loss/len(valid_dataset))
     print("valid loss : " + valid_loss)
