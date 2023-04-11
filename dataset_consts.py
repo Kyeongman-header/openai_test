@@ -15,7 +15,7 @@ csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 import nltk
 import random
 
-nltk.download('punkt')
+# nltk.download('punkt')
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 #rouge = load_metric("rouge")
@@ -23,7 +23,18 @@ rouge = evaluate.load('rouge')
 meteor= evaluate.load('meteor')
 max_length=1024
 batch_size=4
+class Contrastive_Dataset(torch.utils.data.Dataset):
+    def __init__(self, input_ids,attention_mask,global_attention_mask,label):
+        self.input_ids=input_ids
+        self.attention_mask=attention_mask
+        self.global_attention_mask=global_attention_mask
+        self.label=label
 
+    def __len__(self):
+        return self.input_ids.shape[0]
+
+    def __getitem__(self, index): 
+        return (self.input_ids[index], self.attention_mask[index],self.global_attention_mask[index],self.label[index])
 
 class MyBaseDataset(Dataset):
     def __init__(self, input_ids, attention_mask,labels,decoder_attention_mask):
@@ -124,7 +135,7 @@ def return_dataset(target,source):
     
     return MyBaseDataset(input_ids=input_ids,attention_mask=input_attention,labels=decoder_input_ids,decoder_attention_mask=decoder_attention_mask)
 
-from fast_bleu import BLEU, SelfBLEU
+# from fast_bleu import BLEU, SelfBLEU
 
 def compute_metrics(pred):
     labels_ids = pred.label_ids
