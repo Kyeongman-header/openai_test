@@ -13,7 +13,7 @@ PATH = './longformer/'+'all.tar'
 CONTINUOUSLY_TRAIN=False
 
 print("gpu : ")
-print(torch.cuda.empty_cache())
+print(torch.cuda.is_available())
 
 with open("train_coherence.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
