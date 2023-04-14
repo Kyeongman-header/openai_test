@@ -18,10 +18,14 @@ def split(TRAIN_NUM,VALID_NUM,TEST_NUM):
     random.shuffle(whole_data)
     train_data=whole_data[:TRAIN_NUM]
     valid_data=whole_data[TRAIN_NUM:TRAIN_NUM+VALID_NUM]
-    test_data=whole_data[VALID_NUM:TRAIN_NUM+VALID_NUM+TEST_NUM]
+    test_data=whole_data[TRAIN_NUM+VALID_NUM:TRAIN_NUM+VALID_NUM+TEST_NUM]
     return train_data,valid_data,test_data
 
-train,valid,test=split(1000,100,100)
+
+train,valid,test=split(60000,4000,9999999)
+print(len(train))
+print(len(valid))
+print(len(test))
 
 with open("train_reedsy_prompts_whole"+".pickle","wb") as f:
         pickle.dump(train,f)
