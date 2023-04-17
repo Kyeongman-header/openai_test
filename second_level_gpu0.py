@@ -468,8 +468,9 @@ def do_eval(steps):
                 neg_log_likelihood=for_perplexity.loss
             
             nlls.append(neg_log_likelihood)
-
-            prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
+            
+            if USE_CUMULATIVE is True:
+                prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
             
             predictions = tokenizer.batch_decode(outputs,skip_special_tokens=True)
             cumul_prev_predictions.insert(0,prev_predictions)
@@ -784,8 +785,9 @@ def trainer(LAST_STEP):
                 
                 loss = outputs.loss
                 loss.backward()
-                
-                prev_predictions =  torch.argmax(outputs.logits, dim=-1)
+
+                if USE_CUMULATIVE
+                    prev_predictions =  torch.argmax(outputs.logits, dim=-1)
                 
                 if TEACHER_FORCING_MEMORY:
                     prev_predictions = label # teacher forcing으로, memory와 cumul에 쓰이는 prev prediction은 training 과정에선 golden label 사용!
