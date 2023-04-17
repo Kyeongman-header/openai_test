@@ -450,6 +450,9 @@ def do_eval(steps):
             
             order=count
             whole=len(num_decoder_input_ids)
+            if USE_MEMORY is False:
+                memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:0')
+            _memory=memory
             outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole,intro=intro,tail=tail)#prompt_ids=prompt_ids,prompt_attention=prompt_attention)
             with torch.no_grad():
                 dd = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
@@ -464,7 +467,7 @@ def do_eval(steps):
                 # input_ids 맨 앞에 이전 preceding context를 합친다.
                 dlabel=dd[:,1:].to('cuda:0')
                 
-                for_perplexity,_=model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ddd,decoder_attention_mask=dd_attention_mask,labels=dlabel,output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole,intro=intro,tail=tail)
+                for_perplexity,_=model(memory=_memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ddd,decoder_attention_mask=dd_attention_mask,labels=dlabel,output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole,intro=intro,tail=tail)
                 neg_log_likelihood=for_perplexity.loss
             
             nlls.append(neg_log_likelihood)
@@ -781,6 +784,8 @@ def trainer(LAST_STEP):
                 
                 order=count
                 whole=len(num_decoder_input_ids)
+                if USE_MEMORY is False:
+                    memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:0')
                 outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole,intro=intro,tail=tail)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
                 loss = outputs.loss
