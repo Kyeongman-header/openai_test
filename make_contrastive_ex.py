@@ -12,13 +12,14 @@ import pandas as pd
 import pickle
 import random
 from dataset_consts import *
+import gc
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 
 
 
 
 
-def get_whole_data(wp=False,reedsy=False,booksum=False,t_v_t="train",location="./writingPrompts/",start=0,range=0):
+def get_whole_data(wp=False,reedsy=False,booksum=False,t_v_t="train",location="../writingPrompts/",start=0,range=0):
 
     if wp:
         T=t_v_t
@@ -94,7 +95,7 @@ def get_whole_data(wp=False,reedsy=False,booksum=False,t_v_t="train",location=".
 def making_new_whole_data(whole_data):
 
     new_whole_data=[]
-    for i in range(100):
+    for i in range(30):
         new_whole_data.append([])
 
 
@@ -300,30 +301,39 @@ def making_pickle_data(examples,name):
     with open(name+".pickle","wb") as f:
         pickle.dump(train_dataset,f)
 
-t_v_t="valid"
+t_v_t="train"
 
-whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=0,range=1000)
+whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=200000,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+del whole_data
 report(new_whole_data)
-wp_examples_1=making_coherence_examples(new_whole_data)
-wp_examples_2=making_completeness_examples(new_whole_data)
+examples_1=making_coherence_examples(new_whole_data)
+examples_2=making_completeness_examples(new_whole_data)
 
-whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=1000)
+
+whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+del whole_data
 report(new_whole_data)
-rd_examples_1=making_coherence_examples(new_whole_data)
-rd_examples_2=making_completeness_examples(new_whole_data)
+examples_1+=making_coherence_examples(new_whole_data)
+examples_2+=making_completeness_examples(new_whole_data)
 
-whole_data=get_whole_data(booksum=True,location="booksum/",t_v_t=t_v_t,start=0,range=1000)
+"""
+whole_data=get_whole_data(booksum=True,location="booksum/",t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+del whole_data
 report(new_whole_data)
-bk_examples_1=making_coherence_examples(new_whole_data)
-bk_examples_2=making_completeness_examples(new_whole_data)
+examples_1+=making_coherence_examples(new_whole_data)
+examples_2+=making_completeness_examples(new_whole_data)
+del new_whole_data
+gc.collect()
+"""
+#examples_1=wp_examples_1+bk_examples_1+rd_examples_1
+#examples_2=wp_examples_2+bk_examples_2+rd_examples_2
 
-examples_1=wp_examples_1+bk_examples_1+rd_examples_1
-examples_2=wp_examples_2+bk_examples_2+rd_examples_2
-
-making_pickle_data(examples_1,t_v_t+"_coherence")
-making_pickle_data(examples_2,t_v_t+"_completeness")
+making_pickle_data(examples_1,t_v_t+"_wp_coherence-2")
+del examples_1
+gc.collect()
+making_pickle_data(examples_2,t_v_t+"_wp_completeness-2")
 
 
