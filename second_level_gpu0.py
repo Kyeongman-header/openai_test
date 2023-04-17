@@ -23,7 +23,7 @@ def createFolder(directory):
         print('Error Creating directory. ' + directory)
 
 createFolder('second_level')
-PATH = './second_level/'+'all_bart_num_whole.tar'
+PATH = './second_level/'+'rake_f_m_e_token.tar'
 writer = SummaryWriter("./runs/")
 
 CONTINUOUSLY_TRAIN=False
@@ -73,9 +73,9 @@ ending_token_tensor=torch.LongTensor([[ending_id]]).to('cuda:0')
 
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
-with open("pickle_data/"+"train_bart"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"train_rake"+"/level_2.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
-with open("pickle_data/"+"valid_bart"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"val_rake"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 
@@ -167,7 +167,7 @@ class Network(nn.Module):
             print("no previous decoder output used because of too long summary.")
 
         #    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
-            input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor),1)
+            input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor,order_token_tensor),1)
 
         else:
             input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor,),1)
@@ -258,7 +258,7 @@ class Network(nn.Module):
             print("no previous decoder output used because of too long summary.")
 
         #    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
-            input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor),1)
+            input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor,order_token_tensor),1)
 
         else:
             input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,for_concat_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor,),1)
@@ -308,7 +308,7 @@ bart.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedd
 model = Network(config.vocab_size, config.d_model,bart).to('cuda:0')
 
 # -----------train ends, eval starts.
-f = open('bart_num_whole_second_level_val_results.csv','w', newline='')
+f = open('rake_fme_second_level_val_results.csv','w', newline='')
 wr = csv.writer(f)
 wr.writerow(["steps","index","source","real text","generated_results"])
 
