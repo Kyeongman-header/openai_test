@@ -34,12 +34,12 @@ TEACHER_FORCING_MEMORY=True
 CUMUL_NUM=3
 
 # num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<by>","<sep>"],special_tokens=True)
-num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<i>","<b>","<t>","<f>","<m>","<e>","<sep>"],special_tokens=True)
+num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<i>","<b>","<t>","<f>","<m>","<e>","[SEP]"],special_tokens=True)
 soplot_id=tokenizer.convert_tokens_to_ids("<plot>")
 eoplot_id=tokenizer.convert_tokens_to_ids("</plot>")
 soprev_id=tokenizer.convert_tokens_to_ids("<prev>")
 eoprev_id=tokenizer.convert_tokens_to_ids("</prev>")
-sep_id=tokenizer.convert_tokens_to_ids("<sep>")
+sep_id=tokenizer.convert_tokens_to_ids("[SEP]")
 intro_id=tokenizer.convert_tokens_to_ids("<i>")
 body_id=tokenizer.convert_tokens_to_ids("<b>")
 tail_id=tokenizer.convert_tokens_to_ids("<t>")
