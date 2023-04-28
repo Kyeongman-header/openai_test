@@ -6,12 +6,6 @@ from tqdm import tqdm, trange
 from dataset_consts import *
 from torch.utils.tensorboard import SummaryWriter
 import sys
-writer = SummaryWriter('./runs/')
-
-createFolder('longformer')
-PATH = './longformer/'+'all.tar'
-
-CONTINUOUSLY_TRAIN=False
 
 print("gpu : ")
 print(torch.cuda.is_available())
@@ -19,11 +13,14 @@ print(torch.cuda.is_available())
 dataset_name=sys.argv[1] # 예제 : coherence-1
 num_epochs=sys.argv[2] # 예제 : 1
 num_batch = sys.argv[3] # 예제 : 4
-dtest=sys.argv[4] # 1
+dtest=sys.argv[4] # 1 or 0
 do_test=False
 if dtest==1:
     do_test=True
 num_test=sys.argv[5] # 4
+conti=sys.argv[6] # 1 or 0
+save_dir=sys.argv[7] #all.tar
+log_dir=sys.argv[8] # coh1
 
 with open("train_"+dataset_name+".pickle","rb") as fi:
         train_dataset = pickle.load(fi)
@@ -35,6 +32,15 @@ train_dataset= torch.utils.data.DataLoader(train_dataset,
                                    shuffle=True)
 valid_dataset= torch.utils.data.DataLoader(valid_dataset,batch_size=num_batch,shuffle=True)
 
+CONTINUOUSLY_TRAIN=False
+if conti==1:
+    CONTINUOUSLY_TRAIN=True
+
+
+createFolder('longformer')
+PATH = './longformer/'+save_dir
+
+writer = SummaryWriter('./runs/'+log_dir)
 
 tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
 
