@@ -391,7 +391,7 @@ def do_eval(steps):
 
     model.eval()
 
-    for data in tqdm(random.sample(valid_dataset,1000)):
+    for data in tqdm(valid_dataset[500:600]):
         input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
         
         if input_ids.shape[1] > 1020:
