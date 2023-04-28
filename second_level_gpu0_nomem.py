@@ -26,8 +26,8 @@ createFolder('second_level')
 PATH = './second_level/'+'all_rake_nomem_token.tar'
 writer = SummaryWriter("./runs/nomem/")
 
-CONTINUOUSLY_TRAIN=True
-LAST_STEP=488324
+CONTINUOUSLY_TRAIN=False
+LAST_STEP=0
 USE_MEMORY=False
 USE_CUMULATIVE=True
 TEACHER_FORCING_MEMORY=True
@@ -73,9 +73,9 @@ ending_token_tensor=torch.LongTensor([[ending_id]]).to('cuda:0')
 
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
-with open("pickle_data/"+"train_bart"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"train_wp_rake"+"/level_2.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
-with open("pickle_data/"+"valid_bart"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"val_wp_rake"+"/level_2.pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 
@@ -820,9 +820,9 @@ def trainer(LAST_STEP):
                 'optimizer_state_dict': optimizer.state_dict(),
                 },PATH)
 
-            if i % 200000 == 0:
-                do_eval(epoch * len(train_dataset)+i)
-                writer.flush()
+        
+        do_eval(epoch * len(train_dataset)+i)
+        writer.flush()
 
         conti_first=True
     print('Finished Training')
