@@ -9,6 +9,7 @@ from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 from rake_nltk import Rake
 r = Rake()
 import evaluate
+import sys
 
 metric = evaluate.load("rouge")
 meteor=evaluate.load("meteor")
@@ -44,18 +45,39 @@ def createFolder(directory):
     except OSError:
         print('Error Creating directory. ' + directory)
 
+save_dir=sys.argv[1]
+log_dir=sys.argv[2]
+conti=sys.argv[3]
+
+last_step=int(sys.arg[4])
+use_mem=sys.arg[5]
+use_cumul=sys.arg[6]
+
+cumul_num=int(sys.arg[7])
+
 
 
 createFolder('second_level')
-PATH = './second_level/'+'rake__token.tar'
-writer = SummaryWriter("./runs/")
-
+PATH = './second_level/'+save_dir+'.tar'
+writer = SummaryWriter("./runs/"+log_dir)
 CONTINUOUSLY_TRAIN=False
-LAST_STEP=0
+if conti==1:
+    CONTINUOUSLY_TRAIN=True
+LAST_STEP=last_step
+
 USE_MEMORY=True
+if use_mem==1:
+    USE_MEMORY=True
+else:
+    USE_MEMORY=False
+
 USE_CUMULATIVE=True
+if use_cumul==1:
+    USE_CUMULATIVE=True
+else:
+    USE_CUMULATIVE=False
 TEACHER_FORCING_MEMORY=True
-CUMUL_NUM=3
+CUMUL_NUM=cumul_num
 
 # num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<by>","<sep>"],special_tokens=True)
 num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<i>","<b>","<t>","<f>","<m>","<e>","[SEP]"],special_tokens=True)
@@ -873,9 +895,9 @@ def trainer(LAST_STEP):
                 'optimizer_state_dict': optimizer.state_dict(),
                 },PATH)
 
-            if i % 200000 == 199999:
-                do_eval(epoch * len(train_dataset)+i)
-                writer.flush()
+            
+        do_eval(epoch * len(train_dataset)+i)
+        writer.flush()
 
         conti_first=True
     print('Finished Training')
