@@ -585,10 +585,13 @@ def do_eval(steps):
                 r.extract_keywords_from_text(predictions)
                 top_features = r.get_ranked_phrases()
                 topK=10
-                top_features = clean_top_features(top_features, topK)
-                keywordsSTR = convert_keys_to_str(top_features)
+                if len(top_features)==0:
+                        cumul_prev_predictions.insert(0,sep_token_tensor)
+                else:
+                    top_features = clean_top_features(top_features, topK)
+                    keywordsSTR = convert_keys_to_str(top_features)
 
-                cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
+                    cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
 
             one_prediction.append(predictions[0])
             #whole_predictions.append(predictions[0])
@@ -920,10 +923,13 @@ def trainer(LAST_STEP):
                     r.extract_keywords_from_text(tokenizer.decode(prev_predictions[0],skip_special_tokens=True))
                     top_features = r.get_ranked_phrases()
                     topK=10
-                    top_features = clean_top_features(top_features, topK)
-                    keywordsSTR = convert_keys_to_str(top_features)
+                    if len(top_features)==0:
+                        cumul_prev_predictions.insert(0,sep_token_tensor)
+                    else:
+                        top_features = clean_top_features(top_features, topK)
+                        keywordsSTR = convert_keys_to_str(top_features)
 
-                    cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
+                        cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
                     if debug:
                         print("keywords from last output:")
                         print(keywordsSTR)
