@@ -84,20 +84,20 @@ else:
 TEACHER_FORCING_MEMORY=True
 CUMUL_NUM=cumul_num
 
-if debug:
-    print('save_dir : ' + save_dir)
-    print('log_dir : ' + log_dir)
-    print('use_cumulative : ')
-    print(USE_CUMULATIVE)
-    print('cumul num :')
-    print(cumul_num)
-    print('use_mem : ')
-    print(USE_MEMORY)
-    print('continuously : ')
-    print(CONTINUOUSLY_TRAIN)
-    print("last_step : ")
-    print(last_step)
-
+print('save_dir : ' + save_dir)
+print('log_dir : ' + log_dir)
+print('use_cumulative : ')
+print(USE_CUMULATIVE)
+print('cumul num :')
+print(cumul_num)
+print('use_mem : ')
+print(USE_MEMORY)
+print('continuously : ')
+print(CONTINUOUSLY_TRAIN)
+print("last_step : ")
+print(last_step)
+print("debug : ")
+print(debug)
 
 # num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<by>","<sep>"],special_tokens=True)
 num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<i>","<b>","<t>","<f>","<m>","<e>","[SEP]"],special_tokens=True)
@@ -453,7 +453,7 @@ def do_eval(steps):
         memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
         #print(prev_predictions)
         cumul_prev_predictions=[]
-        conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long).to(gpu_name)
+        conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
         one_label=[]
         one_prediction=[]
         _labels_len=0
@@ -551,7 +551,7 @@ def do_eval(steps):
             count+=1
             order=count
             whole=len(num_decoder_input_ids)
-
+            conti_prev_predictions=conti_prev_predictions.to(gpu_name)
             if USE_MEMORY is False:
                 memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
             
@@ -588,7 +588,7 @@ def do_eval(steps):
                 top_features = clean_top_features(top_features, topK)
                 keywordsSTR = convert_keys_to_str(top_features)
 
-                cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids)
+                cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
 
             one_prediction.append(predictions[0])
             #whole_predictions.append(predictions[0])
@@ -837,7 +837,7 @@ def trainer(LAST_STEP):
             memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
             #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
             cumul_prev_predictions=[]
-            conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long).to(gpu_name)
+            conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
         #print(prev_predictions)
             #torch.cuda.empty_cache() # manually freeing gpu memory.
             for d in num_decoder_input_ids:
@@ -902,6 +902,8 @@ def trainer(LAST_STEP):
                 count+=1
                 order=count
                 whole=len(num_decoder_input_ids)
+                conti_prev_predictions=conti_prev_predictions.to(gpu_name)
+
                 if USE_MEMORY is False:
                     memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
                 outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,order=order,whole=whole,intro=intro,tail=tail)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
@@ -921,7 +923,7 @@ def trainer(LAST_STEP):
                     top_features = clean_top_features(top_features, topK)
                     keywordsSTR = convert_keys_to_str(top_features)
 
-                    cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids)
+                    cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
                     if debug:
                         print("keywords from last output:")
                         print(keywordsSTR)
