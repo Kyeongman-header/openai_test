@@ -634,7 +634,8 @@ def do_eval(steps):
             predictions = tokenizer.batch_decode(outputs,skip_special_tokens=True)
             
             if USE_CUMULATIVE:
-                r.extract_keywords_from_text(predictions)
+                #print(predictions)
+                r.extract_keywords_from_text(predictions[0])
                 top_features = r.get_ranked_phrases()
                 topK=10
                 if len(top_features)==0:
@@ -859,7 +860,7 @@ if CONTINUOUSLY_TRAIN:
 def trainer(LAST_STEP):
     conti_first=False
     whole_count_for_save=0
-    #do_eval(0)
+    do_eval(0)
     model.train()
     for epoch in range(num_epochs):  # loop over the dataset multiple times
 
