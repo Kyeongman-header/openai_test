@@ -1,10 +1,10 @@
 
-from transformers import AutoTokenizer, LongformerModel,AutoConfig
 import torch
 import pickle
 from tqdm import tqdm, trange
 from dataset_consts import *
 from torch.utils.tensorboard import SummaryWriter
+from transformers import AutoConfig,LongformerModel
 import sys
 
 print("gpu : ")
@@ -53,8 +53,7 @@ with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
         valid_dataset = pickle.load(fi)
 
 train_dataset= torch.utils.data.DataLoader(train_dataset,
-                                   batch_size=num_batch,
-                                   shuffle=True)
+                                   batch_size=num_batch,shuffle=True)
 valid_dataset= torch.utils.data.DataLoader(valid_dataset,shuffle=True)
 
 CONTINUOUSLY_TRAIN=False
@@ -97,14 +96,11 @@ mylongformer=MyLongformer()
 # print(mylongformer(input_ids,attention_mask,global_attention_mask,label=torch.FloatTensor([[1]])))
 if torch.cuda.is_available():
      mylongformer=mylongformer.to(gpu)
-if CONTINUOUSLY_TRAIN:
-    checkpoint= torch.load(PATH)
-    mylongformer.load_state_dict(checkpoint['model_state_dict'])
-    mylongformer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 def eval(steps):
     mylongformer.eval()
     valid_loss=0.0
+    acc=0
     for i,(input_ids,attention_mask,global_attention_mask,labels) in enumerate(tqdm(valid_dataset)):
         # print(input_ids.shape)
         if torch.cuda.is_available():
@@ -121,10 +117,10 @@ def eval(steps):
             print("loss")
             print(loss)
 
-        for (i,p) in enumerate(probs,9):
-            if p >=0.5 and labels[i]==1:
+        for (j,p) in enumerate(probs,0):
+            if p >=0.5 and labels[j]==1:
                 acc+=1
-            elif p < 0.5 and labels[i]==0:
+            elif p < 0.5 and labels[j]==0:
                 acc+=1
         
         if debug:
@@ -154,7 +150,10 @@ lr_scheduler = get_scheduler(
     name="linear", optimizer=optimizer, num_warmup_steps=50000, num_training_steps=num_training_steps
 )
 
-
+if CONTINUOUSLY_TRAIN:
+    checkpoint= torch.load(PATH)
+    mylongformer.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 for epoch in range(num_epochs):
     running_loss = 0.0
@@ -167,7 +166,7 @@ for epoch in range(num_epochs):
     loss_steps=1
     acc=0
     #eval_steps=1
-    eval(0)
+    #eval(0)
     
     for i,(input_ids,attention_mask,global_attention_mask,labels) in enumerate(tqdm(train_dataset)):
         # print(input_ids.shape)
@@ -183,13 +182,13 @@ for epoch in range(num_epochs):
             print(prob)
             print("loss")
             print(loss)
-        for (i,p) in enumerate(prob,9):
-            if p >=0.5 and labels[i]==1:
+        for (j,p) in enumerate(prob,0):
+            if p >=0.5 and labels[j]==1:
                 acc+=1
-            elif p < 0.5 and labels[i]==0:
+            elif p < 0.5 and labels[j]==0:
                 acc+=1
         
-        acc=acc/num_batch
+        
         if debug:
             print(acc)
             input()
@@ -206,10 +205,10 @@ for epoch in range(num_epochs):
 
 
         if i%loss_report==(loss_report-1):
-            print(running_loss/loss_report)
-            print(acc/loss_report)
-            writer.add_scalar("loss/train",running_loss/loss_report,loss_steps)
-            writer.add_scalar("acc/train",acc/loss_report,loss_steps)
+            print(running_loss/(loss_report*num_batch))
+            print(acc/(loss_report*num_batch))
+            writer.add_scalar("loss/train",running_loss/(loss_report*num_batch),loss_steps)
+            writer.add_scalar("acc/train",acc/(loss_report*num_batch),loss_steps)
             running_loss=0
             acc=0
             loss_steps+=1
@@ -222,7 +221,7 @@ for epoch in range(num_epochs):
             'model_state_dict': mylongformer.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             },PATH)
-
+        
         del input_ids
         del attention_mask
         del global_attention_mask
