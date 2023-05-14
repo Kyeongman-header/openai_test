@@ -69,24 +69,34 @@ if CONTINUOUSLY_TRAIN:
     checkpoint= torch.load(PATH)
     mylongformer.load_state_dict(checkpoint['model_state_dict'])
 
-mylongformer.eval()
-def eval(fake_outputs,real_outputs):
-    fake=tokenizer(fake_outputs,max_length=4096,padding="max_length",
-                truncation=True,return_tensors="pt")
-    input_ids=fake['input_ids']
-    attention_mask=fake['attention_mask']
-    global_attention_mask=torch.zeros_like(attention_mask)
-    global_attention_mask[:,0]=1
-    fake_probs,_=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,)
 
-    real=tokenizer(real_outputs,max_length=4096,padding="max_length",
+def eval(fake_outputs,real_outputs):
+    mylongformer.eval()
+    with torch.no_grad():
+        fake=tokenizer(fake_outputs,max_length=4096,padding="max_length",
+                    truncation=True,return_tensors="pt")
+        input_ids=fake['input_ids'].to(gpu)
+        attention_mask=fake['attention_mask'].to(gpu)
+        global_attention_mask=torch.zeros_like(attention_mask).to(gpu)
+        global_attention_mask[:,0]=1
+        fake_probs,_=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,)
+    
+        real=tokenizer(real_outputs,max_length=4096,padding="max_length",
                 truncation=True,return_tensors="pt")
-    input_ids=real['input_ids']
-    attention_mask=real['attention_mask']
-    global_attention_mask=torch.zeros_like(attention_mask)
-    global_attention_mask[:,0]=1
-    real_probs,_=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,)
-    return fake_probs, real_probs
+        input_ids=real['input_ids'].to(gpu)
+        attention_mask=real['attention_mask'].to(gpu)
+        global_attention_mask=torch.zeros_like(attention_mask).to(gpu)
+        global_attention_mask[:,0]=1
+        real_probs,_=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,)
+
+        del fake
+        del real
+        del input_ids
+        del attention_mask
+        del global_attention_mask
+        if torch.cuda.is_available():
+             torch.cuda.empty_cache()
+    return fake_probs.to('cpu'), real_probs.to('cpu')
 
 import csv
 import ctypes as ct
@@ -95,6 +105,9 @@ import numpy as np
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 
 f = open(testfile_name+'.csv', 'r', encoding='utf-8')
+rdr = csv.reader(f)
+num_whole_steps=sum(1 for row in rdr)
+f.seek(0)
 rdr = csv.reader(f)
 first=True
 
@@ -107,49 +120,61 @@ r_score=0
 f_scores=[]
 r_scores=[]
 step=0
+
+progress_bar = tqdm(range(num_whole_steps))
+
 for line in rdr:
     
     if first:
         first=False
         continue
     count+=1
-
+    progress_bar.update(1)
+    
+    keywords=line[2].replace('[','').replace(']','')
+    fake=line[4].replace('[','').replace(']','')
+    real=line[3].replace('[','').replace(']','')
     if debug:
-        print("keywords : " + line[2][0])
-        print("fake outputs : " + line[3][0])
-        print("real outputs : " + line[4][0])
+        print("keywords : " + line[2].replace('[','').replace(']',''))
+        print("fake outputs : " + line[4].replace('[','').replace(']',''))
+        print("real outputs : " + line[3].replace('[','').replace(']',''))
         input()
 
-    if line[2][0]==last_keywords:
-        cumul_fake_outputs+=line[4][0]
-        cumul_real_outputs+=line[3][0]
+    if keywords==last_keywords:
+        cumul_fake_outputs+=fake
+        cumul_real_outputs+=real
         continue
     else:
         if count!=1:
             f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
-            f_scores.append(f_score)
-            r_scores.append(r_score)
+            f_scores.append(f_score.item())
+            r_scores.append(r_score.item())
             step+=1
-            writer.add_scalar("fake score", f_score, step)
-            writer.add_scalar("real score", r_score, step)
+            writer.add_scalar("fake score", f_score.item(), step)
+            writer.add_scalar("real score", r_score.item(), step)
 
             if debug:
                 print("eval results : " )
-                print(cumul_fake_outputs)
-                print(cumul_real_outputs)
-                print(last_keywords)
-                print(f_score)
-                print(r_score)
+                print("fake : " + cumul_fake_outputs)
+                print("real : " + cumul_real_outputs)
+                print("keywords : " + last_keywords)
+                print("fake score : ")
+                print(f_score.item())
+                print("real score : ")
+                print(r_score.item())
                 print("###############")
             
-        cumul_fake_outputs=line[4][0]
-        cumul_real_outputs=line[3][0]
-        last_keywords=line[2][0]
+        cumul_fake_outputs=fake
+        cumul_real_outputs=real
+        last_keywords=keywords
 
 
 f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
-f_scores.append(f_score)
-r_scores.append(r_score)
+f_scores.append(f_score.item())
+r_scores.append(r_score.item())
+step+=1
+writer.add_scalar("fake score", f_score.item(), step)
+writer.add_scalar("real score", r_score.item(), step)
 
 f_scores=np.array(f_scores)
 r_scores=np.array(r_scores)
