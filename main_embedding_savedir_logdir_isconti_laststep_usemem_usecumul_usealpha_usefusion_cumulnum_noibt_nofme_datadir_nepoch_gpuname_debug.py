@@ -244,7 +244,7 @@ class Network(nn.Module):
        self.wMn = nn.Linear(d_model,d_model).to(gpu_name)
        """
 
-   def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,order,whole,intro,tail,use_cumulative,use_memory):#prompt_ids,prompt_attention):
+   def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,conti_keyword_prev_predictions,order,whole,intro,tail,use_cumulative,use_memory):#prompt_ids,prompt_attention):
        #memory states update.
        
         if debug :
@@ -350,15 +350,15 @@ class Network(nn.Module):
         else:
             if NO_IBT is False and NO_FME is False:
                 if order==whole-1:
-                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
+                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
                 else:
-                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor,order_token_tensor),1)
+                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor),1)
             elif NO_IBT and NO_FME:
-                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,),1)
+                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor),1)
             elif NO_FME:
-                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor),1)
+                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,decoding_token_tensor),1)
             elif NO_IBT:
-                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor),1)
+                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,order_token_tensor),1)
                 
 
         if debug:
@@ -380,7 +380,7 @@ class Network(nn.Module):
 
         return outputs,memory
     
-   def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,order,whole,intro,tail,use_memory,use_cumulative):#prompt_ids,prompt_attention):
+   def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,conti_keyword_prev_predictions,order,whole,intro,tail,use_memory,use_cumulative):#prompt_ids,prompt_attention):
 
        
         short_prev=prev_predictions # 뒤에서 사용
@@ -437,12 +437,11 @@ class Network(nn.Module):
             print(beta)
         
         if use_cumulative is False or input_ids.shape[1]+conti_prev_predictions.shape[1]+5 > 1020 or intro:
-            # print("no previous decoder output used because of too long summary.")
-
+            
         #    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
             if NO_IBT is False and NO_FME is False:
                 if order==whole-1:
-                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
+                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1) # 다음 문단이 ending이라는 정보를 알려준다.
                 else:
                     input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor,order_token_tensor),1)
             elif NO_IBT and NO_FME:
@@ -451,21 +450,20 @@ class Network(nn.Module):
                 input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,decoding_token_tensor),1)
             elif NO_IBT:
                 input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor),1)
-
         else:
             if NO_IBT is False and NO_FME is False:
                 if order==whole-1:
-                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
+                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
                 else:
-                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor),1)    
+                    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,decoding_token_tensor,order_token_tensor),1)
             elif NO_IBT and NO_FME:
-                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_prev_predictions,eoprev_token_tensor),1)
+                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor),1)
             elif NO_FME:
-                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_prev_predictions,eoprev_token_tensor,decoding_token_tensor),1)
+                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,decoding_token_tensor),1)
             elif NO_IBT:
-                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_prev_predictions,eoprev_token_tensor,order_token_tensor),1)
-        #print("input id shape")
-        #print(input_ids.shape)
+                input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,order_token_tensor),1)
+                
+
 
         inputs_embeds=self.shared(input_ids)
         #print(inputs_embeds.shape)
@@ -581,71 +579,21 @@ def do_eval(steps):
         for d in num_decoder_input_ids:
         
             prev_predictions=prev_predictions.to(gpu_name)
-            '''
-            word=""
-            if count==0:
-                word=str(count+1) + "st"
-            elif count==1:
-                word=str(count+1) + "nd"
-            elif count==2:
-                word=str(count+1) + "rd"
-            elif count>2 and count!=len(num_decoder_input_ids)-1:
-                word=str(count+1) + "th"
-            else:
-                word='last'
-        
-            prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
             
-            prompt=tokenizer(prompt,return_tensors="pt")
-            prompt_attention=prompt.attention_mask.to(gpu_name)
-            prompt_ids=prompt.input_ids.to(gpu_name)
-            '''
-            #print("before concat, prompt ids shape :")
-            #print(prompt_ids.shape)
-
-        #print(d)
-        #ex_d=torch.unsqueeze(d[:-1],dim=0).to(gpu_name)
-        #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][:-1],dim=0).to(gpu_name)
-            # input_ids 맨 앞에 이전 preceding context를 합친다.
-        #label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
-            #ex_d=torch.unsqueeze(d,dim=0).to(gpu_name)
-        
-        #print(decoder_attention_masks[count-1][0])
-
-            #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1],dim=0).to(gpu_name)
-            #label=torch.unsqueeze(d,dim=0).to(gpu_name)
             
             ex_d=torch.unsqueeze(d[:-1],dim=0).to(gpu_name)
             decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
             label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-            """with torch.no_grad():
-            outputs,memory = model(input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,labels=label,decoder_attention_mask=decoder_attention_mask,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention,memory=memory.detach())
-        
-        
+            
 
-        #prev_predictions =  torch.argmax(outputs.logits, dim=-1)
-        
-        loss = outputs.loss
-        outputs=torch.argmax(outputs.logits, dim=-1)
-        predictions = tokenizer.batch_decode(outputs,)#skip_special_tokens=True)
-        print("predictions")
-        print(predictions)
-        l = tokenizer.batch_decode(label,)#skip_special_tokens=True)
-        print("golden label")
-        print(l)
-
-        print("decoder input")
-        exd = tokenizer.batch_decode(ex_d,)
-        print(exd)
-
-        print("loss")
-        print(loss)
-            """
-
+            keyword_prev_predictions=[]
+            conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
+    
             if len(cumul_prev_predictions)>0:
-                    conti_prev_predictions=cumul_prev_predictions[0]
+                conti_prev_predictions=cumul_prev_predictions[0]
+                conti_keyword_prev_predictions=keyword_prev_predictions[0]
 
             if use_cumulative and count>0:
                 length=len(cumul_prev_predictions)
@@ -656,7 +604,8 @@ def do_eval(steps):
                         #print("break")
                         #print(cumul_prev_predictions[j].shape)
                         break
-                    conti_prev_predictions=torch.cat((conti_prev_predictions,sep_token_tensor,cumul_prev_predictions[j]),1)  
+                    conti_prev_predictions=torch.cat((conti_prev_predictions,sep_token_tensor,cumul_prev_predictions[j]),1)       
+                    conti_keyword_prev_predictions=torch.cat((conti_keyword_prev_predictions,sep_token_tensor,keyword_prev_predictions[j]),1)
             
             
             intro=False
@@ -685,7 +634,8 @@ def do_eval(steps):
                 memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
             
             _memory=memory
-            outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory)#prompt_ids=prompt_ids,prompt_attention=prompt_attention)
+            outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,
+                                          conti_keyword_prev_predictions=conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory)#prompt_ids=prompt_ids,prompt_attention=prompt_attention)
             with torch.no_grad():
                 dd = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
                 dd = tokenizer(dd,return_tensors="pt")
@@ -700,7 +650,7 @@ def do_eval(steps):
                 dlabel=dd[:,1:].to(gpu_name)
                 
                 for_perplexity,_=model(memory=_memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ddd,decoder_attention_mask=dd_attention_mask,labels=dlabel,prev_predictions=prev_predictions,
-                                       conti_prev_predictions=conti_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory)
+                                       conti_prev_predictions=conti_prev_predictions,conti_keyword_prev_predictions=conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory)
                 neg_log_likelihood=for_perplexity.loss
             
             nlls.append(neg_log_likelihood)
@@ -715,19 +665,25 @@ def do_eval(steps):
 
             if use_cumulative:
                 cumul_prev_predictions.insert(0,prev_predictions)
-            # if use_cumulative:
-            #     #print(predictions)
-            #     r.extract_keywords_from_text(predictions[0])
-            #     top_features = r.get_ranked_phrases()
-            #     topK=10
-            #     if len(top_features)==0:
-            #             cumul_prev_predictions.insert(0,sep_token_tensor)
-            #     else:
-            #         top_features = clean_top_features(top_features, topK)
-            #         keywordsSTR = convert_keys_to_str(top_features)
 
-            #         cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
+            if use_cumulative:
+                    r.extract_keywords_from_text(tokenizer.decode(prev_predictions[0],skip_special_tokens=True))
+                    top_features = r.get_ranked_phrases()
+                    topK=10
+                    if len(top_features)==0:
+                        keyword_prev_predictions.insert(0,sep_token_tensor)
+                    else:
+                        top_features = clean_top_features(top_features, topK)
+                        keywordsSTR = convert_keys_to_str(top_features)
 
+                        keyword_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
+                    if debug:
+                        print("keywords from last output:")
+                        print(keywordsSTR)
+                        print("shape")
+                        print(tokenizer(keywordsSTR,return_tensors='pt').input_ids.shape)
+            if debug:    
+                input()
             one_prediction.append(predictions[0])
             #whole_predictions.append(predictions[0])
             _predictions_len+=len(outputs[0])
@@ -978,7 +934,9 @@ def trainer(LAST_STEP):
             memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
             #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
             cumul_prev_predictions=[]
+            
             conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
+            
         #print(prev_predictions)
             #torch.cuda.empty_cache() # manually freeing gpu memory.
             for d in num_decoder_input_ids:
@@ -998,10 +956,15 @@ def trainer(LAST_STEP):
                 
                 # zero the parameter gradients
                 optimizer.zero_grad()
-
-        # forward + backward + optimize
+                
+                
+                
+                keyword_prev_predictions=[]
+                conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
+        
                 if len(cumul_prev_predictions)>0:
                     conti_prev_predictions=cumul_prev_predictions[0]
+                    conti_keyword_prev_predictions=keyword_prev_predictions[0]
 
                 if use_cumulative and count>0:
                     length=len(cumul_prev_predictions)
@@ -1013,7 +976,7 @@ def trainer(LAST_STEP):
                             #print(cumul_prev_predictions[j].shape)
                             break
                         conti_prev_predictions=torch.cat((conti_prev_predictions,sep_token_tensor,cumul_prev_predictions[j]),1)       
-                
+                        conti_keyword_prev_predictions=torch.cat((conti_keyword_prev_predictions,sep_token_tensor,keyword_prev_predictions[j]),1)
                 
                 intro=False
                 tail=False
@@ -1040,10 +1003,12 @@ def trainer(LAST_STEP):
                 order=count
                 whole=len(num_decoder_input_ids)
                 conti_prev_predictions=conti_prev_predictions.to(gpu_name)
+                conti_keyword_prev_predictions=conti_keyword_prev_predictions.to(gpu_name)
 
                 if use_memory is False:
                     memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
-                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
+                outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,prev_predictions=prev_predictions,
+                                       conti_prev_predictions=conti_prev_predictions,conti_keyword_prev_predictions=conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
 
                 
@@ -1064,24 +1029,24 @@ def trainer(LAST_STEP):
                     cumul_prev_predictions.insert(0,prev_predictions)
                 
                 
-                # if use_cumulative:
-                #     r.extract_keywords_from_text(tokenizer.decode(prev_predictions[0],skip_special_tokens=True))
-                #     top_features = r.get_ranked_phrases()
-                #     topK=10
-                #     if len(top_features)==0:
-                #         cumul_prev_predictions.insert(0,sep_token_tensor)
-                #     else:
-                #         top_features = clean_top_features(top_features, topK)
-                #         keywordsSTR = convert_keys_to_str(top_features)
+                if use_cumulative:
+                    r.extract_keywords_from_text(tokenizer.decode(prev_predictions[0],skip_special_tokens=True))
+                    top_features = r.get_ranked_phrases()
+                    topK=10
+                    if len(top_features)==0:
+                        keyword_prev_predictions.insert(0,sep_token_tensor)
+                    else:
+                        top_features = clean_top_features(top_features, topK)
+                        keywordsSTR = convert_keys_to_str(top_features)
 
-                #         cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
-                #     if debug:
-                #         print("keywords from last output:")
-                #         print(keywordsSTR)
-                #         print("shape")
-                #         print(tokenizer(keywordsSTR,return_tensors='pt').input_ids.shape)
-                # if debug:    
-                #     input()
+                        keyword_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
+                    if debug:
+                        print("keywords from last output:")
+                        print(keywordsSTR)
+                        print("shape")
+                        print(tokenizer(keywordsSTR,return_tensors='pt').input_ids.shape)
+                if debug:    
+                    input()
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
