@@ -177,16 +177,6 @@ middle_token_tensor=torch.LongTensor([[middle_id]]).to(gpu_name)
 ending_token_tensor=torch.LongTensor([[ending_id]]).to(gpu_name)
 next_is_ending_token_tensor=torch.LongTensor([[next_is_ending_id]]).to(gpu_name)
 
-#train_total_target=last_target[:TRAIN_RANGE]
-# train_total_source=total_target[:TRAIN_RANGE]
-# train_total_prompt=total_source[:TRAIN_RANGE]
-# val_total_target=last_target[TRAIN_RANGE:]
-# val_total_source=total_target[TRAIN_RANGE:]
-# val_total_prompt=total_source[TRAIN_RANGE:]
-
-# train_dataset=return_dataset_2(train_total_target,train_total_source,train_total_prompt)
-# valid_dataset=return_dataset_2(val_total_target,val_total_source,val_total_prompt)
-
 
 #with open("pickle_data/"+"train"+"/level_2.pickle","rb") as fi:
 with open("pickle_data/"+"train_"+dataset_dir+"/level_2.pickle","rb") as fi:
@@ -1030,7 +1020,7 @@ def trainer(LAST_STEP):
                 
                 if count==0:
                     intro=True
-                    if USE_Fusion is True:
+                    if USE_FUSION is True:
                         use_memory=True
                         ## fusion ver.
                 
