@@ -257,12 +257,13 @@ def making_completeness_examples(new_whole_data):
 
     for num, sample in enumerate(new_whole_data[2:]):
         for i in range(0,len(sample)//2):
-            # print(sample[i])
-            sample[i].pop(-1) # 마지막 요소를 날린다.
+            print(sample[i])
+            sample[i][-1]=sample[i+1][-1]
+
             whole_data_1=' '.join(sample[i])
             neg_examples_2.append({'data' : whole_data_1,'label':[0]})
-            # print("index : " + str(i) + " whole_data_1 : " + whole_data_1)
-            # input()
+            print("index : " + str(i) + " whole_data_1 : " + whole_data_1)
+            input()
 
         for j in range(len(sample)//2,len(sample)):
             whole_data_3=' '.join(sample[j])
@@ -272,6 +273,8 @@ def making_completeness_examples(new_whole_data):
     print("whole neg length : " + str(len(neg_examples_2)))
     examples_2=neg_examples_2+pos_examples_2
     print("whole length : " + str(len(examples_2)))
+
+
     return examples_2
 
 # examples=pos_examples+neg_examples
