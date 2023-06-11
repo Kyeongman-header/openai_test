@@ -301,16 +301,20 @@ def making_pickle_data(examples,name):
     with open(name+".pickle","wb") as f:
         pickle.dump(train_dataset,f)
 
-t_v_t="train"
+t_v_t="valid"
+examples_1=[]
+examples_2=[]
 
-whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=200000,range=0)
+whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 report(new_whole_data)
 examples_1=making_coherence_examples(new_whole_data)
 examples_2=making_completeness_examples(new_whole_data)
+del new_whole_data
+gc.collect()
 
-
+"""
 whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
@@ -318,8 +322,8 @@ report(new_whole_data)
 examples_1+=making_coherence_examples(new_whole_data)
 examples_2+=making_completeness_examples(new_whole_data)
 
-"""
-whole_data=get_whole_data(booksum=True,location="booksum/",t_v_t=t_v_t,start=0,range=0)
+
+whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 report(new_whole_data)
@@ -327,13 +331,13 @@ examples_1+=making_coherence_examples(new_whole_data)
 examples_2+=making_completeness_examples(new_whole_data)
 del new_whole_data
 gc.collect()
-"""
+
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
 #examples_2=wp_examples_2+bk_examples_2+rd_examples_2
-
-making_pickle_data(examples_1,t_v_t+"_wp_coherence-2")
+"""
+making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-0")
 del examples_1
 gc.collect()
-making_pickle_data(examples_2,t_v_t+"_wp_completeness-2")
+making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-0")
 
 
