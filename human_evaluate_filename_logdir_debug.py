@@ -63,11 +63,6 @@ for step, line in _f.iterrows():
     keywords=line[2].replace('[','').replace(']','')
     fake=line[4].replace('[','').replace(']','')
     real=line[3].replace('[','').replace(']','')
-    if debug:
-        print("keywords : " + line[2].replace('[','').replace(']',''))
-        print("fake outputs : " + line[4].replace('[','').replace(']',''))
-        print("real outputs : " + line[3].replace('[','').replace(']',''))
-        input()
 
     if keywords==last_keywords:
         cumul_fake_outputs+=fake
@@ -77,17 +72,6 @@ for step, line in _f.iterrows():
         if count!=1:
             f.append({"text" : cumul_fake_outputs , "label" : "fake"})
             r.append({"text" : cumul_real_outputs, "label" : "real"})
-            
-            if debug:
-                print("eval results : " )
-                print("fake : " + cumul_fake_outputs)
-                print("real : " + cumul_real_outputs)
-                print("keywords : " + last_keywords)
-                print("fake score : ")
-                
-                print("real score : ")
-                
-                print("###############")
             
         cumul_fake_outputs=fake
         cumul_real_outputs=real
@@ -108,9 +92,49 @@ f_scores_c=[]
 r_scores_a=[]
 r_scores_b=[]
 r_scores_c=[]
+
+import sys
+import urllib.request
+import json
+from googletrans import Translator
+
+translator = Translator()
+
+"""
+result = translator.detect("안녕하세요")
+print(result.lang)
+
+
+translated = translator.translate('안녕하세요.', dest='en')
+
+print(translated.text)
+"""
+
+#client_id = "8z6k8bejae"
+#client_secret = "GbAIqpuIQ3Zi7gJadG9obywKRVl1iZjeqEdGQ9ST"
+
+
 for i,sample in enumerate(mix):
     print("\n\n" + str(i) + ". The sample text from " + testfile_name +". \n ############################")
     print(sample["text"])
+    print("Korean Translation : " )
+    """
+    encText = urllib.parse.quote(sample['text'])
+    data = "source=en&target=ko&text=" + encText
+    url = "https://naveropenapi.apigw.ntruss.com/nmt/v1/translation"
+    request = urllib.request.Request(url)
+    request.add_header("X-NCP-APIGW-API-KEY-ID",client_id)
+    request.add_header("X-NCP-APIGW-API-KEY",client_secret)
+    response = urllib.request.urlopen(request, data=data.encode("utf-8"))
+    rescode = response.getcode()
+    if(rescode==200):
+        response_body = response.read()
+        print(json.loads(response_body.decode('utf-8'))['message']['result']['translatedText'])
+    else:
+        print("Error Code:" + rescode)
+    """
+    translated = translator.translate(sample["text"], dest='ko')
+    print(translated.text)
     
     while True:
         print("Question 1. 이 글은 주제의 통일성이 마치 사람이 쓴 것과 같다.")
@@ -157,6 +181,7 @@ for i,sample in enumerate(mix):
         print("a : " + a)
         print("b : " + b)
         print("c : " + c)
+        print("label : " + sample["label"])
     print("If you want to stop the survey, please enter the '0'. If you enter whatever else, the survey is keep going.")
     stop=input()
     print("You entered " + stop)
@@ -166,4 +191,25 @@ for i,sample in enumerate(mix):
 
 
 
+f_scores_a=np.array(f_scores_a)
+f_scores_b=np.array(f_scores_b)
+f_scores_c=np.array(f_scores_c)
+r_scores_a=np.array(r_scores_a)
+r_scores_b=np.array(r_scores_b)
+r_scores_c=np.array(r_scores_c)
+import os
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print('Error Creating directory. ' + directory)
+createFolder('HumanEvaluate')
+createFolder('HumanEvaluate/'+testfile_name)
 
+np.save('HumanEvaluate/'+testfile_name+"/f_scores_a", f_scores_a)
+np.save('HumanEvaluate/'+testfile_name+"/f_scores_b", f_scores_b)
+np.save('HumanEvaluate/'+testfile_name+"/f_scores_c", f_scores_c)
+np.save('HumanEvaluate/'+testfile_name+"/r_scores_a", r_scores_a)
+np.save('HumanEvaluate/'+testfile_name+"/r_scores_b", r_scores_b)
+np.save('HumanEvaluate/'+testfile_name+"/r_scores_c", r_scores_c)

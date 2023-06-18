@@ -462,7 +462,10 @@ class Network(nn.Module):
                 input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,decoding_token_tensor),1)
             elif NO_IBT:
                 input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,soprev_token_tensor,conti_keyword_prev_predictions,eoprev_token_tensor,order_token_tensor),1)
-                
+    
+        if debug:
+            print("after preprocessing, input ids: ")
+            print(tokenizer.decode(input_ids[0],skip_special_tokens=False))
 
 
         inputs_embeds=self.shared(input_ids)
@@ -570,6 +573,9 @@ def do_eval(steps):
         #print(prev_predictions)
         cumul_prev_predictions=[]
         conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
+        keyword_prev_predictions=[]
+        conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
+
         one_label=[]
         one_prediction=[]
         _labels_len=0
@@ -586,11 +592,7 @@ def do_eval(steps):
             # input_ids 맨 앞에 이전 preceding context를 합친다.
             label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-            
-
-            keyword_prev_predictions=[]
-            conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
-    
+                
             if len(cumul_prev_predictions)>0:
                 conti_prev_predictions=cumul_prev_predictions[0]
                 conti_keyword_prev_predictions=keyword_prev_predictions[0]
@@ -630,6 +632,7 @@ def do_eval(steps):
             order=count
             whole=len(num_decoder_input_ids)
             conti_prev_predictions=conti_prev_predictions.to(gpu_name)
+            conti_keyword_prev_predictions=conti_keyword_prev_predictions.to(gpu_name)
             if use_memory is False:
                 memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
             
@@ -682,7 +685,13 @@ def do_eval(steps):
                         print(keywordsSTR)
                         print("shape")
                         print(tokenizer(keywordsSTR,return_tensors='pt').input_ids.shape)
-            if debug:    
+            if debug:
+                print("-----------")
+                print("predictions")
+                print(predictions) 
+                label = tokenizer.batch_decode(label,skip_special_tokens=True)
+                print("golden label")
+                print(label)
                 input()
             one_prediction.append(predictions[0])
             #whole_predictions.append(predictions[0])
@@ -899,7 +908,7 @@ if CONTINUOUSLY_TRAIN:
 def trainer(LAST_STEP):
     conti_first=False
     whole_count_for_save=0
-    #do_eval(0)
+    do_eval(0)
     model.train()
     for epoch in range(num_epochs):  # loop over the dataset multiple times
 
@@ -934,7 +943,8 @@ def trainer(LAST_STEP):
             memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
             #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
             cumul_prev_predictions=[]
-            
+            keyword_prev_predictions=[]
+            conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
             conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
             
         #print(prev_predictions)
@@ -956,11 +966,6 @@ def trainer(LAST_STEP):
                 
                 # zero the parameter gradients
                 optimizer.zero_grad()
-                
-                
-                
-                keyword_prev_predictions=[]
-                conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
         
                 if len(cumul_prev_predictions)>0:
                     conti_prev_predictions=cumul_prev_predictions[0]
