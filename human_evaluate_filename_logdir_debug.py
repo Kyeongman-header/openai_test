@@ -97,6 +97,7 @@ import sys
 import urllib.request
 import json
 from googletrans import Translator
+import numpy as np
 
 translator = Translator()
 
@@ -117,7 +118,7 @@ print(translated.text)
 for i,sample in enumerate(mix):
     print("\n\n" + str(i) + ". The sample text from " + testfile_name +". \n ############################")
     print(sample["text"])
-    print("Korean Translation : " )
+    print("Korean Translation : (구글 번역기의 번역 결과임을 감안하여 평가해 주세요.)" )
     """
     encText = urllib.parse.quote(sample['text'])
     data = "source=en&target=ko&text=" + encText
@@ -138,7 +139,7 @@ for i,sample in enumerate(mix):
     
     while True:
         print("Question 1. 이 글은 주제의 통일성이 마치 사람이 쓴 것과 같다.")
-        print("1. 매우 그렇다. 2. 그렇다. 3. 보통이다. 4. 아니다. 5. 매우 아니다.")
+        print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다 5. 매우 그렇다.")
         print("Answer the number.",end=" ")
         a=input()
         if a.isdigit() and int(a)<=5 and int(a)>0:
@@ -149,7 +150,7 @@ for i,sample in enumerate(mix):
 
     while True:
         print("Question 2. 이 글은 한편의 글로써 완결성이 마치 사람이 쓴 것과 같다.")
-        print("1. 매우 그렇다. 2. 그렇다. 3. 보통이다. 4. 아니다. 5. 매우 아니다.")
+        print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
         print("Answer the number.",end=" ")
         b=input()
         if b.isdigit() and int(b)<=5 and int(b)>0:
@@ -160,7 +161,7 @@ for i,sample in enumerate(mix):
     
     while True:
         print("Question 3. 이 글은 사람이 쓴 것 같다.")
-        print("1. 매우 그렇다. 2. 그렇다. 3. 보통이다. 4. 아니다. 5. 매우 아니다.")
+        print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
         print("Answer the number.",end=" ")
         c=input()
         if c.isdigit() and int(c)<=5 and int(c)>0:
@@ -182,10 +183,11 @@ for i,sample in enumerate(mix):
         print("b : " + b)
         print("c : " + c)
         print("label : " + sample["label"])
-    print("If you want to stop the survey, please enter the '0'. If you enter whatever else, the survey is keep going.")
+    print("If you want to stop this survey, please enter the '0'. If you enter whatever else including the 'enter', the survey will be keep going.")
     stop=input()
     print("You entered " + stop)
     if stop=='0':
+
         break
 
 
