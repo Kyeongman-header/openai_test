@@ -11,7 +11,7 @@ r = Rake()
 writer = SummaryWriter()
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 
-from Network import *
+
 
 def sorting(lst):
     # lst2=sorted(lst, key=len)
@@ -448,13 +448,13 @@ class Network(nn.Module):
 
 
 config = AutoConfig.from_pretrained('facebook/bart-base')
-bart =  AutoModelForSeq2SeqLM.from_config(config).to('cuda:1')
+bart =  AutoModelForSeq2SeqLM.from_config(config).to(gpu_name)
 bart.resize_token_embeddings(len(tokenizer))
 bert_config = AutoConfig.from_pretrained("prajjwal1/bert-tiny")
 bert = AutoModel.from_config(bert_config).to(gpu_name)
 bert.resize_token_embeddings(len(bert_tokenizer))
 
-model = Network(config.vocab_size, config.d_model,bart, bert,bert_config).to('cuda:1')
+model = Network(config.vocab_size, config.d_model,bart, bert,bert_config).to(gpu_name)
 
 
 
@@ -483,7 +483,7 @@ def make_any_req(NUM_PARAGRAPH=5,index=0,keywords="keywords text.",prompt="promp
     input=tokenizer(keywords,return_tensors="pt")
     input_ids=input['input_ids']
     attention_mask=input['attention_mask']
-    memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:0') # first memory.
+    memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
     prev_predictions=tokenizer(prompt,return_tensors="pt")['input_ids']
     cumul_prev_predictions=[]
     conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
@@ -544,9 +544,7 @@ def make_any_req(NUM_PARAGRAPH=5,index=0,keywords="keywords text.",prompt="promp
         if use_memory is False:
             memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
                 
-        outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,
-                                        decoder_input_ids = None,decoder_attention_mask=None,labels=None,
-                                        output_hidden_states=True,prev_predictions=prev_predictions,order=order,whole=whole, memory=memory.detach(),
+        outputs,memory=model.generate(memory=memory.detach(),
                                         input_ids = input_ids,attention_mask = attention_mask,
                                         prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,
                                         conti_keyword_prev_predictions=conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,
