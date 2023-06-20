@@ -50,9 +50,10 @@ use_fusion=int(sys.argv[6])
 cumul_num=int(sys.argv[7]) # 3
 no_ibt=int(sys.argv[8])
 no_fme=int(sys.argv[9])
-human_eval=int(sys.argv[10])
-gpu_name=sys.argv[11] # cuda:0
-debug = int(sys.argv[12]) # 1
+num_paragraph=int(sys.argv[10])
+human_eval=int(sys.argv[11])
+gpu_name=sys.argv[12] # cuda:0
+debug = int(sys.argv[13]) # 1
 
 if debug ==1:
     debug=True
@@ -470,9 +471,9 @@ if HUMAN_EVAL is True:
     print("Please enter your name or survey's name.")
     name=input()
 if HUMAN_EVAL is True:        
-    f = open('length_control_'+save_dir+'_'+name+"_human-eval"+'csv','w', newline='')
+    f = open('length_control_'+str(num_paragraph)+'_'+save_dir+'_'+name+"_human-eval"+'csv','w', newline='')
 else:
-    f = open('length_control_'+save_dir+"_automatic-eval"+'csv','w', newline='')
+    f = open('length_control_'+str(num_paragraph)+'_'+save_dir+"_automatic-eval_"+'csv','w', newline='')
 
 wr = csv.writer(f)
 wr.writerow(["steps","index","source","not real text","generated_results"])
@@ -600,92 +601,101 @@ scores_c=[]
 
 
 if HUMAN_EVAL is True:
-    _range=random.sample(test_dataset,30)
+    _range=random.sample(test_dataset,10)
 else:
-    _range=test_dataset[0:100]
+    _range=test_dataset[0:10]
 
 for z,data in enumerate(_range):
-    print("the " + str(z) + "th survey.")
-    print("The keyword : ")
+    if HUMAN_EVAL:
+        print("the " + str(z) + "th survey.")
+        print("The keyword : ")
     input_ids,_,_,_,prompt = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
     keywords=tokenizer.batch_decode(input_ids,skip_special_tokens=True)
     prompt=tokenizer.batch_decode(prompt,skip_special_tokens=True)
-    print(keywords[0])
-    print("Prompt : ")
-    print(prompt[0])
+    if HUMAN_EVAL or debug:
+        print(keywords[0])
+        print("Prompt : ")
+        print(prompt[0])
+    
     if HUMAN_EVAL is False:
-        for p in range(1,29):
-            predictions=make_any_req(NUM_PARAGRAPH=p,keywords=keywords[0],prompt=prompt[0])
-            if debug :
-                print("The result : ")
-                print(predictions)
-                print("Korean Translation : (구글 번역기의 번역 결과임을 감안하여 평가해 주세요.)" )
-                translated = translator.translate(sample["text"], dest='ko')
-                input()
+        predictions=make_any_req(NUM_PARAGRAPH=num_paragraph,keywords=keywords[0],prompt=prompt[0])
+        if debug :
+            print("The result : ")
+            print(" ".join(predictions))
+            print("Korean Translation : (구글 번역기의 번역 결과임을 감안하여 평가해 주세요.)" )
+            translated = translator.translate(" ".join(predictions), dest='ko')
+            input()
             
 
     elif HUMAN_EVAL:
+        predictions=make_any_req(NUM_PARAGRAPH=num_paragraph,keywords=keywords[0],prompt=prompt[0])
+        print("The result : ")
+        print(" ".join(predictions))
+        print("Korean Translation : (구글 번역기의 번역 결과임을 감안하여 평가해 주세요.)" )
+        translated = translator.translate(" ".join(predictions), dest='ko')
+        print(translated.text)
+        print()
         while True:
-            print("please enter the number of paragraphs.")
-            p=input()
-            predictions=make_any_req(NUM_PARAGRAPH=p,keywords=keywords[0],prompt=prompt[0])
-            print("The result : ")
-            print(predictions)
-            print("Korean Translation : (구글 번역기의 번역 결과임을 감안하여 평가해 주세요.)" )
-            translated = translator.translate(sample["text"], dest='ko')
-            print(translated.text)
-            print()
-            while True:
-                print("Question 1. 이 글은 주제의 통일성이 마치 사람이 쓴 것과 같다.")
-                print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다 5. 매우 그렇다.")
-                print("Answer the number.",end=" ")
-                a=input()
-                if a.isdigit() and int(a)<=5 and int(a)>0:
-                    break
-                else:
-                    print("You answerd wrong case => " + a)
-                    print("Please answer the question again.")
-
-            while True:
-                print("Question 2. 이 글은 한편의 글로써 완결성이 마치 사람이 쓴 것과 같다.")
-                print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
-                print("Answer the number.",end=" ")
-                b=input()
-                if b.isdigit() and int(b)<=5 and int(b)>0:
-                    break
-                else:
-                    print("You answerd wrong case => " + b)
-                    print("Please answer the question again.")
-            
-            while True:
-                print("Question 3. 이 글은 사람이 쓴 것 같다.")
-                print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
-                print("Answer the number.",end=" ")
-                c=input()
-                if c.isdigit() and int(c)<=5 and int(c)>0:
-                    break
-                else:
-                    print("You answerd wrong case => " + c)
-                    print("Please answer the question again.")
-            
-            
-            scores_a.append(int(a))
-            scores_b.append(int(b))
-            scores_c.append(int(c))
-            if debug:
-                print("a : " + a)
-                print("b : " + b)
-                print("c : " + c)
-                print("label : " + sample["label"])
-            print("If you want to try other keywords, please enter the '0'. If you enter whatever else including the 'enter', the same keywords will be used to generate text.")
-            stop=input()
-            print("You entered " + stop)
-            if stop=='0':
+            print("Question 1. 이 글은 주제의 통일성이 마치 사람이 쓴 것과 같다.")
+            print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다 5. 매우 그렇다.")
+            print("Answer the number.",end=" ")
+            a=input()
+            if a.isdigit() and int(a)<=5 and int(a)>0:
                 break
+            else:
+                print("You answerd wrong case => " + a)
+                print("Please answer the question again.")
+
+        while True:
+            print("Question 2. 이 글은 한편의 글로써 완결성이 마치 사람이 쓴 것과 같다.")
+            print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
+            print("Answer the number.",end=" ")
+            b=input()
+            if b.isdigit() and int(b)<=5 and int(b)>0:
+                break
+            else:
+                print("You answerd wrong case => " + b)
+                print("Please answer the question again.")
+        
+        while True:
+            print("Question 3. 이 글은 사람이 쓴 것 같다.")
+            print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
+            print("Answer the number.",end=" ")
+            c=input()
+            if c.isdigit() and int(c)<=5 and int(c)>0:
+                break
+            else:
+                print("You answerd wrong case => " + c)
+                print("Please answer the question again.")
+        
+        
+        scores_a.append(int(a))
+        scores_b.append(int(b))
+        scores_c.append(int(c))
+        if debug:
+            print("a : " + a)
+            print("b : " + b)
+            print("c : " + c)
+        print("If you want to stop this survey, please enter the '0'. If you enter whatever else including the 'enter', the survey will be keep going.")
+        stop=input()
+        print("You entered " + stop)
+        if stop=='0':
+            break
+            
 if HUMAN_EVAL:
     scores_a=np.array(scores_a)
     scores_b=np.array(scores_b)
     scores_c=np.array(scores_c)
+    print("총 " + str(scores_a.size) + "개의 문항을 답했습니다.")
+    print("1번 문항 평균, 분산. ")
+    print(np.mean(scores_a))
+    print(np.var(scores_a))
+    print("2번 문항 평균, 분산. ")
+    print(np.mean(scores_b))
+    print(np.var(scores_b))
+    print("3번 문항 평균, 분산. ")
+    print(np.mean(scores_c))
+    print(np.var(scores_c))
 
     import os
     def createFolder(directory):
@@ -696,8 +706,8 @@ if HUMAN_EVAL:
             print('Error Creating directory. ' + directory)
     createFolder('LengthControlEvaluate')
     createFolder('LengthControlEvaluate/'+ save_dir)
-    createFolder('LengthControlEvaluate/'+ save_dir + '/' + name)
+    createFolder('LengthControlEvaluate/'+ save_dir + '/' + name + "_"+str(num_paragraph))
 
-    np.save('HumanEvaluate/'+save_dir+'/'+name+"/f_scores_a", scores_a)
-    np.save('HumanEvaluate/'+save_dir+'/'+name+"/f_scores_b", scores_b)
-    np.save('HumanEvaluate/'+save_dir+'/'+name+"/f_scores_c", scores_c)
+    np.save('HumanEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_a", scores_a)
+    np.save('HumanEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_b", scores_b)
+    np.save('HumanEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_c", scores_c)
