@@ -465,7 +465,7 @@ PATH = './second_level/'+save_dir+'.tar'
 checkpoint= torch.load(PATH)
 model.load_state_dict(checkpoint['model_state_dict'])
 
-with open("pickle_data/"+"test"+"/level_2.pickle","rb") as fi:
+with open("pickle_data/"+"test_wp_rake"+"/level_2.pickle","rb") as fi:
         test_dataset = pickle.load(fi)
 if HUMAN_EVAL is True:
     print("Please enter your name or survey's name.")
@@ -481,15 +481,15 @@ wr.writerow(["steps","index","source","not real text","generated_results"])
 
 def make_any_req(NUM_PARAGRAPH=5,index=0,keywords="keywords text.",prompt="prompt"):
     
-    input=tokenizer(keywords,return_tensors="pt")
-    input_ids=input['input_ids']
-    attention_mask=input['attention_mask']
+    _input=tokenizer(keywords,return_tensors="pt")
+    input_ids=_input['input_ids'].to(gpu_name)
+    attention_mask=_input['attention_mask'].to(gpu_name)
     memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
-    prev_predictions=tokenizer(prompt,return_tensors="pt")['input_ids']
+    prev_predictions=tokenizer(prompt,return_tensors="pt")['input_ids'].to(gpu_name)
     cumul_prev_predictions=[]
-    conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
+    conti_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long).to(gpu_name)
     keyword_prev_predictions=[]
-    conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long)
+    conti_keyword_prev_predictions=torch.zeros_like(torch.empty(1,1),dtype=torch.long).to(gpu_name)
     whole=NUM_PARAGRAPH
     whole_predictions=[]
     model.eval()
@@ -554,7 +554,7 @@ def make_any_req(NUM_PARAGRAPH=5,index=0,keywords="keywords text.",prompt="promp
         prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
         
         predictions=tokenizer.batch_decode(outputs,skip_special_tokens=True)
-        whole_predictions.append(predictions)
+        whole_predictions.append(predictions[0])
         
         wr.writerow(["lengthcontrol",str(index),tokenizer.batch_decode(input_ids,skip_special_tokens=True),predictions,predictions]) # real 자리에 그냥 prediction 넣었다
         index+=1
@@ -607,7 +607,7 @@ else:
 
 for z,data in enumerate(_range):
     if HUMAN_EVAL:
-        print("the " + str(z) + "th survey.")
+        print("the " + str(z+1) + "th survey.")
         print("The keyword : ")
     input_ids,_,_,_,prompt = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
     keywords=tokenizer.batch_decode(input_ids,skip_special_tokens=True)
@@ -624,6 +624,7 @@ for z,data in enumerate(_range):
             print(" ".join(predictions))
             print("Korean Translation : (구글 번역기의 번역 결과임을 감안하여 평가해 주세요.)" )
             translated = translator.translate(" ".join(predictions), dest='ko')
+            print(translated.text)
             input()
             
 
@@ -704,10 +705,11 @@ if HUMAN_EVAL:
                 os.makedirs(directory)
         except OSError:
             print('Error Creating directory. ' + directory)
+    
     createFolder('LengthControlEvaluate')
     createFolder('LengthControlEvaluate/'+ save_dir)
     createFolder('LengthControlEvaluate/'+ save_dir + '/' + name + "_"+str(num_paragraph))
 
-    np.save('HumanEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_a", scores_a)
-    np.save('HumanEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_b", scores_b)
-    np.save('HumanEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_c", scores_c)
+    np.save('LengthControlEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_a", scores_a)
+    np.save('LengthControlEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_b", scores_b)
+    np.save('LengthControlEvaluate/'+save_dir+'/'+name+"_"+str(num_paragraph)+"/f_scores_c", scores_c)
