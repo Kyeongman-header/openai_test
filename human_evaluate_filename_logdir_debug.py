@@ -70,8 +70,8 @@ for step, line in _f.iterrows():
         continue
     else:
         if count!=1:
-            f.append({"text" : cumul_fake_outputs , "label" : "fake"})
-            r.append({"text" : cumul_real_outputs, "label" : "real"})
+            f.append({"text" : cumul_fake_outputs.replace('<newline>','').replace('<Newline>','').replace('<ewline>','') , "label" : "fake"})
+            r.append({"text" : cumul_real_outputs.replace('<newline>','').replace('<Newline>','').replace('<ewline>',''), "label" : "real"})
             
         cumul_fake_outputs=fake
         cumul_real_outputs=real
@@ -134,13 +134,19 @@ for i,sample in enumerate(mix):
     else:
         print("Error Code:" + rescode)
     """
-    translated = translator.translate(sample["text"], dest='ko')
-    print(translated.text)
+    l=0
+    translated=""
+    while l < len(sample["text"]):
+        new_l=l+4500
+        translated += translator.translate(sample["text"][l:new_l], dest='ko').text        
+        l=l+new_l
+
+    print(translated)
     
     while True:
         print("Question 1. 이 글은 주제의 통일성이 마치 사람이 쓴 것과 같다.")
         print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다 5. 매우 그렇다.")
-        print("Answer the number.",end=" ")
+        print("Answer the number : ",end=" ")
         a=input()
         if a.isdigit() and int(a)<=5 and int(a)>0:
             break
@@ -151,7 +157,7 @@ for i,sample in enumerate(mix):
     while True:
         print("Question 2. 이 글은 한편의 글로써 완결성이 마치 사람이 쓴 것과 같다.")
         print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
-        print("Answer the number.",end=" ")
+        print("Answer the number : ",end=" ")
         b=input()
         if b.isdigit() and int(b)<=5 and int(b)>0:
             break
@@ -162,7 +168,7 @@ for i,sample in enumerate(mix):
     while True:
         print("Question 3. 이 글은 사람이 쓴 것 같다.")
         print("1. 매우 아니다. 2. 아니다. 3. 보통이다. 4. 그렇다. 5. 매우 그렇다.")
-        print("Answer the number.",end=" ")
+        print("Answer the number : ",end=" ")
         c=input()
         if c.isdigit() and int(c)<=5 and int(c)>0:
             break
@@ -170,6 +176,7 @@ for i,sample in enumerate(mix):
             print("You answerd wrong case => " + c)
             print("Please answer the question again.")
     
+    print("This paragraph was " + sample["label"])
     if sample["label"]=="fake":
         f_scores_a.append(int(a))
         f_scores_b.append(int(b))
@@ -184,6 +191,7 @@ for i,sample in enumerate(mix):
         print("c : " + c)
         print("label : " + sample["label"])
     print("If you want to stop this survey, please enter the '0'. If you enter whatever else including the 'enter', the survey will be keep going.")
+    print("설문조사를 종료하고 싶으시다면 0을 누르시고 엔터를 치세요. 그 외 모든 입력에는(아무 입력도 없이 엔터도 포함) 설문조사가 계속 진행됩니다.")
     stop=input()
     print("You entered " + stop)
     if stop=='0':
@@ -199,6 +207,15 @@ f_scores_c=np.array(f_scores_c)
 r_scores_a=np.array(r_scores_a)
 r_scores_b=np.array(r_scores_b)
 r_scores_c=np.array(r_scores_c)
+
+print("fake_scores of question A : " + str(np.average(f_scores_a)))
+print("fake_scores of question B : " + str(np.average(f_scores_b)))
+print("fake_scores of question C : " + str(np.average(f_scores_c)))
+print("real_scores of question A : " + str(np.average(r_scores_a)))
+print("real_scores of question B : " + str(np.average(r_scores_b)))
+print("real_scores of question C : " + str(np.average(r_scores_c)))
+
+
 import os
 def createFolder(directory):
     try:
