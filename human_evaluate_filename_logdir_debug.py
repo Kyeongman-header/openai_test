@@ -34,57 +34,11 @@ import numpy as np
 import pandas as pd
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 
-_f = pd.read_csv(testfile_name+'.csv',chunksize=1000)
+_f = pd.read_csv('HumanEvaluate/TestFiles/'+testfile_name+'.csv',chunksize=1000)
 _f= pd.concat(_f)
 
 num_whole_steps=len(_f.index)
 
-first=True
-
-count=0
-last_keywords=""
-cumul_fake_outputs=""
-cumul_real_outputs=""
-
-f=[]
-r=[]
-step=0
-
-#progress_bar = tqdm(range(num_whole_steps))
-
-for step, line in _f.iterrows():
-    
-    if first:
-        first=False
-        continue
-    count+=1
-    #progress_bar.update(1)
-    
-    keywords=line[2].replace('[','').replace(']','')
-    fake=line[4].replace('[','').replace(']','')
-    real=line[3].replace('[','').replace(']','')
-
-    if keywords==last_keywords:
-        cumul_fake_outputs+=fake
-        cumul_real_outputs+=real
-        continue
-    else:
-        if count!=1:
-            f.append({"text" : cumul_fake_outputs.replace('<newline>','').replace('<Newline>','').replace('<ewline>','') , "label" : "fake"})
-            r.append({"text" : cumul_real_outputs.replace('<newline>','').replace('<Newline>','').replace('<ewline>',''), "label" : "real"})
-            
-        cumul_fake_outputs=fake
-        cumul_real_outputs=real
-        last_keywords=keywords
-
-
-f.append({"text" : cumul_fake_outputs , "label" : "fake"})
-r.append({"text" : cumul_real_outputs, "label" : "real"})
-step+=1
-random.shuffle(f)
-random.shuffle(r)
-mix=f+r
-random.shuffle(mix)
 
 f_scores_a=[]
 f_scores_b=[]
@@ -96,29 +50,16 @@ r_scores_c=[]
 import sys
 import urllib.request
 import json
-from googletrans import Translator
 import numpy as np
 
-translator = Translator()
-
-"""
-result = translator.detect("안녕하세요")
-print(result.lang)
 
 
-translated = translator.translate('안녕하세요.', dest='en')
-
-print(translated.text)
-"""
-
-#client_id = "8z6k8bejae"
-#client_secret = "GbAIqpuIQ3Zi7gJadG9obywKRVl1iZjeqEdGQ9ST"
-
-
-for i,sample in enumerate(mix):
-    print("\n\n" + str(i) + ". The sample text from " + testfile_name +". \n ############################")
-    print(sample["text"])
+for step, line in _f.iterrows():
+    print("\n\n" + str(step+1) + ". The sample text from " + testfile_name +". \n ############################")
+    print(line[1])
+    print()
     print("Korean Translation : (구글 번역기의 번역 결과임을 감안하여 평가해 주세요.)" )
+    print()
     """
     encText = urllib.parse.quote(sample['text'])
     data = "source=en&target=ko&text=" + encText
@@ -134,14 +75,9 @@ for i,sample in enumerate(mix):
     else:
         print("Error Code:" + rescode)
     """
-    l=0
-    translated=""
-    while l < len(sample["text"]):
-        new_l=l+4500
-        translated += translator.translate(sample["text"][l:new_l], dest='ko').text        
-        l=l+new_l
-
-    print(translated)
+    
+    print(line[2])
+    print()
     
     while True:
         print("Question 1. 이 글은 주제의 통일성이 마치 사람이 쓴 것과 같다.")
@@ -176,8 +112,8 @@ for i,sample in enumerate(mix):
             print("You answerd wrong case => " + c)
             print("Please answer the question again.")
     
-    print("This paragraph was " + sample["label"])
-    if sample["label"]=="fake":
+    print("This paragraph was " + line[3])
+    if line[3]=="fake":
         f_scores_a.append(int(a))
         f_scores_b.append(int(b))
         f_scores_c.append(int(c))
@@ -189,7 +125,7 @@ for i,sample in enumerate(mix):
         print("a : " + a)
         print("b : " + b)
         print("c : " + c)
-        print("label : " + sample["label"])
+        print("label : " + line[3])
     print("If you want to stop this survey, please enter the '0'. If you enter whatever else including the 'enter', the survey will be keep going.")
     print("설문조사를 종료하고 싶으시다면 0을 누르시고 엔터를 치세요. 그 외 모든 입력에는(아무 입력도 없이 엔터도 포함) 설문조사가 계속 진행됩니다.")
     stop=input()
