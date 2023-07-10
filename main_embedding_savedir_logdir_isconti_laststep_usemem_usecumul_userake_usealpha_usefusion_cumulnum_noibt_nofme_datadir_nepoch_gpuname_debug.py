@@ -913,7 +913,7 @@ if CONTINUOUSLY_TRAIN:
 def trainer(LAST_STEP):
     conti_first=False
     whole_count_for_save=0
-    do_eval(0)
+    #do_eval(0)
     model.train()
     for epoch in range(num_epochs):  # loop over the dataset multiple times
 
@@ -1018,7 +1018,7 @@ def trainer(LAST_STEP):
                 if use_memory is False:
                     memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
                 outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,prev_predictions=prev_predictions,
-                                       conti_prev_predictions=conti_prev_predictions,conti_keyword_prev_predictions=conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
+                                       conti_prev_predictions=conti_prev_predictions,conti_keyword_prev_predictions=conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
 
                 
