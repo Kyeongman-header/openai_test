@@ -177,7 +177,7 @@ for i,sample in enumerate(mix):
             print("Please answer the question again.")
     
     print("This paragraph was " + sample["label"])
-    if sample["label"]=="fake":
+    if "f" in sample["label"]:
         f_scores_a.append(int(a))
         f_scores_b.append(int(b))
         f_scores_c.append(int(c))
