@@ -7,6 +7,29 @@ r = Rake()
 T="train"
 
 total_target=[]
+def sorting(lst):
+    # lst2=sorted(lst, key=len)
+    lst2 = sorted(lst, key=len)
+    return lst2
+def clean_top_features(keywords, top=10):
+    keywords = sorting(keywords)
+    newkeys = []
+    newkeys.append(keywords[len(keywords)-1])
+    for i in range(len(keywords)-2,-1,-1):
+        if newkeys[len(newkeys)-1].startswith(keywords[i]):
+            continue
+        newkeys.append(keywords[i])
+
+    if len(newkeys) > top:
+        return newkeys[:top]
+    return newkeys
+
+def convert_keys_to_str(key_list):
+    newstr = key_list[0]
+    for k in range(1, len(key_list)):
+        if len(key_list[k].split(' ')) > 2 :
+            newstr += '[SEP]' + key_list[k]
+    return newstr.replace("(M)", "").strip()
 
 with open("/home/ubuntu/research/writingPrompts/"+ T +".wp_target", encoding='UTF8') as f:
     stories = f.readlines()
@@ -34,15 +57,25 @@ else:
     whole_data=total_target[0][START:]
 
 dict={'target' : [], 'prompt' : [], 'keyword' : []}
-for i in range(len(whole_data)):
-    
-    r.extract_keywords_from_text(whole_data[i])
-    words=''
-    for word in r.get_ranked_phrases():
-        words+=word + ' '
-    dict['target'].append(whole_data[i])
-    dict['prompt'].append(total_source[0][i])
-    dict['keywords'].append(words)
+topK=30
+import csv
+file=T+"_wp_rake_results.csv"
+f = open(file,'w', newline='')
+wr = csv.writer(f)
 
-df=pd.DataFrame.from_dict(dict)
-df.to_csv("train_wp_rake_results.csv", index=False)
+for i in range(len(whole_data)):
+
+    story=whole_data[i].strip()
+    r.extract_keywords_from_text(story)
+    top_features = r.get_ranked_phrases()
+    top_features = clean_top_features(top_features, topK)
+    keywordsSTR = convert_keys_to_str(top_features)
+    if len(top_features)==0:
+        print("error")
+        print(story)
+    
+    print(whole_data[i])
+    print(keywordsSTR)
+    print()
+    input()
+    wr.writerow([story,keywordsSTR,total_source[0][i]])
