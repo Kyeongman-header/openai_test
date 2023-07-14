@@ -53,20 +53,21 @@ conti=int(sys.argv[3]) # 0
 last_step=int(sys.argv[4]) # 0
 use_mem=int(sys.argv[5]) # 1
 use_cumul=int(sys.argv[6]) # 1
-use_rake=int(sys.argv[7])
-use_alpha=int(sys.argv[8])
-use_fusion=int(sys.argv[9])
+use_gamma=int(sys.argv[7])
+use_rake=int(sys.argv[8])
+use_alpha=int(sys.argv[9])
+use_fusion=int(sys.argv[10])
 
-cumul_num=int(sys.argv[10]) # 3
+cumul_num=int(sys.argv[11]) # 3
 
-no_ibt=int(sys.argv[11])
-no_fme=int(sys.argv[12])
+no_ibt=int(sys.argv[12])
+no_fme=int(sys.argv[13])
 
-dataset_dir=sys.argv[13]
-num_epochs=int(sys.argv[14])
+dataset_dir=sys.argv[14]
+num_epochs=int(sys.argv[15])
 
-gpu_name=sys.argv[15] # cuda:0
-debug = int(sys.argv[16]) # 1
+gpu_name=sys.argv[16] # cuda:0
+debug = int(sys.argv[17]) # 1
 if debug ==1:
     debug=True
 else:
@@ -91,6 +92,11 @@ if use_cumul==1:
     USE_CUMULATIVE=True
 else:
     USE_CUMULATIVE=False
+USE_GAMMA=True
+if use_gamma==1:
+    USE_GAMMA=True
+else:
+    USE_GAMMA=False
 USE_RAKE=True
 if use_rake==1:
     USE_RAKE=True
@@ -130,6 +136,8 @@ print('cumul num :')
 print(cumul_num)
 print('use_mem : ')
 print(USE_MEMORY)
+print('use_rake : ')
+print(USE_RAKE)
 print('use alpha :')
 print(USE_ALPHA)
 print('use fusion :')
@@ -235,10 +243,16 @@ class Network(nn.Module):
        #nn.Embedding(config.vocab_size, config.d_model) 
        self.shared.requires_grad = False # 이 shared는 역할상 고정되어 있어야 한다.
        # 하지만 bart의 embedding layer는 학습을 거치면서 업데이트 된다.
+       
        self.bart = bart
-       self.bert = bert
-       self.rogistic=torch.nn.Linear(bert_config.hidden_size,1)
-       self.sigmoid=torch.nn.Sigmoid()
+       if USE_ALPHA:
+           self.bert = bert
+           if USE_GAMMA:
+               self.rogistic=torch.nn.Linear(bert_config.hidden_size,3)
+           else:
+               self.rogistic=torch.nn.Linear(bert_config.hidden_size,1)
+           self.sigmoid=torch.nn.Sigmoid()
+       
        self.grucell=nn.GRUCell(d_model,d_model).to(gpu_name)
        """
        self.wHr = nn.Linear(d_model,d_model).to(gpu_name)
@@ -319,22 +333,36 @@ class Network(nn.Module):
         if USE_ALPHA:
             if short_prev.shape[1]>500:
                 short_prev=short_prev[:,-500:]
-            
-            previous=torch.cat((short_prev,eoprev_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
-            previous=tokenizer.decode(previous[0],skip_special_tokens=True)
-            previous=bert_tokenizer(previous,return_tensors="pt").input_ids.to(gpu_name)
 
+            previous=torch.cat((short_prev,eoprev_token_tensor,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
+            #print("###")
+            #print(previous.shape)
+            previous=tokenizer.decode(previous[0],skip_special_tokens=True)
+            previous=previous.replace('--','').replace('__','')
+            #print(previous)
+            previous=bert_tokenizer(previous,return_tensors="pt").input_ids.to(gpu_name)
+            #print(previous.shape)
             output=self.bert(previous)
-            alpha=self.rogistic(output.pooler_output)
-            alpha=self.sigmoid(alpha) 
-            alpha=torch.mul((alpha),1/2)
-            beta=0.5-alpha
+            if USE_GAMMA:
+                ratio=self.rogistic(output.pooler_output)
+                ratio=self.sigmoid(ratio)
+                alpha=ratio[0,0]/torch.sum(ratio)
+                beta=ratio[0,1]/torch.sum(ratio)
+                gamma=ratio[0,2]/torch.sum(ratio)
+            else:
+                alpha=self.rogistic(output.pooler_output)
+                alpha=self.sigmoid(alpha) 
+                alpha=torch.mul((alpha),1/2)
+                beta=0.5-alpha
 
         if debug:
             print("alpha :")
             print(alpha)
             print("beta : ")
             print(beta)
+            if USE_GAMMA:
+                print("gamma : ")
+                print(gamma)
        
          
        
@@ -430,17 +458,27 @@ class Network(nn.Module):
             
 
             output=self.bert(previous)
-            alpha=self.rogistic(output.pooler_output)
-            alpha=self.sigmoid(alpha) 
-            alpha=torch.mul((alpha),1/2)
-            beta=0.5-alpha
+            if USE_GAMMA:
+                ratio=self.rogistic(output.pooler_output)
+                ratio=self.sigmoid(ratio)
+                alpha=ratio[0,0]/torch.sum(ratio)
+                beta=ratio[0,1]/torch.sum(ratio)
+                gamma=ratio[0,2]/torch.sum(ratio)
+            else:
+                alpha=self.rogistic(output.pooler_output)
+                alpha=self.sigmoid(alpha)
+                alpha=torch.mul((alpha),1/2)
+                beta=0.5-alpha
 
         if debug:
             print("alpha :")
             print(alpha)
             print("beta : ")
             print(beta)
-        
+            if USE_GAMMA:
+                print("gamma : ")
+                print(gamma)
+
         if use_rake is False or input_ids.shape[1]+conti_prev_predictions.shape[1]+5 > 1020 or intro:
             
         #    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
@@ -951,6 +989,7 @@ def do_eval(steps):
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
     #writer.add_scalar("ppl",ppl.item(),steps)
+
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=5e-6)
