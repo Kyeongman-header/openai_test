@@ -528,14 +528,24 @@ model = Network(config.vocab_size, config.d_model,bart, bert,bert_config).to(gpu
 # wr.writerow(["steps","index","source","real text","generated_results"])
 
 def do_eval(steps):
-    #f = open('second_level_val_results.csv','w', newline='')
-    #wr = csv.writer(f)
-    #wr.writerow(["steps","index","source","real text","generated_results"])
+    # f = open(save_dir+'_generations_outputs.csv','w',encoding='utf-8', newline='')
+    # wr = csv.writer(f)
+    # wr.writerow(["steps","index","source","real text","generated_results"])
     index=0
+    N=100
+    # 이건 문단 내부적으로  얼마나 반복성이 심한지 보는 지표이다.
+    in_self_bleu_one=0
+    in_self_bleu_bi=0
+    in_self_bleu_tri=0
+    in_self_bleu_four=0
+    in_self_bleu_fif=0
+    
+    # 주의! bleu는 이제 rouge만 쓰고 안 쓴다.
     bleu_score_bi=0
     bleu_score_tri=0
     bleu_score_four=0
     bleu_score_fif=0
+
     self_bleu_one=0
     self_bleu_bi=0
     self_bleu_tri=0
@@ -561,7 +571,7 @@ def do_eval(steps):
     use_memory=USE_MEMORY
 
     model.eval()
-    for data in tqdm(valid_dataset[500:600]):
+    for data in tqdm(valid_dataset[0:100]):# 전체에 대해서 다 하고, self-bleu만 처음 천개에 대해서 한다.
         input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'])
         
         if input_ids.shape[1] > 1020:
@@ -590,14 +600,14 @@ def do_eval(steps):
         for d in num_decoder_input_ids:
         
             prev_predictions=prev_predictions.to(gpu_name)
-            
+
             
             ex_d=torch.unsqueeze(d[:-1],dim=0).to(gpu_name)
             decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
             label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-                
+
             if len(cumul_prev_predictions)>0:
                 conti_prev_predictions=cumul_prev_predictions[0]
                 conti_keyword_prev_predictions=keyword_prev_predictions[0]
@@ -640,10 +650,11 @@ def do_eval(steps):
             conti_keyword_prev_predictions=conti_keyword_prev_predictions.to(gpu_name)
             if use_memory is False:
                 memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
-            
             _memory=memory
+
             outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,
                                           conti_keyword_prev_predictions=conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention)
+            """
             with torch.no_grad():
                 dd = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
                 dd = tokenizer(dd,return_tensors="pt")
@@ -662,7 +673,7 @@ def do_eval(steps):
                 neg_log_likelihood=for_perplexity.loss
             
             nlls.append(neg_log_likelihood)
-            
+            """ # ppl을 구하기 위한 과정이었는데, 별로 필요 없는 수치로 판명.
             
             prev_predictions = outputs # 이렇게 만들면 outputs에 id가 나오는 모양임.
             
@@ -673,8 +684,7 @@ def do_eval(steps):
 
             if use_cumulative:
                 cumul_prev_predictions.insert(0,prev_predictions)
-
-            if use_cumulative:
+            if use_rake:
                     r.extract_keywords_from_text(tokenizer.decode(prev_predictions[0],skip_special_tokens=True))
                     top_features = r.get_ranked_phrases()
                     topK=10
@@ -698,6 +708,7 @@ def do_eval(steps):
                 print("golden label")
                 print(label)
                 input()
+
             one_prediction.append(predictions[0])
             #whole_predictions.append(predictions[0])
             _predictions_len+=len(outputs[0])
@@ -711,9 +722,11 @@ def do_eval(steps):
             # print(label)
         
             #print("decoder input")
-            _labels_len+=len(dd[0])
+            
             #print(len(dd[0]))
             ex_d = tokenizer.batch_decode(ex_d,skip_special_tokens=True)
+            dd = tokenizer(ex_d,return_tensors="pt")['input_ids']
+            _labels_len+=len(dd[0])
             one_label.append(ex_d[0])
             #whole_labels.append(ex_d[0])
             
@@ -743,6 +756,30 @@ def do_eval(steps):
             self_bleu_fif+=self_bleu['fifthgram'][0]
             """
             #input()
+
+        _in_self_bleu_one=0
+        _in_self_bleu_bi=0
+        _in_self_bleu_tri=0
+        _in_self_bleu_four=0
+        _in_self_bleu_fif=0
+        if len(one_prediction)>1:
+            for j in range(len(one_prediction)): # 1000개에 대해서만 self-bleu.
+                except_one_prediction=one_prediction[0:j]+one_prediction[j+1:]
+            
+        #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
+                self_bleu=_bleu.compute(predictions=[one_prediction[j]],references=[except_one_prediction],max_order=5)
+                _in_self_bleu_one+=self_bleu['precisions'][0]
+                _in_self_bleu_bi+=self_bleu['precisions'][1]
+                _in_self_bleu_tri+=self_bleu['precisions'][2]
+                _in_self_bleu_four+=self_bleu['precisions'][3]
+                _in_self_bleu_fif+=self_bleu['precisions'][4]
+
+        in_self_bleu_one+=_in_self_bleu_one/len(one_prediction)
+        in_self_bleu_bi+=_in_self_bleu_bi/len(one_prediction)
+        in_self_bleu_tri+=_in_self_bleu_tri/len(one_prediction)
+        in_self_bleu_four+=_in_self_bleu_four/len(one_prediction)
+        in_self_bleu_fif+=_in_self_bleu_fif/len(one_prediction)
+        
         one_prediction=' '.join(one_prediction)
         one_label=' '.join(one_label)
         if len(one_label)==0:
@@ -764,34 +801,57 @@ def do_eval(steps):
         whole_num+=1
         #bleu = BLEU([one_label],weights)
         #bleu_score=bleu.get_score([one_prediction])
+        """
         bleu_score=_bleu.compute(predictions=[one_prediction],references=[one_label],max_order=5)
         bleu_score_bi+=bleu_score['precisions'][1]
         bleu_score_tri+=bleu_score['precisions'][2]
         bleu_score_four+=bleu_score['precisions'][3]
         bleu_score_fif+=bleu_score['precisions'][4]
         met_result += meteor.compute(predictions=[one_prediction], references=[one_label])["meteor"]
+        """
 
     result=metric.compute()
     print(result)
-    whole_nlls=torch.stack(whole_nlls)
-    nlls_mean=torch.mean(whole_nlls)
+    #whole_nlls=torch.stack(whole_nlls)
+    #nlls_mean=torch.mean(whole_nlls)
     #print(nlls)
-    ppl=torch.exp(nlls_mean)
-    print("ppl is : " + str(ppl.item()))
-    bleu_score_bi=bleu_score_bi/whole_num
-    bleu_score_tri=bleu_score_tri/whole_num
-    bleu_score_four=bleu_score_four/whole_num
-    bleu_score_fif=bleu_score_fif/whole_num
+    #ppl=torch.exp(nlls_mean)
+    ppl=0
+    #print("ppl is : " + str(ppl.item()))
+    bart.cpu()
+    bert.cpu()
+    model.cpu()
+    #del model, bart, bert
+    #gc.collect()
+    #torch.cuda.empty_cache()
+    # 이제 모델은 필요 없으니 free 해준다.
 
-    print("bleu_score_bi : " + str(bleu_score_bi) + " bleu_score_tri : " + str(bleu_score_tri) + " bleu_score_four : " + str(bleu_score_four) + " bleu_score_fif : " + str(bleu_score_fif))
+    in_self_bleu_one=in_self_bleu_one/whole_num
+    in_self_bleu_bi=in_self_bleu_bi/whole_num
+    in_self_bleu_tri=in_self_bleu_tri/whole_num
+    in_self_bleu_four=in_self_bleu_four/whole_num
+    in_self_bleu_fif=in_self_bleu_fif/whole_num
+    print("in_self_bleu_one : " + str(in_self_bleu_one))
+    print("in_self_bleu_bi : " + str(in_self_bleu_bi))
+    print("in_self_bleu_tri : " + str(in_self_bleu_tri))
+    print("in_self_bleu_four : " + str(in_self_bleu_four))
+    print("in_self_bleu_fif : " + str(in_self_bleu_fif))
+
+
+    #bleu_score_bi=bleu_score_bi/whole_num
+    #bleu_score_tri=bleu_score_tri/whole_num
+    #bleu_score_four=bleu_score_four/whole_num
+    #bleu_score_fif=bleu_score_fif/whole_num
+
+    #print("bleu_score_bi : " + str(bleu_score_bi) + " bleu_score_tri : " + str(bleu_score_tri) + " bleu_score_four : " + str(bleu_score_four) + " bleu_score_fif : " + str(bleu_score_fif))
     
-    met_result=met_result/whole_num
+    #met_result=met_result/whole_num
     print("len of sample generation : " + str(whole_num))
     #self_bleu = SelfBLEU(whole_predictions, weights).get_score()
     #real_self_bleu = SelfBLEU(whole_labels, weights).get_score()
     
-    for j in range(len(whole_predictions)):
-        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:]
+    for j in range(N): # 1000개에 대해서만 self-bleu.
+        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:1000]
         
         #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
         self_bleu=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=5)
@@ -802,8 +862,8 @@ def do_eval(steps):
         self_bleu_fif+=self_bleu['precisions'][4]
     
     self_num=0
-    for j in range(len(whole_labels)):
-        except_whole_labels=whole_labels[0:j]+whole_labels[j+1:]
+    for j in range(N):
+        except_whole_labels=whole_labels[0:j]+whole_labels[j+1:1000]
         #print([whole_labels[j]])
         #print()
         #print([except_whole_labels])
@@ -842,19 +902,19 @@ def do_eval(steps):
     print(whole_num)
     #print(self_bleu)
     """
-    print("meteor : " + str(met_result))
+    #print("meteor : " + str(met_result))
     whole_predictions_len=whole_predictions_len/whole_num
     whole_labels_len=(whole_labels_len/whole_num)
-    self_bleu_one=self_bleu_one/len(whole_predictions)
-    self_bleu_bi=self_bleu_bi/len(whole_predictions)
-    self_bleu_tri=self_bleu_tri/len(whole_predictions)
-    self_bleu_four=self_bleu_four/len(whole_predictions)
-    self_bleu_fif=self_bleu_fif/len(whole_predictions)
-    r_self_bleu_one=r_self_bleu_one/(self_num)
-    r_self_bleu_bi=r_self_bleu_bi/(self_num)
-    r_self_bleu_tri=r_self_bleu_tri/(self_num)
-    r_self_bleu_four=r_self_bleu_four/(self_num)
-    r_self_bleu_fif=r_self_bleu_fif/(self_num)
+    self_bleu_one=self_bleu_one/N
+    self_bleu_bi=self_bleu_bi/N
+    self_bleu_tri=self_bleu_tri/N
+    self_bleu_four=self_bleu_four/N
+    self_bleu_fif=self_bleu_fif/N
+    r_self_bleu_one=r_self_bleu_one/N
+    r_self_bleu_bi=r_self_bleu_bi/N
+    r_self_bleu_tri=r_self_bleu_tri/N
+    r_self_bleu_four=r_self_bleu_four/N
+    r_self_bleu_fif=r_self_bleu_fif/N
 
     print("avg prediction len : " + str(whole_predictions_len))
     print("self_bleu one : " + str(self_bleu_one))
@@ -874,10 +934,11 @@ def do_eval(steps):
     writer.add_scalar("rouge2/eval", result['rouge2'], steps)
     writer.add_scalar("rougeL/eval", result['rougeL'], steps)
     writer.add_scalar("rougeLsum/eval", result['rougeLsum'], steps)
-    writer.add_scalar("bleu bi/eval", bleu_score_bi, steps)
-    writer.add_scalar("bleu tri/eval", bleu_score_tri, steps)
-    writer.add_scalar("bleu four/eval", bleu_score_four, steps)
-    writer.add_scalar("bleu fif/eval", bleu_score_fif, steps)
+    writer.add_scalar("in self bleu one/eval",in_self_bleu_one, steps)
+    writer.add_scalar("in self bleu bi/eval", in_self_bleu_bi, steps)
+    writer.add_scalar("in self bleu tri/eval", in_self_bleu_tri, steps)
+    writer.add_scalar("in self bleu four/eval", in_self_bleu_four, steps)
+    writer.add_scalar("in self bleu fif/eval",in_self_bleu_fif, steps)
     writer.add_scalar("self bleu bi/eval", self_bleu_bi, steps)
     writer.add_scalar("self bleu tri/eval", self_bleu_tri, steps)
     writer.add_scalar("self bleu four/eval", self_bleu_four, steps)
@@ -886,10 +947,10 @@ def do_eval(steps):
     writer.add_scalar("real_self bleu tri/eval", r_self_bleu_tri, steps)
     writer.add_scalar("real_self bleu four/eval", r_self_bleu_four, steps)
     writer.add_scalar("real_self bleu fif/eval", r_self_bleu_fif, steps)
-    writer.add_scalar("meteor",met_result,steps)
+    #writer.add_scalar("meteor",met_result,steps)
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
-    writer.add_scalar("ppl",ppl.item(),steps)
+    #writer.add_scalar("ppl",ppl.item(),steps)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=5e-6)
