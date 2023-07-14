@@ -53,7 +53,10 @@ class MyBaseDataset(Dataset):
     
 
 def return_dataset_2(target,source,prompt): # target을 5분할 한다.
-    whole_dataset=[]
+    whole_datasets=[]
+    for i in range(30):
+        whole_datasets.append([])
+
     for t in trange(len(target)):
         whole_len=len(tokenizer(target[t]).input_ids)
         #print(whole_len)
@@ -86,13 +89,16 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
 
         # for s in split_s:
         #     print(len(tokenizer(s).input_ids))
-
-        input=tokenizer(source[t],return_tensors="pt")
+        
+        
+        input=tokenizer(source[t],max_length=100,padding="max_length",
+            truncation=True,return_tensors="pt")
     
         labels=tokenizer(split_s,max_length=250,padding="max_length",
             truncation=True,return_tensors="pt")
         
-        prompt_id=tokenizer(prompt[t],return_tensors="pt").input_ids
+        prompt_id=tokenizer(prompt[t],max_length=100,padding="max_length",
+            truncation=True,return_tensors="pt").input_ids
     
         input_ids=input.input_ids
         input_attention=input.attention_mask
@@ -108,10 +114,20 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         [-100 if token == tokenizer.pad_token_id else token for token in labels]
         for labels in encoder_input_ids
     ]"""
-    
-        whole_dataset.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask, "prompt":prompt_id })
+        
+        whole_datasets[len(split_s)].append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask, "prompt":prompt_id })
+        # (30, N, data) -> n이 index, i이 데이터셋이 된다.
+        # 사용시에는, (각각 순서대로의 param num에 대해서 따로 학습을 해주며, (0~30)
+        # (N, data) 만 남으니까 얘네를 batch size별로 다시 묶으면
+        # (N/b , b, data) 가 되고,
+        # (b, data)도 사실 내부적으로는 (b, {inputids~, labels[예를 들어 5], ... }) 이런 꼴이기 때문에
+        # 매번 for문을 돌면서 input_ids = (b, seq_len)
+        # labels = (b, label_seq_len)
+        # decoder_input_ids = (b, label_seq_len)
+        # 음... 그리고 conti_prev_predictions이나 keyword_prev_predictions, memory, 같은 것도 전부 (1,~)이 아니라 (b,~)인지 shape을 확인해야.
+        # 
      
-    return whole_dataset
+    return whole_datasets
 
 def return_dataset(target,source):
     labels=tokenizer(target,max_length=max_length,padding="max_length",
@@ -270,6 +286,7 @@ def save_tokenize_pickle_data_2(file,total_source,total_target,last_target):
     createFolder("pickle_data/"+'gpt'+file)
     dataset2=return_dataset_2(last_target,total_target,total_source)
     print("dataset 2 making end")
-    with open("pickle_data/"+'gpt'+file+"/level_2.pickle","wb") as f:
-        pickle.dump(dataset2,f)
+    for step,dataset in enumerate(dataset2):
+        with open("pickle_data/"+'gpt'+file+"/level_2_"+str(step)+".pickle","wb") as f:
+            pickle.dump(dataset,f)
     
