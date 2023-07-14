@@ -190,7 +190,7 @@ with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2.pickle","rb") as fi:
         train_dataset = pickle.load(fi)
 valid_dataset_dir=""
 if dataset_dir=="wp_rake":
-    valid_dataset_dir="gpt_val_wp_rake"
+    valid_dataset_dir="gpt_valid_wp_rake"
 else:
     valid_dataset_dir="gpt_valid_"+dataset_dir
 with open("pickle_data/"+valid_dataset_dir+"/level_2.pickle","rb") as fi:
