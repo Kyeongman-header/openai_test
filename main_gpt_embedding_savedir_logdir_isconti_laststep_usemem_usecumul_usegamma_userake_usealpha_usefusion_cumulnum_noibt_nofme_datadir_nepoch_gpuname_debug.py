@@ -785,17 +785,17 @@ def trainer(LAST_STEP,train_dataset,NumPar):
         #torch.cuda.empty_cache() # manually freeing gpu memory.
         for count in range(NumPar):
 
-            batch_decoder_input_ids=batch_num_decoder_input_ids[count] #(b,250)
-            batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
+            _batch_decoder_input_ids=batch_num_decoder_input_ids[count] #(b,250)
+            _batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
 
             
             # dd=torch.unsqueeze(decoder_input_id[:-1],dim=0).to(gpu_name)
             # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
         # input_ids 맨 앞에 이전 preceding context를 합친다.
             # label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
-            batch_labels=batch_decoder_input_ids[:,1:] #(b,249)
-            batch_decoder_input_ids=batch_decoder_input_ids[:,:-1] #(b,249)
-            batch_decoder_attention_masks=batch_decoder_attention_masks[:,:-1] #(b,249)
+            _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
+            _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
+            _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -845,7 +845,7 @@ def trainer(LAST_STEP,train_dataset,NumPar):
             print(batch_conti_prev_predictions.shape)
             print(batch_conti_keyword_prev_predictions.shape)
 
-            outputs,new_memory = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = batch_decoder_input_ids,decoder_attention_mask=batch_decoder_attention_masks,labels=batch_labels,prev_predictions=batch_prev_predictions,
+            outputs,new_memory = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
             
             if use_memory is True:
@@ -1032,17 +1032,17 @@ def do_eval(steps,dataset,NumPar):
         #torch.cuda.empty_cache() # manually freeing gpu memory.
         for count in range(NumPar):
 
-            batch_decoder_input_ids=batch_num_decoder_input_ids[count] #(b,250)
-            batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
+            _batch_decoder_input_ids=batch_num_decoder_input_ids[count] #(b,250)
+            _batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
 
             
             # dd=torch.unsqueeze(decoder_input_id[:-1],dim=0).to(gpu_name)
             # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
         # input_ids 맨 앞에 이전 preceding context를 합친다.
             # label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
-            batch_labels=batch_decoder_input_ids[:,1:] #(b,249)
-            batch_decoder_input_ids=batch_decoder_input_ids[:,:-1] #(b,249)
-            batch_decoder_attention_masks=batch_decoder_attention_masks[:,:-1] #(b,249)
+            _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
+            _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
+            _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
 
             
             if len(batch_cumul_prev_predictions)>0:
@@ -1091,7 +1091,7 @@ def do_eval(steps,dataset,NumPar):
             print(batch_conti_keyword_prev_predictions.shape)
             
 
-            outputs,new_memory = model.generate(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = batch_decoder_input_ids,decoder_attention_mask=batch_decoder_attention_masks,labels=batch_labels,prev_predictions=batch_prev_predictions,
+            outputs,new_memory = model.generate(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
             
             if use_memory is True:
