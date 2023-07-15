@@ -873,12 +873,12 @@ def trainer(LAST_STEP,train_dataset,NumPar):
             
             
             if use_cumulative:
-                texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions[0],skip_special_tokens=True)
+                texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
                 
                 batch_keywordsSTR=[]
                 for text in texts_prev_predictions:
-                    print("texts for rake")
-                    print(text)
+                    # print("texts for rake")
+                    # print(text)
                     r.extract_keywords_from_text(text)
                     top_features= r.get_ranked_phrases()
                     topK=10
@@ -888,17 +888,18 @@ def trainer(LAST_STEP,train_dataset,NumPar):
                     else:
                         top_features = clean_top_features(top_features, topK)
                         keywordsSTR = convert_keys_to_str(top_features)
-                    print("keywords STR")
-                    print(keywordsSTR)
+                    # print("keywords STR")
+                    # print(keywordsSTR)
                     batch_keywordsSTR.append(keywordsSTR)
 
                 batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=200,padding="max_length",
             truncation=True,return_tensors='pt').input_ids.to(gpu_name))
                 
-                print("batch_keyword_prev_predictions shape")
-                print(len(batch_keyword_prev_predictions))
+                
 
                 if debug:
+                    print("batch_keyword_prev_predictions shape")
+                    print(len(batch_keyword_prev_predictions))
                     print("keywords from last output:")
                     print(batch_keywordsSTR)
             if debug:    
@@ -1122,7 +1123,7 @@ def do_eval(steps,dataset,NumPar):
             
             
             if use_cumulative:
-                texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions[0],skip_special_tokens=True)
+                texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
                 
                 batch_keywordsSTR=[]
                 for text in texts_prev_predictions:
