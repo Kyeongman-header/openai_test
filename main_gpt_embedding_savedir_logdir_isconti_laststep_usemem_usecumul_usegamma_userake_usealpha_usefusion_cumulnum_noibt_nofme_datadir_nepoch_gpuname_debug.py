@@ -446,7 +446,7 @@ class Network(nn.Module):
         
         residual=input_ids
         input_ids=torch.cat((input_ids,decoder_input_ids),1)
-        labels=torch.cat((residual,labels),1)
+        labels=torch.cat((residual[:,1:],labels),1)
         if debug:
             print("after preprocessing, input ids: ")
             print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
@@ -644,7 +644,7 @@ class Network(nn.Module):
                 
         residual=input_ids
         input_ids=torch.cat((input_ids,decoder_input_ids),1)
-        labels=torch.cat((residual,labels),1)
+        labels=torch.cat((residual[:,1:],labels),1)
         if debug:
             print("after preprocessing, input ids: ")
             print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
@@ -793,7 +793,10 @@ def trainer(LAST_STEP,train_dataset,NumPar):
             # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
         # input_ids 맨 앞에 이전 preceding context를 합친다.
             # label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
-            _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
+
+            # _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
+            _batch_labels=_batch_decoder_input_ids #(b,250)
+            # 주의!!! gpt는 이렇게 하지만 bart는 위에 코드로 해야함!
             _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
             _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
 
@@ -1046,7 +1049,8 @@ def do_eval(steps,dataset,NumPar):
             # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
         # input_ids 맨 앞에 이전 preceding context를 합친다.
             # label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
-            _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
+            # _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
+            _batch_labels=_batch_decoder_input_ids #(b,250)
             _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
             _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
 
