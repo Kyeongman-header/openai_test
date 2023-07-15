@@ -1138,14 +1138,11 @@ def do_eval(steps,dataset,NumPar):
                 batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=200,padding="max_length",
             truncation=True,return_tensors='pt').input_ids.to(gpu_name))
                 
-                print("batch_keyword_prev_predictions shape")
-                print(batch_keyword_prev_predictions.shape)
+                
 
                 if debug:
                     print("keywords from last output:")
                     print(batch_keywordsSTR)
-                    print("shape")
-                    print(tokenizer(batch_keywordsSTR,return_tensors='pt').input_ids.shape)
             
             if debug:
                 print("-----------")
