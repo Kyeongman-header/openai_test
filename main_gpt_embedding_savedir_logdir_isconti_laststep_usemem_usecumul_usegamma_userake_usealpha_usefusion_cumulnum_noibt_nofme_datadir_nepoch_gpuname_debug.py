@@ -576,13 +576,11 @@ optimizer = optim.AdamW(model.parameters(), lr=5e-6)
 #num_epochs = 3
 
 
-with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_whole.pickle","rb") as fi:
-            train_dataset = pickle.load(fi)
-num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
+# with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_whole.pickle","rb") as fi:
+#             train_dataset = pickle.load(fi)
 
-lr_scheduler = get_scheduler(
-    name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
-)
+# num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
+
 
 def trainer(LAST_STEP,train_dataset,valid_dataset,NumPar):
     whole_count_for_save=0
@@ -800,9 +798,12 @@ with open("pickle_data/"+valid_dataset_dir+"/level_2_whole.pickle","rb") as fi:
 for epoch in range(num_epochs):  # loop over the dataset multiple times
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
-        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2" + str(i) + ".pickle","rb") as fi:
+        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 train_dataset = pickle.load(fi)
-        
+        num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
+        lr_scheduler = get_scheduler(
+            name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+        )
         
         progress_bar = tqdm(range(num_training_steps))
 
