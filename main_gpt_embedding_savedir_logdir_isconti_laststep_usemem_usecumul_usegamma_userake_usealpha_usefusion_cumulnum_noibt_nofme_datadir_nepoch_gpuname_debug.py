@@ -898,8 +898,6 @@ def trainer(LAST_STEP,train_dataset,NumPar):
                 if debug:
                     print("keywords from last output:")
                     print(batch_keywordsSTR)
-                    print("shape")
-                    print(tokenizer(batch_keywordsSTR,return_tensors='pt').input_ids.shape)
             if debug:    
                 input()
             optimizer.step()
