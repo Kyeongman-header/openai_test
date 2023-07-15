@@ -857,9 +857,15 @@ def trainer(LAST_STEP,train_dataset,NumPar):
 
             
             batch_prev_predictions =  torch.argmax(outputs.logits, dim=-1) #(b,output_seq_len)
-            print("batch output(물론 teacher forcing하면 250이 될거임)")            
-            print(batch_prev_predictions.shape) #(아마도 b,1024)?
             
+            # 이게 잘못됐다. teacher forcing일땐 상관 없는데.
+            # gpt에서는 output이 input을 싸그리 포함하고 있으므로,
+            # output에서 input 부분만을 빼고 보는 게 필요하다
+            batch_prev_predictions=batch_prev_predictions[:,-249:]
+
+            print("batch output(물론 teacher forcing하면 250이 될거임)") 
+            print(batch_prev_predictions)           
+            print(batch_prev_predictions.shape) #(아마도 b,1024)?
             if TEACHER_FORCING_MEMORY:
                 batch_prev_predictions = _batch_labels # teacher forcing으로, memory와 cumul에 쓰이는 prev prediction은 training 과정에선 golden label 사용!
                 #(b,250)
