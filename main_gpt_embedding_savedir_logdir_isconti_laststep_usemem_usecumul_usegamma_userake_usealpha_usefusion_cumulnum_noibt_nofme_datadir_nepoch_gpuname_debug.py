@@ -442,12 +442,14 @@ class Network(nn.Module):
                 input_ids=torch.cat((batch_soplot_token_tensors,input_ids,batch_eoplot_token_tensors,batch_soprev_token_tensors,conti_keyword_prev_predictions,batch_eoprev_token_tensors,batch_decoding_token_tensors),1)
             elif NO_IBT:
                 input_ids=torch.cat((batch_soplot_token_tensors,input_ids,batch_eoplot_token_tensors,batch_soprev_token_tensors,conti_keyword_prev_predictions,batch_eoprev_token_tensors,batch_order_token_tensors),1)
-                
+        
+        residual=input_ids
         input_ids=torch.cat((input_ids,decoder_input_ids),1)
-        labels=torch.cat((input_ids,labels),1)
+        labels=torch.cat((residual,labels),1)
         if debug:
             print("after preprocessing, input ids: ")
             print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
+            print("after preprocessing, labels: ")
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
         inputs_embeds=self.shared(input_ids)
@@ -639,11 +641,13 @@ class Network(nn.Module):
             elif NO_IBT:
                 input_ids=torch.cat((batch_soplot_token_tensors,input_ids,batch_eoplot_token_tensors,batch_soprev_token_tensors,conti_keyword_prev_predictions,batch_eoprev_token_tensors,batch_order_token_tensors),1)
                 
+        residual=input_ids
         input_ids=torch.cat((input_ids,decoder_input_ids),1)
-        labels=torch.cat((input_ids,labels),1)
+        labels=torch.cat((residual,labels),1)
         if debug:
             print("after preprocessing, input ids: ")
             print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
+            print("after preprocessing, labels: ")
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
         inputs_embeds=self.shared(input_ids)
@@ -715,7 +719,7 @@ if CONTINUOUSLY_TRAIN:
 # num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
 
 
-def trainer(LAST_STEP,train_dataset,valid_dataset,NumPar):
+def trainer(LAST_STEP,train_dataset,NumPar):
     whole_count_for_save=0
     #do_eval(0)
     model.train()
@@ -928,15 +932,8 @@ def trainer(LAST_STEP,train_dataset,valid_dataset,NumPar):
             'optimizer_state_dict': optimizer.state_dict(),
             },PATH)
 
-valid_dataset_dir=""
-if dataset_dir=="wp_rake":
-    valid_dataset_dir="gpt_valid_wp_rake"
-else:
-    valid_dataset_dir="gpt_valid_"+dataset_dir
-with open("pickle_data/"+valid_dataset_dir+"/level_2_whole.pickle","rb") as fi:
-        valid_dataset = pickle.load(fi)
 
-def do_eval(steps,model,dataset,NumPar):
+def do_eval(steps,dataset,NumPar):
     f = open(save_dir+'_generations_outputs.csv','w',encoding='utf-8', newline='')
     wr = csv.writer(f)
     wr.writerow(["steps","index","source","real text","generated_results"])
@@ -1326,6 +1323,7 @@ def do_eval(steps,model,dataset,NumPar):
     #writer.add_scalar("ppl",ppl.item(),steps)
 
 for epoch in range(num_epochs):  # loop over the dataset multiple times
+
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
         with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
@@ -1342,6 +1340,19 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
         trainer(LAST_STEP,train_dataset=train_dataset,valid_dataset=valid_dataset,NumPar=i)
         writer.close()
         LAST_STEP=0
+    
+    for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+
+        valid_dataset_dir=""
+        if dataset_dir=="wp_rake":
+            valid_dataset_dir="gpt_valid_wp_rake"
+        else:
+            valid_dataset_dir="gpt_valid_"+dataset_dir
+        with open("pickle_data/"+valid_dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
+                valid_dataset = pickle.load(fi)
+        
+        do_eval(steps=epoch,dataset=valid_dataset,NumPar=i)
+    
 
 
 
