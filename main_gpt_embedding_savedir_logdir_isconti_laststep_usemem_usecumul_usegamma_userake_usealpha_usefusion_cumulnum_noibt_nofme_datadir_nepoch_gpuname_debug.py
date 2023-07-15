@@ -881,7 +881,7 @@ def trainer(LAST_STEP,train_dataset,NumPar):
                     # print(text)
                     r.extract_keywords_from_text(text)
                     top_features= r.get_ranked_phrases()
-                    topK=10
+                    topK=5
 
                     if len(top_features)==0:
                         keywordsSTR="[SEP]"
@@ -892,7 +892,7 @@ def trainer(LAST_STEP,train_dataset,NumPar):
                     # print(keywordsSTR)
                     batch_keywordsSTR.append(keywordsSTR)
 
-                batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=200,padding="max_length",
+                batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=100,padding="max_length",
             truncation=True,return_tensors='pt').input_ids.to(gpu_name))
                 
                 
