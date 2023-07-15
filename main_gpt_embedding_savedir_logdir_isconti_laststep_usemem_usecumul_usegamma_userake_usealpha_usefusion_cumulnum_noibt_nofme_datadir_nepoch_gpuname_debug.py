@@ -271,7 +271,7 @@ class Network(nn.Module):
        self.W2 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
        self.W3 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
        self.W4 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
-
+       self.W5 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
    def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,conti_keyword_prev_predictions,order,whole,intro,tail,use_cumulative,use_memory,use_rake):#prompt_ids,prompt_attention):
        #memory states update.
        
@@ -334,7 +334,7 @@ class Network(nn.Module):
             Mhat = torch.tanh(self.W1(memory)+self.W2(prev_predictions))
             g = torch.sigmoid(self.W3(memory)+self.W4(prev_predictions))
             Mnext = torch.mul(1-g, memory) + torch.mul(g, Mhat)
-            memory= F.normalize(1e-7+Mnext, dim = -1) # (b,d_model)
+            memory= F.normalize(1e-7+Mnext, dim = -1) # (b,400,d_model)
             # 주의!! 완전히 plotmachine 스타일이다.
             # 원래는 embedding avg가 아닌 그냥 prev_prediction 전체를 썼었다.
         else:
@@ -345,14 +345,20 @@ class Network(nn.Module):
         if use_cumulative :
 
             cumulation=self.shared(conti_prev_predictions) #(b,len,d)
-            cumulation=torch.mean(cumulation,dim=1) # (b,d)
-            cumulation=torch.unsqueeze(cumulation,dim=1) # (b,1,d)
+            #print("cumulation's shape:")
+            #print(cumulation.shape)
+            cumulation=torch.tanh(self.W5(cumulation))
+            #print("tanh cumulation's shape:")
+            #print(cumulation.shape)
+            cumulation=F.normalize(1e-7+cumulation, dim = -1)
+            #cumulation=torch.mean(cumulation,dim=1) # (b,d)
+            #cumulation=torch.unsqueeze(cumulation,dim=1) # (b,1,d)
             # 내친 김에 얘도 avg를 때려봤다.
         else:
             cumulation=None
         
-        print("cumulation's shape :")
-        print(cumulation.shape) #(b,1,d_model)
+        print("final cumulation's shape :")
+        print(cumulation.shape) #(b,len,d_model)
         
         
         if intro:
@@ -383,20 +389,23 @@ class Network(nn.Module):
             print(previous.shape)
             previous=tokenizer.batch_decode(previous,skip_special_tokens=True)
             print(previous)
-            previous=bert_tokenizer(previous,return_tensors="pt").input_ids.to(gpu_name)
+            previous=bert_tokenizer(previous,max_length=300,padding="max_length",
+            truncation=True,return_tensors="pt").input_ids.to(gpu_name)
             print(previous.shape)
             output=self.bert(previous)
             
             if USE_GAMMA:
                 ratio=self.rogistic(output.pooler_output)
                 ratio=self.sigmoid(ratio)
-                alpha=ratio[0,0]/torch.sum(ratio)
-                beta=ratio[0,1]/torch.sum(ratio)
-                gamma=ratio[0,2]/torch.sum(ratio)
+                alpha=torch.unsqueeze(torch.unsqueeze(ratio[:,0]/torch.sum(ratio,dim=1),dim=1),dim=1) #(b,1,1)
+                beta=torch.unsqueeze(torch.unsqueeze(ratio[:,1]/torch.sum(ratio,dim=1),dim=1),dim=1)
+                gamma=torch.unsqueeze(torch.unsqueeze(ratio[:,2]/torch.sum(ratio,dim=1),dim=1),dim=1)
             else:
                 alpha=self.rogistic(output.pooler_output)
                 alpha=self.sigmoid(alpha) 
-                alpha=torch.mul((alpha),1/2)
+                alpha=torch.unsqueeze(torch.mul((alpha),1/2),dim=1) #(b,1)
+                #attention의 결과가 3 dim이면 (b,1,1)이어야함
+                # 2 dim -> (b,1) 이 맞음
                 beta=0.5-alpha
 
         if debug:
@@ -671,7 +680,7 @@ def trainer(LAST_STEP,train_dataset,valid_dataset,NumPar):
         print(emb_input_ids.shape)
 
         memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
-        memory = torch.cat((emb_input_ids,memory),dim=0) # (B,400,1024)
+        memory = torch.cat((emb_input_ids,memory),dim=1) # (B,400,1024)
         #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
         batch_cumul_prev_predictions=[]
         batch_keyword_prev_predictions=[]
