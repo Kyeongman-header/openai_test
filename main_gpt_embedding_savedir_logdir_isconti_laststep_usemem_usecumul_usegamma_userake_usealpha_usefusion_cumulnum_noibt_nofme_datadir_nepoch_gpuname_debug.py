@@ -57,20 +57,21 @@ conti=int(sys.argv[3]) # 0
 last_step=int(sys.argv[4]) # 0
 use_mem=int(sys.argv[5]) # 1
 use_cumul=int(sys.argv[6]) # 1
-use_rake=int(sys.argv[7])
-use_alpha=int(sys.argv[8])
-use_fusion=int(sys.argv[9])
+use_gamma=int(sys.argv[7])
+use_rake=int(sys.argv[8])
+use_alpha=int(sys.argv[9])
+use_fusion=int(sys.argv[10])
 
-cumul_num=int(sys.argv[10]) # 3
+cumul_num=int(sys.argv[11]) # 3
 
-no_ibt=int(sys.argv[11])
-no_fme=int(sys.argv[12])
+no_ibt=int(sys.argv[12])
+no_fme=int(sys.argv[13])
 
-dataset_dir=sys.argv[13]
-num_epochs=int(sys.argv[14])
+dataset_dir=sys.argv[14]
+num_epochs=int(sys.argv[15])
 
-gpu_name=sys.argv[15] # cuda:0
-debug = int(sys.argv[16]) # 1
+gpu_name=sys.argv[16] # cuda:0
+debug = int(sys.argv[17]) # 1
 if debug ==1:
     debug=True
 else:
@@ -95,6 +96,11 @@ if use_cumul==1:
     USE_CUMULATIVE=True
 else:
     USE_CUMULATIVE=False
+USE_GAMMA=True
+if use_gamma==1:
+    USE_GAMMA=True
+else:
+    USE_GAMMA=False
 USE_RAKE=True
 if use_rake==1:
     USE_RAKE=True
@@ -134,6 +140,8 @@ print('cumul num :')
 print(cumul_num)
 print('use_mem : ')
 print(USE_MEMORY)
+print('use_rake : ')
+print(USE_RAKE)
 print('use alpha :')
 print(USE_ALPHA)
 print('use fusion :')
@@ -155,7 +163,6 @@ print("gpu or cpu num :")
 print(gpu_name)
 print("debug : ")
 print(debug)
-
 # num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<by>","<sep>"],special_tokens=True)
 num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<i>","<b>","<t>","<f>","<m>","<e>","[SEP]","<n_e>"],special_tokens=True)
 soplot_id=tokenizer.convert_tokens_to_ids("<plot>")
@@ -244,26 +251,26 @@ batch_b_ending_token_tensors=torch.cat([b_ending_token_tensor]*batch_size,dim=0)
 batch_b_next_is_ending_token_tensors=torch.cat([b_next_is_ending_token_tensor]*batch_size,dim=0)
 
 class Network(nn.Module): 
-   def __init__(self, vocab_size, d_model,gpt,bert,bert_config): 
+   def __init__(self, shared, vocab_size, d_model,gpt,bert,bert_config): 
        super(Network, self).__init__() 
         
-       self.shared = gpt.get_input_embeddings()
+       self.shared = shared
        #nn.Embedding(config.vocab_size, config.d_model) 
-       self.shared.requires_grad = False # 이 shared는 역할상 고정되어 있어야 한다.
+        # 이 shared는 역할상 고정되어 있어야 한다.
        # 하지만 bart의 embedding layer는 학습을 거치면서 업데이트 된다.
        self.gpt = gpt
-       self.bert = bert
-       self.rogistic=torch.nn.Linear(bert_config.hidden_size,1)
-       self.sigmoid=torch.nn.Sigmoid()
-       self.grucell=nn.GRUCell(d_model,d_model).to(gpu_name)
-       """
-       self.wHr = nn.Linear(d_model,d_model).to(gpu_name)
-       self.wMr = nn.Linear(d_model,d_model).to(gpu_name)
-       self.wHz = nn.Linear(d_model,d_model).to(gpu_name)
-       self.wMz = nn.Linear(d_model,d_model).to(gpu_name)
-       self.wHn = nn.Linear(d_model,d_model).to(gpu_name)
-       self.wMn = nn.Linear(d_model,d_model).to(gpu_name)
-       """
+       if USE_ALPHA:
+           self.bert = bert
+           if USE_GAMMA:
+               self.rogistic=torch.nn.Linear(bert_config.hidden_size,3)
+           else:
+               self.rogistic=torch.nn.Linear(bert_config.hidden_size,1)
+           self.sigmoid=torch.nn.Sigmoid()
+    #    self.grucell=nn.GRUCell(d_model,d_model).to(gpu_name)
+       self.W1 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
+       self.W2 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
+       self.W3 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
+       self.W4 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
 
    def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,conti_keyword_prev_predictions,order,whole,intro,tail,use_cumulative,use_memory,use_rake):#prompt_ids,prompt_attention):
        #memory states update.
@@ -307,29 +314,45 @@ class Network(nn.Module):
 
 
         short_prev=prev_predictions # 뒤에서 사용
-        padding=torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to(gpu_name)
-        list_padding=[padding]*batch_size
-        padding=torch.cat(list_padding,dim=0)
-        prev_predictions=torch.cat((padding,prev_predictions),1)
+        # padding=torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to(gpu_name)
+        # list_padding=[padding]*batch_size
+        # padding=torch.cat(list_padding,dim=0)
+        # prev_predictions=torch.cat((padding,prev_predictions),1)
         
-        prev_predictions = self.shared(prev_predictions)
-        print("prev_predictions shape:")
-        print(prev_predictions.shape)
         
         if use_memory :
-           memory=self.grucell((prev_predictions),(memory)).unsqueeze(dim=0)
+            prev_predictions = self.shared(prev_predictions)
+            prev_predictions=torch.mean(prev_predictions,dim=1)
+            prev_predictions=torch.unsqueeze(prev_predictions,dim=1)
+            prev_predictions=prev_predictions.expand((-1,memory.shape[1],-1)) 
+            print("prev_predictions shape:")
+            print(prev_predictions.shape) # (b,400,d_model)
+            
+            #memory -> (b,400,d)
+            #prev_prediction -> (b,400,d)
+            #w mul and sum -> (b,400,d)
+            Mhat = torch.tanh(self.W1(memory)+self.W2(prev_predictions))
+            g = torch.sigmoid(self.W3(memory)+self.W4(prev_predictions))
+            Mnext = torch.mul(1-g, memory) + torch.mul(g, Mhat)
+            memory= F.normalize(1e-7+Mnext, dim = -1) # (b,d_model)
+            # 주의!! 완전히 plotmachine 스타일이다.
+            # 원래는 embedding avg가 아닌 그냥 prev_prediction 전체를 썼었다.
         else:
            memory=None
         print("after gru, memory : " )
         print(memory.shape)
 
         if use_cumulative :
-            cumulation=self.shared(conti_prev_predictions)
+
+            cumulation=self.shared(conti_prev_predictions) #(b,len,d)
+            cumulation=torch.mean(cumulation,dim=1) # (b,d)
+            cumulation=torch.unsqueeze(cumulation,dim=1) # (b,1,d)
+            # 내친 김에 얘도 avg를 때려봤다.
         else:
             cumulation=None
         
         print("cumulation's shape :")
-        print(cumulation.shape)
+        print(cumulation.shape) #(b,1,d_model)
         
         
         if intro:
@@ -363,16 +386,27 @@ class Network(nn.Module):
             previous=bert_tokenizer(previous,return_tensors="pt").input_ids.to(gpu_name)
             print(previous.shape)
             output=self.bert(previous)
-            alpha=self.rogistic(output.pooler_output)
-            alpha=self.sigmoid(alpha) 
-            alpha=torch.mul((alpha),1/2)
-            beta=0.5-alpha
+            
+            if USE_GAMMA:
+                ratio=self.rogistic(output.pooler_output)
+                ratio=self.sigmoid(ratio)
+                alpha=ratio[0,0]/torch.sum(ratio)
+                beta=ratio[0,1]/torch.sum(ratio)
+                gamma=ratio[0,2]/torch.sum(ratio)
+            else:
+                alpha=self.rogistic(output.pooler_output)
+                alpha=self.sigmoid(alpha) 
+                alpha=torch.mul((alpha),1/2)
+                beta=0.5-alpha
 
         if debug:
             print("alpha :")
             print(alpha)
             print("beta : ")
             print(beta)
+            if USE_GAMMA:
+                print("gamma : ")
+                print(gamma)
        
          
        
@@ -561,10 +595,11 @@ else:
 
 gpt.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedding unit이 추가가 된다.
 bert.resize_token_embeddings(len(bert_tokenizer))
-
+shared = gpt.get_input_embeddings()
+shared.requires_grad = False
 #bart.get_input_embeddings().requires_grad = False # embedding layer는 학습을 안한다. 얘가 변동되면 prev_predictions에 대한 표현도 계속 변하기 때문.
 #생각해보니, shared에다가 init에서 복사한 embedding module만 계속 쓰는 거잖아?
-model = Network(vocab_size, d_model,gpt, bert,bert_config).to(gpu_name)
+model = Network(shared,vocab_size, d_model,gpt, bert,bert_config).to(gpu_name)
 
 # -----------train ends, eval starts.
 # f = open('rake_fme_second_level_val_results.csv','w', newline='')
@@ -631,8 +666,12 @@ def trainer(LAST_STEP,train_dataset,valid_dataset,NumPar):
         count=0
     
         
+        emb_input_ids = shared(batch_input_ids)
+        print("emb input ids shape : ")
+        print(emb_input_ids.shape)
 
-        memory = torch.zeros_like(torch.empty(batch_size,1024,d_model)).to(gpu_name) # first memory.
+        memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
+        memory = torch.cat((emb_input_ids,memory),dim=0) # (B,400,1024)
         #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
         batch_cumul_prev_predictions=[]
         batch_keyword_prev_predictions=[]
