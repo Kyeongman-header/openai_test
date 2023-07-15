@@ -861,7 +861,7 @@ def trainer(LAST_STEP,train_dataset,NumPar):
             print(batch_prev_predictions.shape) #(아마도 b,1024)?
             
             if TEACHER_FORCING_MEMORY:
-                batch_prev_predictions = batch_labels # teacher forcing으로, memory와 cumul에 쓰이는 prev prediction은 training 과정에선 golden label 사용!
+                batch_prev_predictions = _batch_labels # teacher forcing으로, memory와 cumul에 쓰이는 prev prediction은 training 과정에선 golden label 사용!
                 #(b,250)
                 print("teacher forcing 하면 batch prev predition:")
                 print(batch_prev_predictions.shape)
