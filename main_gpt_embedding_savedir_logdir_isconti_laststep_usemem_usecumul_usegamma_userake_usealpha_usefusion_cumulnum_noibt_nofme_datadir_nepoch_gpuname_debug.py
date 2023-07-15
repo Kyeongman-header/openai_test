@@ -47,7 +47,7 @@ def createFolder(directory):
     except OSError:
         print('Error Creating directory. ' + directory)
 
-LAST_PARAG=3
+LAST_PARAG=5
 
 save_dir=sys.argv[1] # rake_all
 log_dir=sys.argv[2] # rake_all
@@ -1129,7 +1129,7 @@ def do_eval(steps,dataset,NumPar):
                 for text in texts_prev_predictions:
                     r.extract_keywords_from_text(text)
                     top_features= r.get_ranked_phrases()
-                    topK=10
+                    topK=5
 
                     if len(top_features)==0:
                         keywordsSTR="[SEP]"
@@ -1139,7 +1139,7 @@ def do_eval(steps,dataset,NumPar):
                     
                     batch_keywordsSTR.append(keywordsSTR)
 
-                batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=200,padding="max_length",
+                batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=50,padding="max_length",
             truncation=True,return_tensors='pt').input_ids.to(gpu_name))
                 
                 
