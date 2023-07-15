@@ -1337,7 +1337,7 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
 
         
         
-        trainer(LAST_STEP,train_dataset=train_dataset,valid_dataset=valid_dataset,NumPar=i)
+        trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i)
         writer.close()
         LAST_STEP=0
     
