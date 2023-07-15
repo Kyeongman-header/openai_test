@@ -597,21 +597,24 @@ def trainer(LAST_STEP,train_dataset,valid_dataset,NumPar):
         mini_running_loss=0.0
         batch_data=train_dataset[i:i+batch_size]
         first=True
+        batch_num_decoder_input_ids=[]
+        batch_decoder_attention_masks=[]
         for data in batch_data:
             input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
+            batch_num_decoder_input_ids.append(num_decoder_input_ids)
+            batch_decoder_attention_masks.append(decoder_attention_masks)
             if first:
                 batch_input_ids=input_ids
                 batch_attention_mask=attention_mask
-                batch_num_decoder_input_ids=num_decoder_input_ids
-                batch_decoder_attention_masks=decoder_attention_masks
                 batch_prev_predictions=prompt
                 first=False
             else:
                 batch_input_ids=torch.cat((batch_input_ids,input_ids),dim=0)
                 batch_attention_mask=torch.cat((batch_attention_mask,attention_mask),dim=0)
-                batch_num_decoder_input_ids=torch.stack((batch_num_decoder_input_ids,num_decoder_input_ids),dim=1)
-                batch_decoder_attention_masks=torch.stack((batch_decoder_attention_masks,decoder_attention_masks),dim=1)
+                
                 batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
+        batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
+        batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
         print("batch dataset shapes")
         print(batch_input_ids.shape) #(b, 200)
         print(batch_attention_mask.shape) 
