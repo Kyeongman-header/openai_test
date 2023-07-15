@@ -893,7 +893,7 @@ def trainer(LAST_STEP,train_dataset,NumPar):
             truncation=True,return_tensors='pt').input_ids.to(gpu_name))
                 
                 print("batch_keyword_prev_predictions shape")
-                print(batch_keyword_prev_predictions.shape)
+                print(len(batch_keyword_prev_predictions))
 
                 if debug:
                     print("keywords from last output:")
