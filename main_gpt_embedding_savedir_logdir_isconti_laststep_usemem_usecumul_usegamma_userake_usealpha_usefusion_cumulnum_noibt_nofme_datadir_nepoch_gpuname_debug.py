@@ -47,7 +47,7 @@ def createFolder(directory):
     except OSError:
         print('Error Creating directory. ' + directory)
 
-LAST_PARAG=1
+LAST_PARAG=3
 
 save_dir=sys.argv[1] # rake_all
 log_dir=sys.argv[2] # rake_all
