@@ -910,7 +910,7 @@ def trainer(LAST_STEP,train_dataset,NumPar):
     # print statistics
             mini_running_loss += loss.item()
         
-        running_loss +=mini_running_loss / count
+        running_loss +=mini_running_loss / count+1
         progress_bar.update(1)
         whole_count_for_save+=1
         if i % 3000 == 2999:    # print every 2000 mini-batches
