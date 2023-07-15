@@ -773,7 +773,7 @@ def trainer(LAST_STEP,train_dataset,NumPar):
         print(emb_input_ids.shape)
 
         memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
-        memory = torch.cat((emb_input_ids,memory),dim=0) # (B,400,1024)
+        memory = torch.cat((emb_input_ids,memory),dim=1) # (B,400,1024)
         #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
         batch_cumul_prev_predictions=[]
         batch_keyword_prev_predictions=[]
@@ -1018,7 +1018,7 @@ def do_eval(steps,dataset,NumPar):
         print(emb_input_ids.shape)
 
         memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
-        memory = torch.cat((emb_input_ids,memory),dim=0) # (B,400,1024)
+        memory = torch.cat((emb_input_ids,memory),dim=1) # (B,400,1024)
         #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
         batch_cumul_prev_predictions=[]
         batch_keyword_prev_predictions=[]
