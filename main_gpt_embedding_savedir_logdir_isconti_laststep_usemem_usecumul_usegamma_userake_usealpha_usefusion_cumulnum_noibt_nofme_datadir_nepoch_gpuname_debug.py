@@ -877,6 +877,8 @@ def trainer(LAST_STEP,train_dataset,NumPar):
                 
                 batch_keywordsSTR=[]
                 for text in texts_prev_predictions:
+                    print("texts for rake")
+                    print(text)
                     r.extract_keywords_from_text(text)
                     top_features= r.get_ranked_phrases()
                     topK=10
@@ -886,7 +888,8 @@ def trainer(LAST_STEP,train_dataset,NumPar):
                     else:
                         top_features = clean_top_features(top_features, topK)
                         keywordsSTR = convert_keys_to_str(top_features)
-                    
+                    print("keywords STR")
+                    print(keywordsSTR)
                     batch_keywordsSTR.append(keywordsSTR)
 
                 batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=200,padding="max_length",
