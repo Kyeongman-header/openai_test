@@ -178,6 +178,7 @@ middle_id=tokenizer.convert_tokens_to_ids("<m>")
 ending_id=tokenizer.convert_tokens_to_ids("<e>")
 next_is_ending_id=tokenizer.convert_tokens_to_ids("<n_e>")
 
+
 # by_id=tokenizer.convert_tokens_to_ids("<by>")
 soplot_token_tensor=torch.LongTensor([[soplot_id]]).to(gpu_name)
 eoplot_token_tensor=torch.LongTensor([[eoplot_id]]).to(gpu_name)
@@ -192,6 +193,7 @@ front_token_tensor=torch.LongTensor([[front_id]]).to(gpu_name)
 middle_token_tensor=torch.LongTensor([[middle_id]]).to(gpu_name)
 ending_token_tensor=torch.LongTensor([[ending_id]]).to(gpu_name)
 next_is_ending_token_tensor=torch.LongTensor([[next_is_ending_id]]).to(gpu_name)
+eos_token_tensor=torch.LongTensor([[tokenizer.eos_token_id]]).to(gpu_name)
 
 batch_sep_token_tensors=torch.cat([sep_token_tensor]*batch_size,dim=0) #(b,1)
 batch_eoprev_token_tensors=torch.cat([eoprev_token_tensor]*batch_size,dim=0)
@@ -455,14 +457,14 @@ class Network(nn.Module):
             input_id=input_ids[b][valid_position]
             
             residual=input_id
-            # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다. decoder input에만큼은 eos가 있어야 할 것 같다. eos 토큰을 추가해준다.
+            # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다고 한다. decoder input에만큼은 eos가 있어야 할 것 같다. eos 토큰을 추가해준다.
             input_id=torch.cat((input_id,decoder_input_ids[b]),dim=0)
-            input_id=torch.cat((input_id,torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
+            input_id=torch.cat((input_id,eoplot_token_tensor[0],eoplot_token_tensor[0]),dim=0)
             padding=torch.LongTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(input_id))).to(gpu_name)
             valid_input_ids.append(torch.cat((input_id,padding,),0))
 
             label=torch.cat((residual[1:],labels[b]),dim=0)
-            label=torch.cat((label,torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
+            label=torch.cat((label,eos_token_tensor[0]),dim=0)
             padding=torch.LongTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(label))).to(gpu_name)
             valid_labels.append(torch.cat((label,padding,),0))
         
