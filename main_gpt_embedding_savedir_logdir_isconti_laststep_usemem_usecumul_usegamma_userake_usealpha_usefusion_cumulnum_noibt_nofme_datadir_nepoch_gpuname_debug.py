@@ -414,9 +414,8 @@ class Network(nn.Module):
             if USE_GAMMA:
                 print("gamma : ")
                 print(gamma)
-       
-         
-       
+        
+        
         if use_rake is False or input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+5 > 1020 or intro:
             
         #    input_ids=torch.cat((soplot_token_tensor,input_ids,eoplot_token_tensor,order_token_tensor,by_token_tensor,whole_token_tensor),1)
@@ -444,9 +443,38 @@ class Network(nn.Module):
             elif NO_IBT:
                 input_ids=torch.cat((batch_soplot_token_tensors,input_ids,batch_eoplot_token_tensors,batch_soprev_token_tensors,conti_keyword_prev_predictions,batch_eoprev_token_tensors,batch_order_token_tensors),1)
         
-        residual=input_ids
-        input_ids=torch.cat((input_ids,decoder_input_ids),1)
-        labels=torch.cat((residual[:,1:],labels),1)
+        
+        valid_input_ids=[]
+        valid_labels=[]
+        for b in batch_size:
+            # GPT STYLE!! BART에서는 EOS 토큰을 뺄 필요도 없고, PAD만 날리면 되며, 애초에 DECODER INPUT IDS랑 합치지도 않는다.
+            
+            # 사실 bart에서는 pad를 날릴 필요조차 없다(어차피 attention mask) 즉 이 코드 전체가 gpt에서만 쓰인다.
+
+            valid_position=torch.where((input_ids[b]!=tokenizer.pad_token_id) & (input_ids[b]!=tokenizer.eos_token_id))
+            input_id=input_ids[b][valid_position]
+            
+            residual=input_id
+            # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다. decoder input에만큼은 eos가 있어야 할 것 같다. eos 토큰을 추가해준다.
+            input_id=torch.cat((input_id,decoder_input_ids[b],torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
+            padding=torch.LongTensor([[tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(input_id))]).to(gpu_name)
+            valid_input_ids.append(torch.cat((input_id,padding,),1))
+
+            label=torch.cat((residual[1:],labels[b],torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
+            padding=torch.LongTensor([[tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(label))]).to(gpu_name)
+            valid_labels.append(label)
+        
+        input_ids=torch.stack(valid_input_ids,dim=0)
+        labels=torch.stack(valid_labels,dim=0)
+        
+        print("valid_input_ids.shape")
+        print(input_ids)
+        print(input_ids.shape)
+        print("valid_labels.shape")
+        print(labels)
+        print(labels.shape)
+
+        
         if debug:
             print("after preprocessing, input ids: ")
             print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
@@ -642,32 +670,36 @@ class Network(nn.Module):
             elif NO_IBT:
                 input_ids=torch.cat((batch_soplot_token_tensors,input_ids,batch_eoplot_token_tensors,batch_soprev_token_tensors,conti_keyword_prev_predictions,batch_eoprev_token_tensors,batch_order_token_tensors),1)
                 
-        residual=input_ids
-        input_ids=torch.cat((input_ids,decoder_input_ids),1)
-        labels=torch.cat((residual[:,1:],labels),1)
-        if debug:
-            print("after preprocessing, input ids: ")
-            print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
-            print("after preprocessing, labels: ")
-            print(tokenizer.batch_decode(labels,skip_special_tokens=False))
+        
+        
 
-        inputs_embeds=self.shared(input_ids)
-        print("input embeds shape : ")
-        print(inputs_embeds.shape)
-
-        # list_attention_mask=[[0]*input_ids.shape[1]]*batch_size
-
-        # for i in range(input_ids.shape[1]):
-        #     if input_ids[0][i]!=pad_token_id: # pad token id는 1이다. pad가 아니면 1로 해야 한다.
-        #         list_attention_mask[0][i]=1
-        attention_mask=torch.where(input_ids==tokenizer.pad_token_id,0,1).to(gpu_name)
-        if debug:
-            print("attention_mask")
-            print(attention_mask)
+        
 
             
         outputs=[]
         for b in range(batch_size):
+            
+        
+            # GPT STYLE!! BART에서는 EOS 토큰을 뺄 필요도 없고, PAD만 날리면 되며, 애초에 DECODER INPUT IDS랑 합치지도 않는다.
+            # 주의! gpt는 아예 eos 토큰이 있지도 않다.
+            valid_position=torch.where((input_ids[b]!=tokenizer.pad_token_id) & (input_ids[b]!=tokenizer.eos_token_id))
+            input_id=torch.unsqueeze(input_ids[b][valid_position],dim=0) #(1,dynamic_len)
+            
+
+            if debug:
+                print("after preprocessing, input ids: ")
+                print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
+            # valid_input_ids.append(torch.cat((input_id,padding,),1))
+
+            inputs_embeds=self.shared(input_id)
+            print("input embeds shape : ")
+            print(inputs_embeds.shape)
+
+            attention_mask=torch.where(input_id==tokenizer.pad_token_id,0,1).to(gpu_name)
+            if debug:
+                print("attention_mask")
+                print(attention_mask)
+            
             outputs.append(self.gpt.generate(max_length=250,memory=memory[b],inputs_embeds=inputs_embeds[b],attention_mask=attention_mask[b],
                     #num_beams=4,
                     do_sample=True,
@@ -739,10 +771,11 @@ def trainer(LAST_STEP,train_dataset,NumPar):
         batch_decoder_attention_masks=[]
         for data in batch_data:
             input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
-            batch_num_decoder_input_ids.append(num_decoder_input_ids)
+            batch_num_decoder_input_ids.append(num_decoder_input_ids)# 또 각각 decoder_input_ids에서도 <s>는 떼내야 한다.
+            #이건 데이터셋 만들때 처리해줘야 할듯하다.
             batch_decoder_attention_masks.append(decoder_attention_masks)
             if first:
-                batch_input_ids=input_ids
+                batch_input_ids=input_ids # 생각해보니 input_ids에서 </s>를 떼야 될 것 같다.
                 batch_attention_mask=attention_mask
                 batch_prev_predictions=prompt
                 first=False
@@ -1120,7 +1153,7 @@ def do_eval(steps,dataset,NumPar):
             print("generation output shape : ")
             print(batch_prev_predictions.shape) # (b,300)
             predictions = tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
-            labels = tokenizer.batch_decode(batch_labels,skip_special_tokens=True)
+            labels = tokenizer.batch_decode(_batch_labels,skip_special_tokens=True)
             print("batch output")            
             print(batch_prev_predictions.shape) #(아마도 b,1024)?
             
