@@ -1159,9 +1159,9 @@ def do_eval(steps,dataset,NumPar):
             
             whole_output=[]
             for length,output in enumerate(outputs):
-                print("개별 generation output의 shape -> batch 1이 없을 지도?")
+                # print("개별 generation output의 shape -> batch 1이 없을 지도?")
                 # print(output.shape)
-                # output=output[:,input_lengths[length]:]
+                output=output[:,input_lengths[length]:]
                 padding=torch.LongTensor([[tokenizer.pad_token_id]*(500-output.shape[1])]).to(gpu_name)
                 # print(padding.shape)
                 whole_output.append(torch.cat((output,padding,),1))
@@ -1211,12 +1211,15 @@ def do_eval(steps,dataset,NumPar):
             if debug:
                 print("-----------")
                 print("predictions")
-                print(predictions[0]) 
+                print(predictions) 
                 
                 print("golden label")
-                print(labels[0]) #batch 중 1개만 본다.
+                print(labels) #batch 중 1개만 본다.
                 input()
+            
 
+            _predictions_len=0
+            _labels_len=0
 
             for u,pred in enumerate(predictions):
                 
@@ -1234,7 +1237,10 @@ def do_eval(steps,dataset,NumPar):
                 wr.writerow([str(steps),str(index),batch_input_text[b],labels[b],predictions[b]]) # 전부 plain string이다.
                 index+=1
         
-
+        print("whole predict")
+        print(one_prediction)
+        print("whole label")
+        print(one_label)
         
         for u,_one_prediction in enumerate(one_prediction):
             _in_self_bleu_one=0
