@@ -458,16 +458,16 @@ class Network(nn.Module):
             # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다. decoder input에만큼은 eos가 있어야 할 것 같다. eos 토큰을 추가해준다.
             input_id=torch.cat((input_id,decoder_input_ids[b],torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
             padding=torch.LongTensor([[tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(input_id))]).to(gpu_name)
-            valid_input_ids.append(torch.cat((input_id,padding,),1))
+            valid_input_ids.append(torch.cat((input_id,padding,),0))
 
             label=torch.cat((residual[1:],labels[b],torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
             padding=torch.LongTensor([[tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(label))]).to(gpu_name)
-            valid_labels.append(label)
+            valid_labels.append(torch.cat((label,padding,),0))
         
         input_ids=torch.stack(valid_input_ids,dim=0)
         labels=torch.stack(valid_labels,dim=0)
         
-        print("valid_input_ids.shape")
+        print("valid_input_ids.shape label과 차원이 같고 한칸씩 label이 밀려있어야 함.")
         print(input_ids)
         print(input_ids.shape)
         print("valid_labels.shape")
@@ -687,8 +687,8 @@ class Network(nn.Module):
             
 
             if debug:
-                print("after preprocessing, input ids: ")
-                print(tokenizer.batch_decode(input_ids,skip_special_tokens=False))
+                print("after preprocessing, input id: ")
+                print(tokenizer.batch_decode(input_id,skip_special_tokens=False))
             # valid_input_ids.append(torch.cat((input_id,padding,),1))
 
             inputs_embeds=self.shared(input_id)
@@ -699,6 +699,7 @@ class Network(nn.Module):
             if debug:
                 print("attention_mask")
                 print(attention_mask)
+                print(attention_mask.shape)
             
             outputs.append(self.gpt.generate(max_length=250,memory=memory[b],inputs_embeds=inputs_embeds[b],attention_mask=attention_mask[b],
                     #num_beams=4,
