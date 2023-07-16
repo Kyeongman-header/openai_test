@@ -1233,7 +1233,7 @@ def do_eval(steps,dataset,NumPar):
                 one_label[u].append(lab)
 
             batch_input_text=tokenizer.batch_decode(batch_input_ids,skip_special_tokens=True)
-            for b in batch_size:
+            for b in range(batch_size):
                 wr.writerow([str(steps),str(index),batch_input_text[b],labels[b],predictions[b]]) # 전부 plain string이다.
                 index+=1
         
@@ -1241,7 +1241,7 @@ def do_eval(steps,dataset,NumPar):
         print(one_prediction)
         print("whole label")
         print(one_label)
-        
+
         for u,_one_prediction in enumerate(one_prediction):
             _in_self_bleu_one=0
             _in_self_bleu_bi=0
