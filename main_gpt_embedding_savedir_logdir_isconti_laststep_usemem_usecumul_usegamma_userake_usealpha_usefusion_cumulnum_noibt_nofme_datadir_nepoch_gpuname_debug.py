@@ -47,7 +47,7 @@ def createFolder(directory):
     except OSError:
         print('Error Creating directory. ' + directory)
 
-LAST_PARAG=5
+LAST_PARAG=3
 
 save_dir=sys.argv[1] # rake_all
 log_dir=sys.argv[2] # rake_all
@@ -1255,7 +1255,10 @@ def do_eval(steps,dataset,NumPar):
             if len(_one_prediction)>1:
                 for j in range(len(_one_prediction)): 
                     except_one_prediction=_one_prediction[0:j]+_one_prediction[j+1:]
-                
+                    print("except one")
+                    print(except_one_prediction)
+                    print("one")
+                    print(_one_predictions[j])
             #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
                     self_bleu=_bleu.compute(predictions=[_one_prediction[j]],references=[except_one_prediction],max_order=5)
                     _in_self_bleu_one+=self_bleu['precisions'][0]
