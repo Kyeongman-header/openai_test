@@ -457,11 +457,13 @@ class Network(nn.Module):
             residual=input_id
             # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다. decoder input에만큼은 eos가 있어야 할 것 같다. eos 토큰을 추가해준다.
             input_id=torch.cat((input_id,decoder_input_ids[b],torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
-            padding=torch.LongTensor([[tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(input_id))]).to(gpu_name)
+            padding=torch.LongTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(input_id))).to(gpu_name)
+            print(input_id.shape)
+            print(padding.shape)
             valid_input_ids.append(torch.cat((input_id,padding,),0))
 
             label=torch.cat((residual[1:],labels[b],torch.LongTensor([tokenizer.eos_token_id]).to(gpu_name)),dim=0)
-            padding=torch.LongTensor([[tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(label))]).to(gpu_name)
+            padding=torch.LongTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+conti_keyword_prev_predictions.shape[1]+decoder_input_ids.shape[1]+15-len(label))).to(gpu_name)
             valid_labels.append(torch.cat((label,padding,),0))
         
         input_ids=torch.stack(valid_input_ids,dim=0)
