@@ -553,8 +553,8 @@ class Network(nn.Module):
             prev_predictions=torch.mean(prev_predictions,dim=1)
             prev_predictions=torch.unsqueeze(prev_predictions,dim=1)
             prev_predictions=prev_predictions.expand((-1,memory.shape[1],-1)) 
-            print("prev_predictions shape:")
-            print(prev_predictions.shape) # (b,400,d_model)
+            # print("prev_predictions shape:")
+            # print(prev_predictions.shape) # (b,400,d_model)
             
             #memory -> (b,400,d)
             #prev_prediction -> (b,400,d)
@@ -567,8 +567,8 @@ class Network(nn.Module):
             # 원래는 embedding avg가 아닌 그냥 prev_prediction 전체를 썼었다.
         else:
            memory=None
-        print("after gru, memory : " )
-        print(memory.shape)
+        # print("after gru, memory : " )
+        # print(memory.shape)
 
         if use_cumulative :
 
@@ -585,8 +585,8 @@ class Network(nn.Module):
         else:
             cumulation=None
         
-        print("final cumulation's shape :")
-        print(cumulation.shape) #(b,len,d_model)
+        # print("final cumulation's shape :")
+        # print(cumulation.shape) #(b,len,d_model)
         
         
         if intro:
@@ -611,15 +611,15 @@ class Network(nn.Module):
         if USE_ALPHA:
             if short_prev.shape[1]>500:
                 short_prev=short_prev[:,-500:]
-            print("previous shape : ")
+            # print("previous shape : ")
             
             previous=torch.cat((short_prev,batch_eoprev_token_tensors,batch_decoding_token_tensors,batch_order_token_tensors,batch_next_is_ending_token_tensors),1)
-            print(previous.shape)
+            # print(previous.shape)
             previous=tokenizer.batch_decode(previous,skip_special_tokens=True)
-            print(previous)
+            # print(previous)
             previous=bert_tokenizer(previous,max_length=300,padding="max_length",
             truncation=True,return_tensors="pt").input_ids.to(gpu_name)
-            print(previous.shape)
+            # print(previous.shape)
             output=self.bert(previous)
             
             if USE_GAMMA:
@@ -679,7 +679,7 @@ class Network(nn.Module):
 
         
 
-            
+        input_lengths=[]
         outputs=[]
         for b in range(batch_size):
             
@@ -688,7 +688,7 @@ class Network(nn.Module):
             # 주의! gpt는 아예 eos 토큰이 있지도 않다.
             valid_position=torch.where((input_ids[b]!=tokenizer.pad_token_id) & (input_ids[b]!=tokenizer.eos_token_id))
             input_id=torch.unsqueeze(input_ids[b][valid_position],dim=0) #(1,dynamic_len)
-            
+            input_lengths.append(input_id.shape[1])
 
             if debug:
                 print("after preprocessing, input id: ")
@@ -730,7 +730,7 @@ class Network(nn.Module):
                         #encoder_no_repeat_ngram_size=3,
                         repetition_penalty=3.5,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
-        return outputs,memory
+        return outputs,memory,input_lengths
 
 config = AutoConfig.from_pretrained('gpt2-medium')
 bert_config = AutoConfig.from_pretrained("prajjwal1/bert-tiny")
@@ -1149,19 +1149,23 @@ def do_eval(steps,dataset,NumPar):
             # print(batch_conti_prev_predictions.shape)
             # print(batch_conti_keyword_prev_predictions.shape)
             
-
-            outputs,new_memory = model.generate(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
+            # gpt의 경우 generation output이 input ids를 포함하고 있다.
+            # 이걸 떼어내기 위해서 input_lengths 배열을 받아온다.
+            outputs,new_memory, input_lengths = model.generate(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
             
             if use_memory is True:
                 memory=new_memory
             
             whole_output=[]
-            for output in outputs:
+            for length,output in enumerate(outputs):
                 print("개별 generation output의 shape -> batch 1이 없을 지도?")
                 print(output.shape)
+                output=output[input_lengths[length]:]
                 padding=torch.LongTensor([[tokenizer.pad_token_id]*(300-output.shape[1])]).to(gpu_name)
                 whole_output.append(torch.cat((output,padding,),1))
+            
+            print(whole_output)
 
             
             batch_prev_predictions=torch.cat(whole_output,dim=0)
