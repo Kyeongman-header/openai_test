@@ -1376,22 +1376,22 @@ def do_eval(steps,dataset,NumPar):
 
 for epoch in range(num_epochs):  # loop over the dataset multiple times
 
-    # for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+    for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
-    #     with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-    #             train_dataset = pickle.load(fi)
-    #     num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
-    #     lr_scheduler = get_scheduler(
-    #         name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
-    #     )
+        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                train_dataset = pickle.load(fi)
+        num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
+        lr_scheduler = get_scheduler(
+            name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+        )
         
-    #     progress_bar = tqdm(range(num_training_steps))
+        progress_bar = tqdm(range(num_training_steps))
 
         
         
-    #     trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i)
-    #     writer.close()
-    #     LAST_STEP=0
+        trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i)
+        writer.close()
+        LAST_STEP=0
     
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
