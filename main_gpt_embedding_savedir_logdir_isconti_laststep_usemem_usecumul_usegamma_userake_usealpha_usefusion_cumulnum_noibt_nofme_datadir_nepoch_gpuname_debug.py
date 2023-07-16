@@ -704,7 +704,11 @@ class Network(nn.Module):
                 print("attention_mask")
                 print(attention_mask)
                 print(attention_mask.shape)
-            
+
+            one_memory=torch.unsqueeze(memory[b],dim=0)
+            one_context=torch.unsqueeze(cumulation[b],dim=0)
+            one_alpha=torch.unsqueeze(alpha[b],dim=0)
+            one_beta=torch.unsqueeze(beta[b],dim=0)
             # outputs.append(self.gpt.generate(max_length=250,memory=memory[b],inputs_embeds=inputs_embeds[b],attention_mask=attention_mask[b],
             #         #num_beams=4,
             #         do_sample=True,
@@ -713,7 +717,7 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.gpt.generate(max_new_tokens=250,memory=memory[b],input_ids=input_id,
+            outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,input_ids=input_id,
                         #attention_mask=attention_mask[b],
                         # num_beams=4,
                         do_sample=True,
@@ -721,7 +725,7 @@ class Network(nn.Module):
                         top_p=0.95,
                         no_repeat_ngram_size=3,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
+                        repetition_penalty=3.5,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory
 
