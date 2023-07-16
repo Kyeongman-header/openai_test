@@ -1401,7 +1401,7 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
         if len(train_dataset)==0:
             continue
         
-        num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
+        num_training_steps = len(train_dataset)-LAST_STEP
         lr_scheduler = get_scheduler(
             name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
         )
