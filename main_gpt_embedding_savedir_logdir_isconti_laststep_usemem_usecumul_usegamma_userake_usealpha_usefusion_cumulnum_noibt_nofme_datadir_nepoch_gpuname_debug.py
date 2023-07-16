@@ -47,7 +47,7 @@ def createFolder(directory):
     except OSError:
         print('Error Creating directory. ' + directory)
 
-LAST_PARAG=3
+LAST_PARAG=1
 
 save_dir=sys.argv[1] # rake_all
 log_dir=sys.argv[2] # rake_all
@@ -1237,10 +1237,10 @@ def do_eval(steps,dataset,NumPar):
                 wr.writerow([str(steps),str(index),batch_input_text[b],labels[b],predictions[b]]) # 전부 plain string이다.
                 index+=1
         
-        print("whole predict")
-        print(one_prediction)
-        print("whole label")
-        print(one_label)
+        # print("whole predict")
+        # print(one_prediction)
+        # print("whole label")
+        # print(one_label)
 
         for u,_one_prediction in enumerate(one_prediction):
             _in_self_bleu_one=0
@@ -1255,10 +1255,11 @@ def do_eval(steps,dataset,NumPar):
             if len(_one_prediction)>1:
                 for j in range(len(_one_prediction)): 
                     except_one_prediction=_one_prediction[0:j]+_one_prediction[j+1:]
-                    print("except one")
-                    print(except_one_prediction)
-                    print("one")
-                    print(_one_predictions[j])
+                    # print("except one")
+                    # print(except_one_prediction)
+                    # print("one")
+                    # print(_one_prediction[j])
+                    # 학습이 제대로 안되서 generate 길이가 0이면, 이게 제대로 작동 안한다.
             #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
                     self_bleu=_bleu.compute(predictions=[_one_prediction[j]],references=[except_one_prediction],max_order=5)
                     _in_self_bleu_one+=self_bleu['precisions'][0]
@@ -1393,22 +1394,25 @@ def do_eval(steps,dataset,NumPar):
 
 for epoch in range(num_epochs):  # loop over the dataset multiple times
 
-    # for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+    for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
-    #     with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-    #             train_dataset = pickle.load(fi)
-    #     num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
-    #     lr_scheduler = get_scheduler(
-    #         name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
-    #     )
+        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                train_dataset = pickle.load(fi)
+        if len(train_dataset)==0:
+            continue
         
-    #     progress_bar = tqdm(range(num_training_steps))
+        num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
+        lr_scheduler = get_scheduler(
+            name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+        )
+        
+        progress_bar = tqdm(range(num_training_steps))
 
         
         
-    #     trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduer=lr_schedulr,progress_bar=progress_bar)
-    #     writer.close()
-    #     LAST_STEP=0
+        trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduer=lr_scheduler,progress_bar=progress_bar)
+        writer.close()
+        LAST_STEP=0
     
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
@@ -1420,6 +1424,8 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
         with open("pickle_data/"+valid_dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
                 valid_dataset = pickle.load(fi)
         
+        if len(valid_dataset)==0:
+            continue
         do_eval(steps=epoch,dataset=valid_dataset,NumPar=i)
     
 
