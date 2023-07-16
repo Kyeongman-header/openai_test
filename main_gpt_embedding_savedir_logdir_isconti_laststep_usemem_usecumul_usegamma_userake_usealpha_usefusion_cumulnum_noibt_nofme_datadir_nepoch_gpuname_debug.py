@@ -1410,7 +1410,7 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
 
         
         
-        trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduer=lr_scheduler,progress_bar=progress_bar)
+        trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
         writer.close()
         LAST_STEP=0
     
