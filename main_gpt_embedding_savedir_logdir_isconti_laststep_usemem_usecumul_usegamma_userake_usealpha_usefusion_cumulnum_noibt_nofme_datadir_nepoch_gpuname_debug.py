@@ -772,7 +772,7 @@ if CONTINUOUSLY_TRAIN:
 # num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
 
 
-def trainer(LAST_STEP,train_dataset,NumPar):
+def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
     whole_count_for_save=0
     #do_eval(0)
     model.train()
@@ -1161,8 +1161,9 @@ def do_eval(steps,dataset,NumPar):
             for length,output in enumerate(outputs):
                 print("개별 generation output의 shape -> batch 1이 없을 지도?")
                 print(output.shape)
-                output=output[input_lengths[length]:]
+                output=output[:,input_lengths[length]:]
                 padding=torch.LongTensor([[tokenizer.pad_token_id]*(300-output.shape[1])]).to(gpu_name)
+                print(padding.shape)
                 whole_output.append(torch.cat((output,padding,),1))
             
             print(whole_output)
@@ -1400,7 +1401,7 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
 
         
         
-    #     trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i)
+    #     trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduer=lr_schedulr,progress_bar=progress_bar)
     #     writer.close()
     #     LAST_STEP=0
     
