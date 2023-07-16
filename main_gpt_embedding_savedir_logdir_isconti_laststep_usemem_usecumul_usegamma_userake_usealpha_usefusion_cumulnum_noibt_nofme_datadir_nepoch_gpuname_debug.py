@@ -455,16 +455,17 @@ class Network(nn.Module):
 
             valid_position=torch.where((input_ids[b]!=tokenizer.pad_token_id) & (input_ids[b]!=tokenizer.eos_token_id))
             input_id=input_ids[b][valid_position]
-            
-            valid_decoder_position=torch.where((decoder_input_ids[b]!=tokenizer.pad_token_id))
-            decoder_input_id=decoder_input_ids[b][valid_decoder_position]
 
             residual=input_id
             # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다고 한다. eos 토큰은 굳이 필요 없는 듯 하다.
-            input_id=torch.cat((input_id,decoder_input_id),dim=0)
+            input_id=torch.cat((input_id,decoder_input_ids[b]),dim=0)
             padding=torch.LongTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+decoder_input_ids.shape[1]-len(input_id))).to(gpu_name)
             valid_input_ids.append(torch.cat((input_id,padding,),0))
+            print("input id shape")
+            print(input_id.shape)
             label=torch.cat((residual[1:],labels[b]),dim=0)
+            print("label shape")
+            print(label.shape)
             valid_labels.append(torch.cat((label,padding,),0))
         
         input_ids=torch.stack(valid_input_ids,dim=0)
