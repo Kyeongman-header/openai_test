@@ -694,10 +694,10 @@ class Network(nn.Module):
                 print("after preprocessing, input id: ")
                 print(tokenizer.batch_decode(input_id,skip_special_tokens=False))
             # valid_input_ids.append(torch.cat((input_id,padding,),1))
-
-            inputs_embeds=self.shared(input_id)
-            print("input embeds shape : ")
-            print(inputs_embeds.shape)
+            # 주의! gpt는 generation에서 embedding을 input으로 못 넣음
+            # inputs_embeds=self.shared(input_id)
+            # print("input embeds shape : ")
+            # print(inputs_embeds.shape)
 
             attention_mask=torch.where(input_id==tokenizer.pad_token_id,0,1).to(gpu_name)
             if debug:
@@ -705,15 +705,22 @@ class Network(nn.Module):
                 print(attention_mask)
                 print(attention_mask.shape)
             
-            outputs.append(self.gpt.generate(max_length=250,memory=memory[b],inputs_embeds=inputs_embeds[b],attention_mask=attention_mask[b],
-                    #num_beams=4,
-                    do_sample=True,
-                    top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
-                    top_p=0.95,
-                    no_repeat_ngram_size=3,
-                    #encoder_no_repeat_ngram_size=3,
-                    repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-        
+            # outputs.append(self.gpt.generate(max_length=250,memory=memory[b],inputs_embeds=inputs_embeds[b],attention_mask=attention_mask[b],
+            #         #num_beams=4,
+            #         do_sample=True,
+            #         top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
+            #         top_p=0.95,
+            #         no_repeat_ngram_size=3,
+            #         #encoder_no_repeat_ngram_size=3,
+            #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
+            outputs.append(self.gpt.generate(max_length=250,memory=memory[b],input_ids=input_id,attention_mask=attention_mask[b],
+                        #num_beams=4,
+                        do_sample=True,
+                        top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
+                        top_p=0.95,
+                        no_repeat_ngram_size=3,
+                        #encoder_no_repeat_ngram_size=3,
+                        repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory
 
