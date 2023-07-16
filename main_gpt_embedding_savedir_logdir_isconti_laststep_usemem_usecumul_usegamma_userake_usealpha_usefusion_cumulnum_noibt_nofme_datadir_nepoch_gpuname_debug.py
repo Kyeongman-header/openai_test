@@ -325,8 +325,8 @@ class Network(nn.Module):
             prev_predictions=torch.mean(prev_predictions,dim=1)
             prev_predictions=torch.unsqueeze(prev_predictions,dim=1)
             prev_predictions=prev_predictions.expand((-1,memory.shape[1],-1)) 
-            print("prev_predictions shape:")
-            print(prev_predictions.shape) # (b,400,d_model)
+            # print("prev_predictions shape:")
+            # print(prev_predictions.shape) # (b,400,d_model)
             
             #memory -> (b,400,d)
             #prev_prediction -> (b,400,d)
@@ -339,8 +339,8 @@ class Network(nn.Module):
             # 원래는 embedding avg가 아닌 그냥 prev_prediction 전체를 썼었다.
         else:
            memory=None
-        print("after gru, memory : " )
-        print(memory.shape)
+        # print("after gru, memory : " )
+        # print(memory.shape)
 
         if use_cumulative :
 
@@ -357,8 +357,8 @@ class Network(nn.Module):
         else:
             cumulation=None
         
-        print("final cumulation's shape :")
-        print(cumulation.shape) #(b,len,d_model)
+        # print("final cumulation's shape :")
+        # print(cumulation.shape) #(b,len,d_model)
         
         
         if intro:
@@ -383,15 +383,15 @@ class Network(nn.Module):
         if USE_ALPHA:
             if short_prev.shape[1]>500:
                 short_prev=short_prev[:,-500:]
-            print("previous shape : ")
+            # print("previous shape : ")
             
             previous=torch.cat((short_prev,batch_eoprev_token_tensors,batch_decoding_token_tensors,batch_order_token_tensors,batch_next_is_ending_token_tensors),1)
-            print(previous.shape)
+            # print(previous.shape)
             previous=tokenizer.batch_decode(previous,skip_special_tokens=True)
-            print(previous)
+            # print(previous)
             previous=bert_tokenizer(previous,max_length=300,padding="max_length",
             truncation=True,return_tensors="pt").input_ids.to(gpu_name)
-            print(previous.shape)
+            # print(previous.shape)
             output=self.bert(previous)
             
             if USE_GAMMA:
@@ -461,22 +461,22 @@ class Network(nn.Module):
             input_id=torch.cat((input_id,decoder_input_ids[b]),dim=0)
             padding=torch.LongTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+decoder_input_ids.shape[1]-len(input_id))).to(gpu_name)
             valid_input_ids.append(torch.cat((input_id,padding,),0))
-            print("input id shape")
-            print(input_id.shape)
+            # print("input id shape")
+            # print(input_id.shape)
             label=torch.cat((residual[1:],labels[b]),dim=0)
-            print("label shape")
-            print(label.shape)
+            # print("label shape")
+            # print(label.shape)
             valid_labels.append(torch.cat((label,padding,),0))
         
         input_ids=torch.stack(valid_input_ids,dim=0)
         labels=torch.stack(valid_labels,dim=0)
         
-        print("valid_input_ids.shape label과 차원이 같고 한칸씩 label이 밀려있어야 함.")
-        print(input_ids)
-        print(input_ids.shape)
-        print("valid_labels.shape")
-        print(labels)
-        print(labels.shape)
+        # print("valid_input_ids.shape label과 차원이 같고 한칸씩 label이 밀려있어야 함.")
+        # print(input_ids)
+        # print(input_ids.shape)
+        # print("valid_labels.shape")
+        # print(labels)
+        # print(labels.shape)
 
         
         if debug:
@@ -486,8 +486,8 @@ class Network(nn.Module):
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
         inputs_embeds=self.shared(input_ids)
-        print("input embeds shape : ")
-        print(inputs_embeds.shape)
+        # print("input embeds shape : ")
+        # print(inputs_embeds.shape)
 
         # list_attention_mask=[[0]*input_ids.shape[1]]*batch_size
 
@@ -791,13 +791,13 @@ def trainer(LAST_STEP,train_dataset,NumPar):
                 batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
         batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
         batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
-        print("batch dataset shapes")
-        print(batch_input_ids.shape) #(b, 200)
-        print(batch_attention_mask.shape) 
-        print(batch_num_decoder_input_ids.shape) # (N,b,250)
-        print(batch_decoder_attention_masks.shape) # (N, b, 250)
-        print(batch_prev_predictions.shape) #(b,150)
-        print("batch dataset shape ends")
+        # print("batch dataset shapes")
+        # print(batch_input_ids.shape) #(b, 200)
+        # print(batch_attention_mask.shape) 
+        # print(batch_num_decoder_input_ids.shape) # (N,b,250)
+        # print(batch_decoder_attention_masks.shape) # (N, b, 250)
+        # print(batch_prev_predictions.shape) #(b,150)
+        # print("batch dataset shape ends")
         batch_input_ids=batch_input_ids.to(gpu_name)
         batch_attention_mask=batch_attention_mask.to(gpu_name)
         batch_num_decoder_input_ids=batch_num_decoder_input_ids.to(gpu_name)
@@ -808,8 +808,8 @@ def trainer(LAST_STEP,train_dataset,NumPar):
     
         
         emb_input_ids = shared(batch_input_ids)
-        print("emb input ids shape : ")
-        print(emb_input_ids.shape)
+        # print("emb input ids shape : ")
+        # print(emb_input_ids.shape)
 
         memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
         memory = torch.cat((emb_input_ids,memory),dim=1) # (B,400,1024)
@@ -882,9 +882,9 @@ def trainer(LAST_STEP,train_dataset,NumPar):
             whole=NumPar
             batch_conti_prev_predictions=batch_conti_prev_predictions.to(gpu_name) #(b,~)
             batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
-            print("batch conti prev predction과 batch conti keyword prev prediction shape.")
-            print(batch_conti_prev_predictions.shape)
-            print(batch_conti_keyword_prev_predictions.shape)
+            # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
+            # print(batch_conti_prev_predictions.shape)
+            # print(batch_conti_keyword_prev_predictions.shape)
 
             outputs,new_memory = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
@@ -902,16 +902,12 @@ def trainer(LAST_STEP,train_dataset,NumPar):
             # 이게 잘못됐다. teacher forcing일땐 상관 없는데.
             # gpt에서는 output이 input을 싸그리 포함하고 있으므로,
             # output에서 input 부분만을 빼고 보는 게 필요하다
-            batch_prev_predictions=batch_prev_predictions[:,-249:]
-
-            print("batch output(물론 teacher forcing하면 250이 될거임)") 
-            print(batch_prev_predictions)           
-            print(batch_prev_predictions.shape) #(아마도 b,1024)?
+            
             if TEACHER_FORCING_MEMORY:
                 batch_prev_predictions = _batch_labels # teacher forcing으로, memory와 cumul에 쓰이는 prev prediction은 training 과정에선 golden label 사용!
                 #(b,250)
-                print("teacher forcing 하면 batch prev predition:")
-                print(batch_prev_predictions.shape)
+                # print("teacher forcing 하면 batch prev predition:")
+                # print(batch_prev_predictions.shape)
             if USE_FUSION is True:
                 use_cumulative=True ## fusion ver.
 
@@ -1047,13 +1043,13 @@ def do_eval(steps,dataset,NumPar):
                 batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
         batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
         batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
-        print("batch dataset shapes")
-        print(batch_input_ids.shape) #(b, 200)
-        print(batch_attention_mask.shape) 
-        print(batch_num_decoder_input_ids.shape) # (N,b,250)
-        print(batch_decoder_attention_masks.shape) # (N, b, 250)
-        print(batch_prev_predictions.shape) #(b,150)
-        print("batch dataset shape ends")
+        # print("batch dataset shapes")
+        # print(batch_input_ids.shape) #(b, 200)
+        # print(batch_attention_mask.shape) 
+        # print(batch_num_decoder_input_ids.shape) # (N,b,250)
+        # print(batch_decoder_attention_masks.shape) # (N, b, 250)
+        # print(batch_prev_predictions.shape) #(b,150)
+        # print("batch dataset shape ends")
         batch_input_ids=batch_input_ids.to(gpu_name)
         batch_attention_mask=batch_attention_mask.to(gpu_name)
         batch_num_decoder_input_ids=batch_num_decoder_input_ids.to(gpu_name)
@@ -1064,8 +1060,8 @@ def do_eval(steps,dataset,NumPar):
     
         
         emb_input_ids = shared(batch_input_ids)
-        print("emb input ids shape : ")
-        print(emb_input_ids.shape)
+        # print("emb input ids shape : ")
+        # print(emb_input_ids.shape)
 
         memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
         memory = torch.cat((emb_input_ids,memory),dim=1) # (B,400,1024)
@@ -1134,9 +1130,9 @@ def do_eval(steps,dataset,NumPar):
             whole=NumPar
             batch_conti_prev_predictions=batch_conti_prev_predictions.to(gpu_name) #(b,~)
             batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
-            print("batch conti prev predction과 batch conti keyword prev prediction shape.")
-            print(batch_conti_prev_predictions.shape)
-            print(batch_conti_keyword_prev_predictions.shape)
+            # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
+            # print(batch_conti_prev_predictions.shape)
+            # print(batch_conti_keyword_prev_predictions.shape)
             
 
             outputs,new_memory = model.generate(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
@@ -1372,22 +1368,22 @@ def do_eval(steps,dataset,NumPar):
 
 for epoch in range(num_epochs):  # loop over the dataset multiple times
 
-    for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+    # for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
-        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                train_dataset = pickle.load(fi)
-        num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
-        lr_scheduler = get_scheduler(
-            name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
-        )
+    #     with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+    #             train_dataset = pickle.load(fi)
+    #     num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
+    #     lr_scheduler = get_scheduler(
+    #         name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+    #     )
         
-        progress_bar = tqdm(range(num_training_steps))
+    #     progress_bar = tqdm(range(num_training_steps))
 
         
         
-        trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i)
-        writer.close()
-        LAST_STEP=0
+    #     trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i)
+    #     writer.close()
+    #     LAST_STEP=0
     
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
