@@ -446,7 +446,7 @@ class Network(nn.Module):
         
         valid_input_ids=[]
         valid_labels=[]
-        for b in batch_size:
+        for b in range(batch_size):
             # GPT STYLE!! BART에서는 EOS 토큰을 뺄 필요도 없고, PAD만 날리면 되며, 애초에 DECODER INPUT IDS랑 합치지도 않는다.
             
             # 사실 bart에서는 pad를 날릴 필요조차 없다(어차피 attention mask) 즉 이 코드 전체가 gpt에서만 쓰인다.
