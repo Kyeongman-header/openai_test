@@ -1160,24 +1160,20 @@ def do_eval(steps,dataset,NumPar):
             whole_output=[]
             for length,output in enumerate(outputs):
                 print("개별 generation output의 shape -> batch 1이 없을 지도?")
-                print(output.shape)
-                output=output[:,input_lengths[length]:]
-                padding=torch.LongTensor([[tokenizer.pad_token_id]*(300-output.shape[1])]).to(gpu_name)
-                print(padding.shape)
+                # print(output.shape)
+                # output=output[:,input_lengths[length]:]
+                padding=torch.LongTensor([[tokenizer.pad_token_id]*(500-output.shape[1])]).to(gpu_name)
+                # print(padding.shape)
                 whole_output.append(torch.cat((output,padding,),1))
             
-            print(whole_output)
 
             
             batch_prev_predictions=torch.cat(whole_output,dim=0)
 
-            print("generation output shape : ")
-            print(batch_prev_predictions.shape) # (b,300)
+            # print("generation output shape : ")
+            # print(batch_prev_predictions.shape) # (b,300)
             predictions = tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
             labels = tokenizer.batch_decode(_batch_labels,skip_special_tokens=True)
-            print("batch output")            
-            print(batch_prev_predictions.shape) #(아마도 b,1024)?
-            
             
             if USE_FUSION is True:
                 use_cumulative=True ## fusion ver.
