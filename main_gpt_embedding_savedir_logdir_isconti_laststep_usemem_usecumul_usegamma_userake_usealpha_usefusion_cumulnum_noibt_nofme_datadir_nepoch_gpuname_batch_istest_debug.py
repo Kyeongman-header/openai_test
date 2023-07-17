@@ -799,15 +799,10 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
     # print(batch_sep_token_tensors.shape)
     for i in range(LAST_STEP, len(train_dataset),batch_size):
     # get the inputs; data is a list of [inputs, labels]
-        if i+batch_size<len(train_dataset):
+        if i+batch_size>len(train_dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
-            print("i")
-            print(i)
-            print("batch_size")
-            print(batch_size)
-            print("length t")
-            print(len(train_dataset))
+            
             break
 
         mini_running_loss=0.0
@@ -1077,7 +1072,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
     model.eval()
     for i in trange(0, eval_num, batch_size):
-        if i+batch_size<eval_num or i+batch_size<len(dataset):
+        if i+batch_size>eval_num or i+batch_size>len(dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
             break
