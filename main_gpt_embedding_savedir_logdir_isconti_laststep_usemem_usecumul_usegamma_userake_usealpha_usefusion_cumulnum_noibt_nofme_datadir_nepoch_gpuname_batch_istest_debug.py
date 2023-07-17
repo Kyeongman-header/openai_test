@@ -1443,7 +1443,7 @@ if IS_TEST:
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
         
-        with open("pickle_data/"+"test_"+dataset_dir+"/level_2.pickle","rb") as fi:
+        with open("pickle_data/"+"test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
             test_dataset = pickle.load(fi)
         
         if len(test_dataset)==0:
