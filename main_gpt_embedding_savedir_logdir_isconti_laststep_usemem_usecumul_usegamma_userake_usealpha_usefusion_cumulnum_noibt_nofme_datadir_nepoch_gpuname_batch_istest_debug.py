@@ -1368,7 +1368,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     
 
     self_num=0
-    for j in range(N):
+    for j in range(N if N<eval_num else eval_num):
         except_whole_labels=whole_labels[0:j]+whole_labels[j+1:1000]
         real_self_bleu=_bleu.compute(predictions=[whole_labels[j]],references=[except_whole_labels],max_order=5)
         r_self_bleu_one+=real_self_bleu['precisions'][0]
@@ -1381,9 +1381,11 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         self_num+=1
     print(r_self_bleu_one)
     print(r_self_bleu_bi)
-    
+
     print(whole_predictions)
-    for j in range(N): # 1000개에 대해서만 self-bleu.
+
+    p_self_num=0
+    for j in range(N if N<eval_num else eval_num): # 1000개에 대해서만 self-bleu.
         except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:1000]
         print(except_whole_predictions)
         #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
@@ -1393,22 +1395,23 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         self_bleu_tri+=self_bleu['precisions'][2]
         self_bleu_four+=self_bleu['precisions'][3]
         self_bleu_fif+=self_bleu['precisions'][4]
+        p_self_num+=1
     
     
 
     
     whole_predictions_len=whole_predictions_len/whole_num
     whole_labels_len=(whole_labels_len/whole_num)
-    self_bleu_one=self_bleu_one/N
-    self_bleu_bi=self_bleu_bi/N
-    self_bleu_tri=self_bleu_tri/N
-    self_bleu_four=self_bleu_four/N
-    self_bleu_fif=self_bleu_fif/N
-    r_self_bleu_one=r_self_bleu_one/N
-    r_self_bleu_bi=r_self_bleu_bi/N
-    r_self_bleu_tri=r_self_bleu_tri/N
-    r_self_bleu_four=r_self_bleu_four/N
-    r_self_bleu_fif=r_self_bleu_fif/N
+    self_bleu_one=self_bleu_one/p_self_num
+    self_bleu_bi=self_bleu_bi/p_self_num
+    self_bleu_tri=self_bleu_tri/p_self_num
+    self_bleu_four=self_bleu_four/p_self_num
+    self_bleu_fif=self_bleu_fif/p_self_num
+    r_self_bleu_one=r_self_bleu_one/self_num
+    r_self_bleu_bi=r_self_bleu_bi/self_num
+    r_self_bleu_tri=r_self_bleu_tri/self_num
+    r_self_bleu_four=r_self_bleu_four/self_num
+    r_self_bleu_fif=r_self_bleu_fif/self_num
 
     print("avg prediction len : " + str(whole_predictions_len))
     print("self_bleu one : " + str(self_bleu_one))
