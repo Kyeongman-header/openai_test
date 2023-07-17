@@ -1460,6 +1460,7 @@ if IS_TEST:
 
         do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
         eval_first=False
+        torch.cuda.empty_cache()
 
 else:
     for epoch in range(num_epochs):  # loop over the dataset multiple times
@@ -1482,8 +1483,9 @@ else:
 
             
             trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
-            writer.close()
+            
             LAST_STEP=0
+            torch.cuda.empty_cache()
         
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
@@ -1500,10 +1502,11 @@ else:
             print("the valid set for " + str(i) + " Num Paragramphs.")
             do_eval(steps=epoch,dataset=valid_dataset,NumPar=i,eval_num=8,eval_first=eval_first)
             eval_first=False
+            torch.cuda.empty_cache()
         
 
 
-
+writer.close()
     
 
 
