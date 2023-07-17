@@ -24,7 +24,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 rouge = evaluate.load('rouge')
 meteor= evaluate.load('meteor')
 max_length=1024
-batch_size=4
+batch_size=2
 class Contrastive_Dataset(torch.utils.data.Dataset):
     def __init__(self, input_ids,attention_mask,global_attention_mask,label):
         self.input_ids=input_ids
@@ -53,8 +53,9 @@ class MyBaseDataset(Dataset):
     
 
 def return_dataset_2(target,source,prompt): # target을 5분할 한다.
+    one_datasets=[]
     whole_datasets=[]
-    for i in range(30):
+    for i in range(100):
         whole_datasets.append([])
 
     for t in trange(len(target)):
@@ -116,6 +117,8 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
     ]"""
         
         whole_datasets[len(split_s)].append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask, "prompt":prompt_id })
+        one_datasets.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask, "prompt":prompt_id })
+        
         # (30, N, data) -> n이 index, i이 데이터셋이 된다.
         # 사용시에는, (각각 순서대로의 param num에 대해서 따로 학습을 해주며, (0~30)
         # (N, data) 만 남으니까 얘네를 batch size별로 다시 묶으면
@@ -127,7 +130,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         # 음... 그리고 conti_prev_predictions이나 keyword_prev_predictions, memory, 같은 것도 전부 (1,~)이 아니라 (b,~)인지 shape을 확인해야.
         # 
      
-    return whole_datasets
+    return whole_datasets,one_datasets
 
 def return_dataset(target,source):
     labels=tokenizer(target,max_length=max_length,padding="max_length",
@@ -283,10 +286,12 @@ def save_tokenize_pickle_data_1(file,total_source,total_target,last_target):
     """
 def save_tokenize_pickle_data_2(file,total_source,total_target,last_target):
     
-    createFolder("pickle_data/"+'gpt'+file)
-    dataset2=return_dataset_2(last_target,total_target,total_source)
+    createFolder("pickle_data/"+'gpt_'+file)
+    dataset2,one_dataset2=return_dataset_2(last_target,total_target,total_source)
     print("dataset 2 making end")
     for step,dataset in enumerate(dataset2):
-        with open("pickle_data/"+'gpt'+file+"/level_2_"+str(step)+".pickle","wb") as f:
+        with open("pickle_data/"+'gpt_'+file+"/level_2_"+str(step)+".pickle","wb") as f:
             pickle.dump(dataset,f)
+    with open("pickle_data/"+'gpt_'+file+"/level_2_whole.pickle","wb") as f:
+            pickle.dump(one_dataset2,f)
     
