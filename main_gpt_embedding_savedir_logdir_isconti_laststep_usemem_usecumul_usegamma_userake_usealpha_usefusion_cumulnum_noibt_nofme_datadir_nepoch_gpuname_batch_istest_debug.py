@@ -817,121 +817,118 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
         first=True
         batch_num_decoder_input_ids=[]
         batch_decoder_attention_masks=[]
+        for data in batch_data:
+            input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
+            batch_num_decoder_input_ids.append(num_decoder_input_ids)# 또 각각 decoder_input_ids에서도 <s>는 떼내야 한다.
+            #이건 데이터셋 만들때 처리해줘야 할듯하다.
+            batch_decoder_attention_masks.append(decoder_attention_masks)
+            if first:
+                batch_input_ids=input_ids # 생각해보니 input_ids에서 </s>를 떼야 될 것 같다.
+                batch_attention_mask=attention_mask
+                batch_prev_predictions=prompt
+                first=False
+            else:
+                batch_input_ids=torch.cat((batch_input_ids,input_ids),dim=0)
+                batch_attention_mask=torch.cat((batch_attention_mask,attention_mask),dim=0)
+                
+                batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
+        batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
+        batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
+        # print("batch dataset shapes")
+        # print(batch_input_ids.shape) #(b, 200)
+        # print(batch_attention_mask.shape) 
+        # print(batch_num_decoder_input_ids.shape) # (N,b,250)
+        # print(batch_decoder_attention_masks.shape) # (N, b, 250)
+        # print(batch_prev_predictions.shape) #(b,150)
+        # print("batch dataset shape ends")
+        batch_input_ids=batch_input_ids.to(gpu_name)
+        batch_attention_mask=batch_attention_mask.to(gpu_name)
+        batch_num_decoder_input_ids=batch_num_decoder_input_ids.to(gpu_name)
+        batch_decoder_attention_masks=batch_decoder_attention_masks.to(gpu_name)
+        batch_prev_predictions=batch_prev_predictions.to(gpu_name)
         
-        with autocast(): # fp16 autocast 기법으로 약간의 memory를 절약한다.
-
-            for data in batch_data:
-                input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
-                batch_num_decoder_input_ids.append(num_decoder_input_ids)# 또 각각 decoder_input_ids에서도 <s>는 떼내야 한다.
-                #이건 데이터셋 만들때 처리해줘야 할듯하다.
-                batch_decoder_attention_masks.append(decoder_attention_masks)
-                if first:
-                    batch_input_ids=input_ids # 생각해보니 input_ids에서 </s>를 떼야 될 것 같다.
-                    batch_attention_mask=attention_mask
-                    batch_prev_predictions=prompt
-                    first=False
-                else:
-                    batch_input_ids=torch.cat((batch_input_ids,input_ids),dim=0)
-                    batch_attention_mask=torch.cat((batch_attention_mask,attention_mask),dim=0)
-                    
-                    batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
-            batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
-            batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
-            # print("batch dataset shapes")
-            # print(batch_input_ids.shape) #(b, 200)
-            # print(batch_attention_mask.shape) 
-            # print(batch_num_decoder_input_ids.shape) # (N,b,250)
-            # print(batch_decoder_attention_masks.shape) # (N, b, 250)
-            # print(batch_prev_predictions.shape) #(b,150)
-            # print("batch dataset shape ends")
-            batch_input_ids=batch_input_ids.to(gpu_name)
-            batch_attention_mask=batch_attention_mask.to(gpu_name)
-            batch_num_decoder_input_ids=batch_num_decoder_input_ids.to(gpu_name)
-            batch_decoder_attention_masks=batch_decoder_attention_masks.to(gpu_name)
-            batch_prev_predictions=batch_prev_predictions.to(gpu_name)
-            
-            count=0
+        count=0
+    
         
+        emb_input_ids = shared(batch_input_ids)
+        # print("emb input ids shape : ")
+        # print(emb_input_ids.shape)
+
+        memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
+        memory = torch.cat((emb_input_ids,memory),dim=1) # (B,400,1024)
+        #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
+        batch_cumul_prev_predictions=[]
+        batch_keyword_prev_predictions=[]
+        batch_conti_keyword_prev_predictions=torch.zeros_like(torch.empty(batch_size,1),dtype=torch.long).to(gpu_name)
+        batch_conti_prev_predictions=torch.zeros_like(torch.empty(batch_size,1),dtype=torch.long).to(gpu_name)
+        
+    #print(prev_predictions)
+        #torch.cuda.empty_cache() # manually freeing gpu memory.
+        for count in range(NumPar):
+
+            _batch_decoder_input_ids=batch_num_decoder_input_ids[count] #(b,250)
+            _batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
+
             
-            emb_input_ids = shared(batch_input_ids)
-            # print("emb input ids shape : ")
-            # print(emb_input_ids.shape)
+            # dd=torch.unsqueeze(decoder_input_id[:-1],dim=0).to(gpu_name)
+            # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
+        # input_ids 맨 앞에 이전 preceding context를 합친다.
+            # label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
 
-            memory = torch.zeros_like(torch.empty(batch_size,batch_input_ids.shape[1],d_model)).to(gpu_name) # first memory.
-            memory = torch.cat((emb_input_ids,memory),dim=1) # (B,400,1024)
-            #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
-            batch_cumul_prev_predictions=[]
-            batch_keyword_prev_predictions=[]
-            batch_conti_keyword_prev_predictions=torch.zeros_like(torch.empty(batch_size,1),dtype=torch.long).to(gpu_name)
-            batch_conti_prev_predictions=torch.zeros_like(torch.empty(batch_size,1),dtype=torch.long).to(gpu_name)
+            # _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
+            _batch_labels=_batch_decoder_input_ids #(b,250)
+            # 주의!!! gpt는 이렇게 하지만 bart는 위에 코드로 해야함!
+            _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
+            _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
             
-        #print(prev_predictions)
-            #torch.cuda.empty_cache() # manually freeing gpu memory.
-            for count in range(NumPar):
+            if len(batch_cumul_prev_predictions)>0:
+                batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
+                batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
 
-                _batch_decoder_input_ids=batch_num_decoder_input_ids[count] #(b,250)
-                _batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
-
-                
-                # dd=torch.unsqueeze(decoder_input_id[:-1],dim=0).to(gpu_name)
-                # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
-            # input_ids 맨 앞에 이전 preceding context를 합친다.
-                # label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
-
-                # _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
-                _batch_labels=_batch_decoder_input_ids #(b,250)
-                # 주의!!! gpt는 이렇게 하지만 bart는 위에 코드로 해야함!
-                _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
-                _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
-
-                # zero the parameter gradients
-                optimizer.zero_grad()
-                
-                if len(batch_cumul_prev_predictions)>0:
-                    batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
-                    batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
-
-                if use_cumulative and count>0:
-                    length=len(batch_cumul_prev_predictions)
-                    #print("one step." + str(length))
-                    for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
-                        #print(prev_predictions.shape)
-                        if batch_input_ids.shape[1]+(batch_cumul_prev_predictions[j].shape[1])+batch_conti_prev_predictions.shape[1]>1000:
-                            #print("break")
-                            #print(cumul_prev_predictions[j].shape)
-                            break
-                        batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
-                        batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
-                
-                intro=False
-                tail=False
-                
-                if count==0:
-                    intro=True
-                    if USE_FUSION is True:
-                        use_memory=True
-                        ## fusion ver.
-                
+            if use_cumulative and count>0:
+                length=len(batch_cumul_prev_predictions)
+                #print("one step." + str(length))
+                for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
+                    #print(prev_predictions.shape)
+                    if batch_input_ids.shape[1]+(batch_cumul_prev_predictions[j].shape[1])+batch_conti_prev_predictions.shape[1]>1000:
+                        #print("break")
+                        #print(cumul_prev_predictions[j].shape)
+                        break
+                    batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
+                    batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
+            
+            intro=False
+            tail=False
+            
+            if count==0:
+                intro=True
                 if USE_FUSION is True:
-                    use_cumulative=False ## fusion ver.
-                
-                if count==len(num_decoder_input_ids)-1:
-                    tail=True
-                    intro=False
-                    if USE_FUSION is True:
-                        use_memory=False
-                        use_cumulative=True
-                        ## fusion ver.
+                    use_memory=True
+                    ## fusion ver.
+            
+            if USE_FUSION is True:
+                use_cumulative=False ## fusion ver.
+            
+            if count==len(num_decoder_input_ids)-1:
+                tail=True
+                intro=False
+                if USE_FUSION is True:
+                    use_memory=False
+                    use_cumulative=True
+                    ## fusion ver.
 
 
-                order=count+1 #order는 1부터 시작한다.
-                whole=NumPar
-                batch_conti_prev_predictions=batch_conti_prev_predictions.to(gpu_name) #(b,~)
-                batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
-                # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
-                # print(batch_conti_prev_predictions.shape)
-                # print(batch_conti_keyword_prev_predictions.shape)
-                
+            order=count+1 #order는 1부터 시작한다.
+            whole=NumPar
+            batch_conti_prev_predictions=batch_conti_prev_predictions.to(gpu_name) #(b,~)
+            batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
+            # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
+            # print(batch_conti_prev_predictions.shape)
+            # print(batch_conti_keyword_prev_predictions.shape)
+            with autocast():
                 outputs,new_memory = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 loss = outputs.loss
