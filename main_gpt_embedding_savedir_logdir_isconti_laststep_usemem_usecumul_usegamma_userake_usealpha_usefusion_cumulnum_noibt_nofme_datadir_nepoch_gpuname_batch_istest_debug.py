@@ -1379,10 +1379,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             
         #print(_real_self_bleu)
         self_num+=1
-    print(r_self_bleu_one)
-    print(r_self_bleu_bi)
-
-    print(whole_predictions)
+    
 
     p_self_num=0
     for j in range(N if N<eval_num else eval_num): # 1000개에 대해서만 self-bleu.
@@ -1461,7 +1458,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=4,eval_first=eval_first)
+        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
         eval_first=False
 
 else:
