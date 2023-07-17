@@ -71,7 +71,10 @@ dataset_dir=sys.argv[14]
 num_epochs=int(sys.argv[15])
 
 gpu_name=sys.argv[16] # cuda:0
-debug = int(sys.argv[17]) # 1
+batch_size=int(sys.argv[17])
+is_test=int(sys.argv[18])
+debug = int(sys.argv[19]) # 1
+
 if debug ==1:
     debug=True
 else:
@@ -80,9 +83,17 @@ else:
 createFolder('second_level')
 PATH = './second_level/'+save_dir+'.tar'
 writer = SummaryWriter("./runs/"+log_dir)
+
+IS_TEST=False
+if is_test==1:
+    IS_TEST=True
+
 CONTINUOUSLY_TRAIN=False
 if conti==1:
     CONTINUOUSLY_TRAIN=True
+if IS_TEST:
+    CONTINUOUSLY_TRAIN=True
+
 LAST_STEP=last_step
 
 USE_MEMORY=True
@@ -134,6 +145,8 @@ else:
 
 print('save_dir : ' + save_dir)
 print('log_dir : ' + log_dir)
+print('is test? : ')
+print(IS_TEST)
 print('use_cumulative : ')
 print(USE_CUMULATIVE)
 print('cumul num :')
@@ -161,6 +174,8 @@ print("num_epochs:")
 print(num_epochs)
 print("gpu or cpu num :")
 print(gpu_name)
+print("batch size ")
+print(batch_size)
 print("debug : ")
 print(debug)
 # num_added_toks = tokenizer.add_tokens(["<plot>","</plot>","<prev>","</prev>","<by>","<sep>"],special_tokens=True)
@@ -784,6 +799,11 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
     # print(batch_sep_token_tensors.shape)
     for i in range(LAST_STEP, len(train_dataset),batch_size):
     # get the inputs; data is a list of [inputs, labels]
+        if i+batch_size<len(train_dataset):
+            # batch size에 안 맞는 마지막 set은 , 그냥 버린다
+            # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
+            break
+
         mini_running_loss=0.0
         batch_data=train_dataset[i:i+batch_size]
         first=True
@@ -969,9 +989,9 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
             mini_running_loss += loss.item()
         
         running_loss +=mini_running_loss / (count+1)
-        progress_bar.update(1)
+        progress_bar.update(batch_size)
         whole_count_for_save+=1
-        if i % 3000 == 2999:    # print every 2000 mini-batches
+        if i % batch_size*30 == 0:    # print every 2000 mini-batches
             print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / whole_count_for_save :.8f}, torch saved.')
             
             writer.add_scalar("Loss/train", running_loss/whole_count_for_save, epoch * len(train_dataset) + i)
@@ -994,11 +1014,31 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
             },PATH)
 
 
-def do_eval(steps,dataset,NumPar):
-    f = open(save_dir+'_generations_outputs.csv','w',encoding='utf-8', newline='')
+createFolder('GPTGenerations')
+createFolder('GPTGenerations/'+save_dir)
+if IS_TEST:
+    eval_dir='GPTGenerations/'+save_dir+'/test'
+    createFolder(eval_dir)
+else:
+    eval_dir='GPTGenerations/'+save_dir+'/valid'
+    createFolder(eval_dir)
+
+def do_eval(steps,dataset,NumPar,eval_num,eval_first):
+    
+    f = open(eval_dir+'/'+'generations_outputs_'+str(NumPar)+'.csv','w',encoding='utf-8', newline='')
     wr = csv.writer(f)
     wr.writerow(["steps","index","source","real text","generated_results"])
+    if eval_first:
+        f2 = open(eval_dir+'/'+'generations_outputs_whole.csv','w',encoding='utf-8', newline='')
+        wr2 = csv.writer(f2)
+        wr2.writerow(["steps","index","source","real text","generated_results"])
+    else:
+        f2 = open(eval_dir+'/'+'generations_outputs_whole.csv','a',encoding='utf-8', newline='')
+        wr2 = csv.writer(f2)
+        wr2.writerow(["steps","index","source","real text","generated_results"])
+    
     index=0
+
     N=100
     # 이건 문단 내부적으로  얼마나 반복성이 심한지 보는 지표이다.
     in_self_bleu_one=0
@@ -1030,7 +1070,11 @@ def do_eval(steps,dataset,NumPar):
     use_memory=USE_MEMORY
 
     model.eval()
-    for i in trange(0, 100, batch_size):
+    for i in trange(0, eval_num, batch_size):
+        if i+batch_size<eval_num or i+batch_size<len(dataset):
+            # batch size에 안 맞는 마지막 set은 , 그냥 버린다
+            # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
+            break
     # get the inputs; data is a list of [inputs, labels]]
         batch_data=dataset[i:i+batch_size]
         first=True
@@ -1235,6 +1279,7 @@ def do_eval(steps,dataset,NumPar):
             batch_input_text=tokenizer.batch_decode(batch_input_ids,skip_special_tokens=True)
             for b in range(batch_size):
                 wr.writerow([str(steps),str(index),batch_input_text[b],labels[b],predictions[b]]) # 전부 plain string이다.
+                wr2.writerow([str(steps),str(index),batch_input_text[b],labels[b],predictions[b]])
                 index+=1
         
         # print("whole predict")
@@ -1392,42 +1437,61 @@ def do_eval(steps,dataset,NumPar):
     writer.add_scalar("references avg len",whole_labels_len,steps)
     #writer.add_scalar("ppl",ppl.item(),steps)
 
-for epoch in range(num_epochs):  # loop over the dataset multiple times
-
+eval_first=True
+if IS_TEST:
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
-        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                train_dataset = pickle.load(fi)
-        if len(train_dataset)==0:
+        
+        with open("pickle_data/"+"test_"+dataset_dir+"/level_2.pickle","rb") as fi:
+            test_dataset = pickle.load(fi)
+        
+        if len(test_dataset)==0:
             continue
-        
-        num_training_steps = len(train_dataset)-LAST_STEP
-        lr_scheduler = get_scheduler(
-            name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
-        )
-        
-        progress_bar = tqdm(range(num_training_steps))
+        print("the test set for " + str(i) + " Num Paragramphs.")
 
-        
-        
-        trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
-        writer.close()
-        LAST_STEP=0
-    
-    for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        eval_first=False
 
-        valid_dataset_dir=""
-        if dataset_dir=="wp_rake":
-            valid_dataset_dir="gpt_valid_wp_rake"
-        else:
-            valid_dataset_dir="gpt_valid_"+dataset_dir
-        with open("pickle_data/"+valid_dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
-                valid_dataset = pickle.load(fi)
+else:
+    for epoch in range(num_epochs):  # loop over the dataset multiple times
+
+        for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+
+            with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+            if len(train_dataset)==0:
+                continue
+            
+            num_training_steps = len(train_dataset)-LAST_STEP
+            lr_scheduler = get_scheduler(
+                name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+            )
+            
+            progress_bar = tqdm(range(num_training_steps))
+
+            print("the training set for " + str(i) + " Num Paragramphs.")
+
+            
+            trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
+            writer.close()
+            LAST_STEP=0
         
-        if len(valid_dataset)==0:
-            continue
-        do_eval(steps=epoch,dataset=valid_dataset,NumPar=i)
-    
+        for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+
+            valid_dataset_dir=""
+            if dataset_dir=="wp_rake":
+                valid_dataset_dir="gpt_valid_wp_rake"
+            else:
+                valid_dataset_dir="gpt_valid_"+dataset_dir
+            with open("pickle_data/"+valid_dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
+                    valid_dataset = pickle.load(fi)
+            
+            if len(valid_dataset)==0:
+                continue
+            print("the valid set for " + str(i) + " Num Paragramphs.")
+            do_eval(steps=epoch,dataset=valid_dataset,NumPar=i,eval_num=8,eval_first=eval_first)
+            eval_first=False
+        
 
 
 
