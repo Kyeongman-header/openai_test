@@ -92,13 +92,13 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         #     print(len(tokenizer(s).input_ids))
         
         
-        input=tokenizer(source[t],max_length=150,padding="max_length",
+        input=tokenizer(source[t],max_length=100,padding="max_length",
             truncation=True,return_tensors="pt")
     
         labels=tokenizer(split_s,max_length=200,padding="max_length",
             truncation=True,return_tensors="pt")
         
-        prompt_id=tokenizer(prompt[t],max_length=150,padding="max_length",
+        prompt_id=tokenizer(prompt[t],max_length=100,padding="max_length",
             truncation=True,return_tensors="pt").input_ids
     
         input_ids=input.input_ids.to(torch.int32)
