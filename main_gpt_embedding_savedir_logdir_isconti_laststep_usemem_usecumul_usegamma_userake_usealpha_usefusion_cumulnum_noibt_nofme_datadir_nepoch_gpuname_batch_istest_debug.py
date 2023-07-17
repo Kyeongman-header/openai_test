@@ -1379,6 +1379,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             
         #print(_real_self_bleu)
         self_num+=1
+    print(r_self_bleu_one)
+    print(r_self_bleu_bi)
     
     print(whole_predictions)
     for j in range(N): # 1000개에 대해서만 self-bleu.
