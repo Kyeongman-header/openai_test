@@ -12,6 +12,7 @@ from rake_nltk import Rake
 r = Rake()
 import evaluate
 import sys
+from torch.cuda.amp import GradScaler, autocast
 
 metric = evaluate.load("rouge")
 meteor=evaluate.load("meteor")
@@ -509,10 +510,14 @@ class Network(nn.Module):
         # for i in range(input_ids.shape[1]):
         #     if input_ids[0][i]!=pad_token_id: # pad token id는 1이다. pad가 아니면 1로 해야 한다.
         #         list_attention_mask[0][i]=1
+
+
         attention_mask=torch.where(input_ids==tokenizer.pad_token_id,0,1).to(gpu_name)
         if debug:
             print("attention_mask")
             print(attention_mask)
+
+        labels=labels.type(torch.LongTensor).to(gpu_name)
 
         outputs = self.gpt(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
 
@@ -768,6 +773,7 @@ shared.requires_grad = False
 #생각해보니, shared에다가 init에서 복사한 embedding module만 계속 쓰는 거잖아?
 model = Network(shared,vocab_size, d_model,gpt, bert,bert_config).to(gpu_name)
 
+
 # -----------train ends, eval starts.
 # f = open('rake_fme_second_level_val_results.csv','w', newline='')
 # wr = csv.writer(f)
@@ -775,6 +781,7 @@ model = Network(shared,vocab_size, d_model,gpt, bert,bert_config).to(gpu_name)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=5e-6)
+scaler = GradScaler()
 
 if CONTINUOUSLY_TRAIN:
     checkpoint= torch.load(PATH)
@@ -921,17 +928,20 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
             # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
             # print(batch_conti_prev_predictions.shape)
             # print(batch_conti_keyword_prev_predictions.shape)
-
-            outputs,new_memory = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
+            with autocast():
+                outputs,new_memory = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
+                loss = outputs.loss
+                # loss.backward()
             
+            scaler.scale(loss).backward()
+
+
             if use_memory is True:
                 memory=new_memory
             
 
-            loss = outputs.loss
-            loss.backward()
-
+            
             
             batch_prev_predictions =  torch.argmax(outputs.logits, dim=-1) #(b,output_seq_len)
             
@@ -983,7 +993,11 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
                     print(batch_keywordsSTR)
             if debug:    
                 input()
-            optimizer.step()
+
+            # optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
+
             lr_scheduler.step()
             optimizer.zero_grad()
     # print statistics
@@ -1507,6 +1521,3 @@ else:
 
 
 writer.close()
-    
-
-
