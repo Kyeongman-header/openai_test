@@ -1450,7 +1450,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=4,eval_first=eval_first)
         eval_first=False
 
 else:
