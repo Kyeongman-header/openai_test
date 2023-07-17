@@ -393,9 +393,11 @@ class Network(nn.Module):
         else:
             batch_order_token_tensors=batch_ending_token_tensors
         
-
-        alpha=0.5
-        beta=0.5
+        alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
+        beta=torch.FloatTensor([[0.5]]).to(gpu_name)
+        alpha=torch.cat([alpha]*batch_size,dim=0)
+        beta=torch.cat([beta]*batch_size,dim=0)
+        
         if USE_ALPHA:
             if short_prev.shape[1]>500:
                 short_prev=short_prev[:,-500:]
@@ -419,7 +421,7 @@ class Network(nn.Module):
             else:
                 alpha=self.rogistic(output.pooler_output)
                 alpha=self.sigmoid(alpha) 
-                alpha=torch.unsqueeze(torch.mul((alpha),1/2),dim=1) #(b,1)
+                alpha=torch.unsqueeze(torch.unsqueeze(torch.mul((alpha),1/2),dim=1),dim=1) #(b,1)
                 #attention의 결과가 3 dim이면 (b,1,1)이어야함
                 # 2 dim -> (b,1) 이 맞음
                 beta=0.5-alpha
@@ -626,8 +628,11 @@ class Network(nn.Module):
             batch_order_token_tensors=batch_ending_token_tensors
         
 
-        alpha=0.5
-        beta=0.5
+        alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
+        beta=torch.FloatTensor([[0.5]]).to(gpu_name)
+        alpha=torch.cat([alpha]*batch_size,dim=0)
+        beta=torch.cat([beta]*batch_size,dim=0)
+
         if USE_ALPHA:
             if short_prev.shape[1]>500:
                 short_prev=short_prev[:,-500:]
@@ -651,7 +656,7 @@ class Network(nn.Module):
             else:
                 alpha=self.rogistic(output.pooler_output)
                 alpha=self.sigmoid(alpha) 
-                alpha=torch.unsqueeze(torch.mul((alpha),1/2),dim=1) #(b,1)
+                alpha=torch.unsqueeze(torch.unsqueeze(torch.mul((alpha),1/2),dim=1),dim=1) #(b,1)
                 #attention의 결과가 3 dim이면 (b,1,1)이어야함
                 # 2 dim -> (b,1) 이 맞음
                 beta=0.5-alpha
