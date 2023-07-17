@@ -101,10 +101,10 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         prompt_id=tokenizer(prompt[t],max_length=100,padding="max_length",
             truncation=True,return_tensors="pt").input_ids
     
-        # input_ids=input.input_ids.to(torch.int32)
-        # input_attention=input.attention_mask.to(torch.int32)
-        # decoder_input_ids=labels.input_ids.to(torch.int32)
-        # decoder_attention_mask=labels.attention_mask.to(torch.int32)
+        input_ids=input.input_ids #.to(torch.int32)
+        input_attention=input.attention_mask #.to(torch.int32)
+        decoder_input_ids=labels.input_ids #.to(torch.int32)
+        decoder_attention_mask=labels.attention_mask #.to(torch.int32)
         #print(input_ids.shape)
         #print(input_attention.shape)
         #print(decoder_input_ids.shape)
