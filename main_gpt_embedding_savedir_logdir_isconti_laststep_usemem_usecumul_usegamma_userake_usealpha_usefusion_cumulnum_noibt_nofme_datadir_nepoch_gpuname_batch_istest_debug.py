@@ -1298,6 +1298,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             whole_one_prediction=' '.join(_one_prediction)
             whole_one_label=' '.join(one_label[u])
 
+
             if len(_one_prediction)>1:
                 for j in range(len(_one_prediction)): 
                     except_one_prediction=_one_prediction[0:j]+_one_prediction[j+1:]
@@ -1364,19 +1365,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
     print("len of sample generation : " + str(whole_num))
     
-    print(whole_predictions)
-
-    for j in range(N): # 1000개에 대해서만 self-bleu.
-        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:1000]
-        print(except_whole_predictions)
-        #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
-        self_bleu=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=5)
-        self_bleu_one+=self_bleu['precisions'][0]
-        self_bleu_bi+=self_bleu['precisions'][1]
-        self_bleu_tri+=self_bleu['precisions'][2]
-        self_bleu_four+=self_bleu['precisions'][3]
-        self_bleu_fif+=self_bleu['precisions'][4]
     
+
     self_num=0
     for j in range(N):
         except_whole_labels=whole_labels[0:j]+whole_labels[j+1:1000]
@@ -1389,6 +1379,20 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             
         #print(_real_self_bleu)
         self_num+=1
+    
+    print(whole_predictions)
+    for j in range(N): # 1000개에 대해서만 self-bleu.
+        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:1000]
+        print(except_whole_predictions)
+        #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
+        self_bleu=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=5)
+        self_bleu_one+=self_bleu['precisions'][0]
+        self_bleu_bi+=self_bleu['precisions'][1]
+        self_bleu_tri+=self_bleu['precisions'][2]
+        self_bleu_four+=self_bleu['precisions'][3]
+        self_bleu_fif+=self_bleu['precisions'][4]
+    
+    
 
     
     whole_predictions_len=whole_predictions_len/whole_num
