@@ -802,6 +802,12 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
         if i+batch_size<len(train_dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
+            print("i")
+            print(i)
+            print("batch_size")
+            print(batch_size)
+            print("length t")
+            print(len(train_dataset))
             break
 
         mini_running_loss=0.0
