@@ -539,7 +539,7 @@ class Network(nn.Module):
 
         labels=labels.type(torch.LongTensor).to(gpu_name)
 
-        outputs = self.gpt(input_ids = None, inputs_embeds=inputs_embeds, attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
+        outputs = self.gpt(input_ids = None, inputs_embeds=inputs_embeds, attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=None,alpha=None,beta=None)
 
         return outputs,memory
     
@@ -761,9 +761,9 @@ class Network(nn.Module):
                 print(attention_mask.shape)
 
             one_memory=torch.unsqueeze(memory[b],dim=0)
-            one_context=torch.unsqueeze(cumulation[b],dim=0)
-            one_alpha=torch.unsqueeze(alpha[b],dim=0)
-            one_beta=torch.unsqueeze(beta[b],dim=0)
+            # one_context=torch.unsqueeze(cumulation[b],dim=0)
+            # one_alpha=torch.unsqueeze(alpha[b],dim=0)
+            # one_beta=torch.unsqueeze(beta[b],dim=0)
             valid_contiprev_position=torch.where((conti_prev_predictions[b]!=tokenizer.pad_token_id))
             one_conti_prev_prediction=torch.unsqueeze(conti_prev_predictions[b][valid_contiprev_position],dim=0)
             # outputs.append(self.gpt.generate(max_length=250,memory=memory[b],inputs_embeds=inputs_embeds[b],attention_mask=attention_mask[b],
@@ -785,7 +785,7 @@ class Network(nn.Module):
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=3.5,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
+                        repetition_penalty=3.5,early_stopping=True,context=None,alpha=None,beta=None))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
