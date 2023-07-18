@@ -504,8 +504,8 @@ class Network(nn.Module):
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
         inputs_embeds=self.shared(input_ids)
-        print("input embeds shape : ")
-        print(inputs_embeds.shape)
+        # print("input embeds shape : ")
+        # print(inputs_embeds.shape)
 
         # list_attention_mask=[[0]*input_ids.shape[1]]*batch_size
 
