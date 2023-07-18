@@ -500,7 +500,7 @@ class Network(nn.Module):
             print("after preprocessing, labels: ")
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
-        # inputs_embeds=self.shared(input_ids)
+        inputs_embeds=self.shared(input_ids)
         # print("input embeds shape : ")
         # print(inputs_embeds.shape)
 
@@ -518,7 +518,7 @@ class Network(nn.Module):
 
         labels=labels.type(torch.LongTensor).to(gpu_name)
 
-        outputs = self.bart(input_ids = input_ids, attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
+        outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
 
         return outputs,memory
     
@@ -1508,26 +1508,18 @@ else:
             eval_first=False
             torch.cuda.empty_cache()
         
-
 for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
-            with open("pickle_data/"+"bart_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                    train_dataset = pickle.load(fi)
-            if len(train_dataset)==0:
-                continue
-            
-            num_training_steps = len(train_dataset)-LAST_STEP
-            lr_scheduler = get_scheduler(
-                name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
-            )
-            
-            progress_bar = tqdm(range(num_training_steps))
+        
+        with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
+            test_dataset = pickle.load(fi)
+        
+        if len(test_dataset)==0:
+            continue
+        print("the test set for " + str(i) + " Num Paragramphs.")
 
-            print("the training set for " + str(i) + " Num Paragramphs.")
+        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        eval_first=False
+        torch.cuda.empty_cache()
 
-            
-            trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
-            
-            LAST_STEP=0
-            torch.cuda.empty_cache()
 writer.close()

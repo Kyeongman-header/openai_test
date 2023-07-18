@@ -503,9 +503,9 @@ class Network(nn.Module):
             print("after preprocessing, labels: ")
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
-        # inputs_embeds=self.shared(input_ids)
-        # print("input embeds shape : ")
-        # print(inputs_embeds.shape)
+        inputs_embeds=self.shared(input_ids)
+        print("input embeds shape : ")
+        print(inputs_embeds.shape)
 
         # list_attention_mask=[[0]*input_ids.shape[1]]*batch_size
 
@@ -521,7 +521,7 @@ class Network(nn.Module):
 
         labels=labels.type(torch.LongTensor).to(gpu_name)
 
-        outputs = self.gpt(input_ids = input_ids,attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
+        outputs = self.gpt(input_ids = None, inputs_embeds=inputs_embeds, attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
 
         return outputs,memory
     
