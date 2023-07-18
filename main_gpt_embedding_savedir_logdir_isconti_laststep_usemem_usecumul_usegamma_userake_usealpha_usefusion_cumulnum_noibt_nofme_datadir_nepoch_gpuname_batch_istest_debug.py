@@ -1391,7 +1391,6 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     p_self_num=0
     for j in range(N if N<eval_num else eval_num): # 1000개에 대해서만 self-bleu.
         except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:1000]
-        print(except_whole_predictions)
         #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
         self_bleu=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=5)
         self_bleu_one+=self_bleu['precisions'][0]
