@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 #from datasets import load_metric
 import evaluate
 #tokenizer = AutoTokenizer.from_pretrained("t5-base")
-tokenizer = AutoTokenizer.from_pretrained("gpt2-medium")
+tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large")
 tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 pad_token_id=tokenizer.pad_token_id
 import csv
@@ -273,11 +273,11 @@ import pickle
 
 def save_tokenize_pickle_data_1(file,total_source,total_target,last_target):
     
-    createFolder("pickle_data/"+'gpt'+file)
+    createFolder("pickle_data/"+'bart'+file)
     dataset=return_dataset(total_target,total_source)
     
     print("dataset 1 making end")
-    with open("pickle_data/"+'gpt'+file+"/level_1.pickle","wb") as f:
+    with open("pickle_data/"+'bart'+file+"/level_1.pickle","wb") as f:
         pickle.dump(dataset, f)
     
     """    
@@ -286,12 +286,12 @@ def save_tokenize_pickle_data_1(file,total_source,total_target,last_target):
     """
 def save_tokenize_pickle_data_2(file,total_source,total_target,last_target):
     
-    createFolder("pickle_data/"+'gpt_'+file)
+    createFolder("pickle_data/"+'bart_'+file)
     dataset2,one_dataset2=return_dataset_2(last_target,total_target,total_source)
     print("dataset 2 making end")
     for step,dataset in enumerate(dataset2):
-        with open("pickle_data/"+'gpt_'+file+"/level_2_"+str(step)+".pickle","wb") as f:
+        with open("pickle_data/"+'bart_'+file+"/level_2_"+str(step)+".pickle","wb") as f:
             pickle.dump(dataset,f)
-    with open("pickle_data/"+'gpt_'+file+"/level_2_whole.pickle","wb") as f:
+    with open("pickle_data/"+'bart_'+file+"/level_2_whole.pickle","wb") as f:
             pickle.dump(one_dataset2,f)
     
