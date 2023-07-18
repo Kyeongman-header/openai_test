@@ -1385,14 +1385,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
    
     ppl=0
     #print("ppl is : " + str(ppl.item()))
-    gpt.cpu()
-    bert.cpu()
-    model.cpu()
-    #del model, bart, bert
-    #gc.collect()
-    #torch.cuda.empty_cache()
-    # 이제 모델은 필요 없으니 free 해준다.
-
+    
     in_self_bleu_one=in_self_bleu_one/whole_num
     in_self_bleu_bi=in_self_bleu_bi/whole_num
     in_self_bleu_tri=in_self_bleu_tri/whole_num
