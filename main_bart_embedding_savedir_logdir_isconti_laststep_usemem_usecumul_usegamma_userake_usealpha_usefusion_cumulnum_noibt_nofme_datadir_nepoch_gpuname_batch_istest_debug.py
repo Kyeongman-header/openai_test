@@ -763,7 +763,7 @@ config = AutoConfig.from_pretrained('facebook/bart-large')
 bert_config = AutoConfig.from_pretrained("prajjwal1/bert-tiny")
 
 vocab_size=config.vocab_size
-d_model=config.n_embd
+d_model=config.d_model
 
 if CONTINUOUSLY_TRAIN:
     bart =  AutoModelForCausalLM.from_config(config).to(gpu_name) # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
