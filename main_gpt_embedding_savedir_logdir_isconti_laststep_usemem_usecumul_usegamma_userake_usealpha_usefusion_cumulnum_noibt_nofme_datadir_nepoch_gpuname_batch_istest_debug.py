@@ -503,7 +503,7 @@ class Network(nn.Module):
             print("after preprocessing, labels: ")
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
-        inputs_embeds=self.shared(input_ids)
+        # inputs_embeds=self.shared(input_ids)
         # print("input embeds shape : ")
         # print(inputs_embeds.shape)
 
@@ -521,7 +521,7 @@ class Network(nn.Module):
 
         labels=labels.type(torch.LongTensor).to(gpu_name)
 
-        outputs = self.gpt(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
+        outputs = self.gpt(input_ids = input_ids,attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
 
         return outputs,memory
     
@@ -1514,6 +1514,18 @@ else:
             eval_first=False
             torch.cuda.empty_cache()
         
+for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
+        
+        with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
+            test_dataset = pickle.load(fi)
+        
+        if len(test_dataset)==0:
+            continue
+        print("the test set for " + str(i) + " Num Paragramphs.")
+
+        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        eval_first=False
+        torch.cuda.empty_cache()
 
 writer.close()
