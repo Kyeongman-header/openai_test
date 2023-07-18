@@ -517,6 +517,11 @@ class Network(nn.Module):
             print(tokenizer.batch_decode(labels,skip_special_tokens=False))
 
         inputs_embeds=self.shared(input_ids)
+        # !!!!------plotmachine ------ !!!
+        
+        inputs_embeds=torch.cat((avg_context,input_ids),dim=2)
+
+        # !!!!------plotmachine ------ !!!
         # print("input embeds shape : ")
         # print(inputs_embeds.shape)
 
@@ -719,11 +724,7 @@ class Network(nn.Module):
                 input_ids=torch.cat((batch_soplot_token_tensors,input_ids,batch_eoplot_token_tensors,batch_soprev_token_tensors,conti_keyword_prev_predictions,batch_eoprev_token_tensors,batch_order_token_tensors),1)
                 
         
-        # !!!!------plotmachine ------ !!!
         
-        input_ids=torch.cat((avg_context,input_ids),dim=1)
-
-        # !!!!------plotmachine ------ !!!
 
         
 
@@ -743,7 +744,13 @@ class Network(nn.Module):
                 print(tokenizer.batch_decode(input_id,skip_special_tokens=False))
             # valid_input_ids.append(torch.cat((input_id,padding,),1))
             # 주의! gpt는 generation에서 embedding을 input으로 못 넣음
-            # inputs_embeds=self.shared(input_id)
+            
+            inputs_embeds=self.shared(input_id)
+            # !!!!------plotmachine ------ !!!
+        
+            inputs_embeds=torch.cat((torch.unsqueeze(avg_context[b],dim=0),input_ids),dim=2)
+
+            # !!!!------plotmachine ------ !!!
             # print("input embeds shape : ")
             # print(inputs_embeds.shape)
 
@@ -767,7 +774,9 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,input_ids=input_id,
+            outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,
+                                             
+                                             #input_ids=input_id,
                         #attention_mask=attention_mask[b],
                         # num_beams=4,
                         do_sample=True,

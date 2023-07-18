@@ -720,7 +720,7 @@ class Network(nn.Module):
                 print(tokenizer.batch_decode(input_id,skip_special_tokens=False))
             # valid_input_ids.append(torch.cat((input_id,padding,),1))
             # 주의! gpt는 generation에서 embedding을 input으로 못 넣음
-            # inputs_embeds=self.shared(input_id)
+            inputs_embeds=self.shared(input_id)
             # print("input embeds shape : ")
             # print(inputs_embeds.shape)
 
@@ -744,7 +744,9 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,input_ids=input_id,
+            outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,
+                                             inputs_embeds=inputs_embeds,
+                                             #input_ids=input_id,
                         #attention_mask=attention_mask[b],
                         # num_beams=4,
                         do_sample=True,
@@ -1462,6 +1464,7 @@ if IS_TEST:
 
         
         with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
+            # 여기서 level_2_whole로 바꾸면, 똑같은 prompt와 keyword에 대해 length만 조절 가능한 length control 실험이 가능!
             test_dataset = pickle.load(fi)
         
         if len(test_dataset)==0:
