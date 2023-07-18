@@ -745,10 +745,10 @@ class Network(nn.Module):
             # valid_input_ids.append(torch.cat((input_id,padding,),1))
             # 주의! gpt는 generation에서 embedding을 input으로 못 넣음
             
-            inputs_embeds=self.shared(input_id)
-            # !!!!------plotmachine ------ !!!
+            # inputs_embeds=self.shared(input_id)
+            # # !!!!------plotmachine ------ !!!
         
-            inputs_embeds=torch.cat((torch.unsqueeze(avg_context[b],dim=0),input_ids),dim=2)
+            # inputs_embeds=torch.cat((torch.unsqueeze(avg_context[b],dim=0),input_ids),dim=2)
 
             # !!!!------plotmachine ------ !!!
             # print("input embeds shape : ")
@@ -775,8 +775,8 @@ class Network(nn.Module):
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
             outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,
-                                             
-                                             #input_ids=input_id,
+                                             preceding_context=torch.unsqueeze(avg_context[b],dim=0),
+                                             input_ids=input_id,
                         #attention_mask=attention_mask[b],
                         # num_beams=4,
                         do_sample=True,
