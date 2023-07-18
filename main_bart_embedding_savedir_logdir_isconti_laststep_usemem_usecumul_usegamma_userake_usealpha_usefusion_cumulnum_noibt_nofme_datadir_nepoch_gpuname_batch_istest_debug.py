@@ -766,10 +766,10 @@ vocab_size=config.vocab_size
 d_model=config.d_model
 
 if CONTINUOUSLY_TRAIN:
-    bart =  AutoModelForCausalLM.from_config(config).to(gpu_name) # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
+    bart =  AutoModelForSeq2SeqLM.from_config(config).to(gpu_name) # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
     bert = AutoModel.from_config(bert_config).to(gpu_name)
 else:
-    bart = AutoModelForCausalLM.from_pretrained("facebook/bart-base").to(gpu_name) # 최초 학습에서는 pretrained 된 bart를 사용
+    bart = AutoModelForSeq2SeqLM.from_pretrained("facebook/bart-base").to(gpu_name) # 최초 학습에서는 pretrained 된 bart를 사용
     bert = AutoModel.from_pretrained("prajjwal1/bert-tiny").to(gpu_name)
 
 bart.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedding unit이 추가가 된다.
@@ -1004,7 +1004,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
         running_loss +=mini_running_loss / (count+1)
         progress_bar.update(batch_size)
         whole_count_for_save+=1
-        if i % (batch_size*3000) == 0:    # print every 2000 mini-batches
+        if i % (batch_size*3000) == 0 and i!=0:    # print every 2000 mini-batches
             print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / whole_count_for_save :.8f}, torch saved.')
             
             writer.add_scalar("Loss/train", running_loss/whole_count_for_save, epoch * len(train_dataset) + i)
@@ -1025,7 +1025,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             },PATH)
-
+    print('torch saved.')
 
 createFolder('bartGenerations')
 createFolder('bartGenerations/'+save_dir)
@@ -1479,7 +1479,7 @@ else:
 
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
-            with open("pickle_data/"+"bart_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     train_dataset = pickle.load(fi)
             if len(train_dataset)==0:
                 continue
