@@ -25,15 +25,12 @@ for line in rdr:
     if first:
         first=False
         continue
-#    count+=1
+    count+=1
 #    if count>100:
 #        break
-    print(line[0])
-    print(line[1])
-    print(line[2])
     last_target.append(line[0])
     total_target.append(line[1])
     total_source.append(line[2])
-    input()
+    print(count,end='\r')
 
 save_tokenize_pickle_data_2(file,total_source,total_target,last_target)
