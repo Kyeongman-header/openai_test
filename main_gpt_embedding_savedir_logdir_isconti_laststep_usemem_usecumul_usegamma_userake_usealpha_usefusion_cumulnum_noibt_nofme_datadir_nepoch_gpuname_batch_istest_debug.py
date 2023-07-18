@@ -395,8 +395,8 @@ class Network(nn.Module):
         
         alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
         beta=torch.FloatTensor([[0.5]]).to(gpu_name)
-        alpha=torch.cat([alpha]*batch_size,dim=0)
-        beta=torch.cat([beta]*batch_size,dim=0)
+        alpha=torch.stack([alpha]*batch_size,dim=0)
+        beta=torch.stack([beta]*batch_size,dim=0)
         
         if USE_ALPHA:
             if short_prev.shape[1]>500:
@@ -630,8 +630,8 @@ class Network(nn.Module):
 
         alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
         beta=torch.FloatTensor([[0.5]]).to(gpu_name)
-        alpha=torch.cat([alpha]*batch_size,dim=0)
-        beta=torch.cat([beta]*batch_size,dim=0)
+        alpha=torch.stack([alpha]*batch_size,dim=0)
+        beta=torch.stack([beta]*batch_size,dim=0)
 
         if USE_ALPHA:
             if short_prev.shape[1]>500:

@@ -394,8 +394,11 @@ class Network(nn.Module):
             batch_order_token_tensors=batch_ending_token_tensors
         
 
-        alpha=0.5
-        beta=0.5
+        alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
+        beta=torch.FloatTensor([[0.5]]).to(gpu_name)
+        alpha=torch.stack([alpha]*batch_size,dim=0)
+        beta=torch.stack([beta]*batch_size,dim=0)
+        
         if USE_ALPHA:
             if short_prev.shape[1]>500:
                 short_prev=short_prev[:,-500:]
@@ -625,8 +628,11 @@ class Network(nn.Module):
             batch_order_token_tensors=batch_ending_token_tensors
         
 
-        alpha=0.5
-        beta=0.5
+        alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
+        beta=torch.FloatTensor([[0.5]]).to(gpu_name)
+        alpha=torch.stack([alpha]*batch_size,dim=0)
+        beta=torch.stack([beta]*batch_size,dim=0)
+        
         if USE_ALPHA:
             if short_prev.shape[1]>500:
                 short_prev=short_prev[:,-500:]
