@@ -421,7 +421,7 @@ class Network(nn.Module):
             else:
                 alpha=self.rogistic(output.pooler_output)
                 alpha=self.sigmoid(alpha) 
-                alpha=torch.unsqueeze(torch.unsqueeze(torch.mul((alpha),1/2),dim=1),dim=1) #(b,1)
+                alpha=torch.unsqueeze(torch.mul((alpha),1/2),dim=1) #(b,1,1)
                 #attention의 결과가 3 dim이면 (b,1,1)이어야함
                 # 2 dim -> (b,1) 이 맞음
                 beta=0.5-alpha
@@ -656,7 +656,7 @@ class Network(nn.Module):
             else:
                 alpha=self.rogistic(output.pooler_output)
                 alpha=self.sigmoid(alpha) 
-                alpha=torch.unsqueeze(torch.unsqueeze(torch.mul((alpha),1/2),dim=1),dim=1) #(b,1)
+                alpha=torch.unsqueeze(torch.mul((alpha),1/2),dim=1) #(b,1,1)
                 #attention의 결과가 3 dim이면 (b,1,1)이어야함
                 # 2 dim -> (b,1) 이 맞음
                 beta=0.5-alpha
