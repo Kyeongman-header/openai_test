@@ -1454,7 +1454,6 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 eval_first=True
 if IS_TEST:
     for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
-
         
         with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
             test_dataset = pickle.load(fi)
@@ -1469,7 +1468,7 @@ if IS_TEST:
 
 else:
     for epoch in range(num_epochs):  # loop over the dataset multiple times
-
+        LAST_PARAG=0
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
             with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
@@ -1493,7 +1492,7 @@ else:
             torch.cuda.empty_cache()
         
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
-
+            LAST_PARAG=0
             valid_dataset_dir=""
             if dataset_dir=="wp_rake":
                 valid_dataset_dir="bart_valid_wp_rake"

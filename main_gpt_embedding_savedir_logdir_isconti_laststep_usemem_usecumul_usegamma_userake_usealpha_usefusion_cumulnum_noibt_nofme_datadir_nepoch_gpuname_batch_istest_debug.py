@@ -1543,7 +1543,7 @@ else:
     for epoch in range(num_epochs):  # loop over the dataset multiple times
 
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
-
+            LAST_PARAG=0
             with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     train_dataset = pickle.load(fi)
             if len(train_dataset)==0:
@@ -1562,9 +1562,12 @@ else:
             trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
             
             LAST_STEP=0
+            
             torch.cuda.empty_cache()
         
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+
+            LAST_PARAG=0
 
             valid_dataset_dir=""
             if dataset_dir=="wp_rake":
@@ -1582,7 +1585,7 @@ else:
             torch.cuda.empty_cache()
         
 for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
-
+        LAST_PARAG=0
         
         with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
             test_dataset = pickle.load(fi)
