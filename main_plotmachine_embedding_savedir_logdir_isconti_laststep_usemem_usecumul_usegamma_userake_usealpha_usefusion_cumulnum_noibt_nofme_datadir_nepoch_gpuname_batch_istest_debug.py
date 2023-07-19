@@ -1117,7 +1117,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         if i+batch_size>eval_num or i+batch_size>len(dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
-            break
+            return
     # get the inputs; data is a list of [inputs, labels]]
         batch_data=dataset[i:i+batch_size]
         first=True
