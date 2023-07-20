@@ -937,7 +937,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
 
 
             order=count+1 #order는 1부터 시작한다.
-            whole=NumPar
+            whole=batch_num_decoder_input_ids.shape[0]
             batch_conti_prev_predictions=batch_conti_prev_predictions.to(gpu_name) #(b,~)
             batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
             # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
