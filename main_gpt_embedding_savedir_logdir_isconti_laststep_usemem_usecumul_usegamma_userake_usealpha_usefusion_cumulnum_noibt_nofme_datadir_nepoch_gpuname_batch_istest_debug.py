@@ -1531,9 +1531,9 @@ else:
                 
 
     
-    whole_new_dataset=random.shuffle(whole_new_dataset)
-    whole_new_dataset=random.shuffle(whole_new_dataset)
-    whole_new_dataset=random.shuffle(whole_new_dataset)
+    random.shuffle(whole_new_dataset)
+    random.shuffle(whole_new_dataset)
+    random.shuffle(whole_new_dataset)
     print("whole length : ")
     print(len(whole_new_dataset))
 
