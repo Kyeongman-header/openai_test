@@ -818,6 +818,9 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
             return
 
         mini_running_loss=0.0
+        
+        # ---- split style
+        """
         batch_data=train_dataset[i:i+batch_size]
         first=True
         batch_num_decoder_input_ids=[]
@@ -839,6 +842,13 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
                 batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
         batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
         batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
+        """
+        # --- split style
+
+        # --- total shuffle
+        batch_input_ids,batch_attention_mask,batch_prev_predictions,batch_num_decoder_input_ids,batch_decoder_attention_masks=(train_dataset[i]['batch_input_ids'],train_dataset[i]['batch_attention_mask'],train_dataset[i]['batch_prev_predictions'],train_dataset[i]['batch_num_decoder_input_ids'],train_dataset[i]['batch_decoder_attention_masks'])
+        # --- total shuffle
+
         # print("batch dataset shapes")
         # print(batch_input_ids.shape) #(b, 200)
         # print(batch_attention_mask.shape) 
@@ -869,7 +879,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
         
     #print(prev_predictions)
         #torch.cuda.empty_cache() # manually freeing gpu memory.
-        for count in range(NumPar):
+        for count in range(batch_num_decoder_input_ids.shape[0]):
 
             _batch_decoder_input_ids=batch_num_decoder_input_ids[count] #(b,250)
             _batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
@@ -1462,16 +1472,89 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
 else:
-    for epoch in range(num_epochs):  # loop over the dataset multiple times
-        LAST_PARAG=0
-        for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+    # ---total style.
+    
+    whole_new_dataset=[]
 
-            with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+    for i in trange(1,30): # 최대 30개 문단까지 있다.
+
+        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                train_dataset = pickle.load(fi)
+        if len(train_dataset)==0:
+            continue
+        
+        
+
+        # print("the training set for " + str(i) + " Num Paragramphs.")
+        for i in range(0, len(train_dataset),batch_size):
+            # get the inputs; data is a list of [inputs, labels]
+                if i+batch_size>len(train_dataset):
+                    # batch size에 안 맞는 마지막 set은 , 그냥 버린다
+                    # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
+                    
+                    break
+
+                mini_running_loss=0.0
+                batch_data=train_dataset[i:i+batch_size]
+                first=True
+                batch_num_decoder_input_ids=[]
+                batch_decoder_attention_masks=[]
+                for data in batch_data:
+                    input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
+                    batch_num_decoder_input_ids.append(num_decoder_input_ids)# 또 각각 decoder_input_ids에서도 <s>는 떼내야 한다.
+                    #이건 데이터셋 만들때 처리해줘야 할듯하다.
+                    batch_decoder_attention_masks.append(decoder_attention_masks)
+                    if first:
+                        batch_input_ids=input_ids # 생각해보니 input_ids에서 </s>를 떼야 될 것 같다.
+                        batch_attention_mask=attention_mask
+                        batch_prev_predictions=prompt
+                        first=False
+                    else:
+                        batch_input_ids=torch.cat((batch_input_ids,input_ids),dim=0)
+                        batch_attention_mask=torch.cat((batch_attention_mask,attention_mask),dim=0)
+                        
+                        batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
+                batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
+                batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
+
+                whole_new_dataset.append({'batch_input_ids':batch_input_ids,'batch_attention_mask':batch_attention_mask,'batch_prev_predictions':batch_prev_predictions,
+                                        'batch_num_decoder_input_ids' : batch_num_decoder_input_ids,'batch_decoder_attention_masks':batch_decoder_attention_masks})
+                
+
+    
+    whole_new_dataset=random.shuffle(whole_new_dataset)
+    whole_new_dataset=random.shuffle(whole_new_dataset)
+    whole_new_dataset=random.shuffle(whole_new_dataset)
+    print("whole length : ")
+    print(len(whole_new_dataset))
+
+    # # 이후,
+    num_training_steps = len(whole_new_dataset)
+    lr_scheduler = get_scheduler(
+        name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+    )
+    
+    progress_bar = tqdm(range(num_training_steps))
+    # # for 문 없이!
+    # trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar)
+    # trainer에서는 batch 배치하는 것 없이 바로 각 배열 원소별로 뽑아서 쓰면 된다!
+    #
+    # batch_input_ids,batch_attention_mask,batch_prev_predictions,batch_num_decoder_input_ids,batch_decoder_attention_masks=(train_dataset[i]['batch_input_ids'],train_dataset[i]['batch_attention_mask'],train_dataset[i]['batch_prev_predictions'],train_dataset[i]['batch_num_decoder_input_ids'],train_dataset[i]['batch_decoder_attention_masks'])
+    #
+    # ---total style.
+    
+    for epoch in range(num_epochs):  # loop over the dataset multiple times
+        
+        # ----split style.
+        """
+        for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+            LAST_PARAG=0
+            with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     train_dataset = pickle.load(fi)
             if len(train_dataset)==0:
                 continue
@@ -1489,7 +1572,14 @@ else:
             trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
             
             LAST_STEP=0
+            
             torch.cuda.empty_cache()
+        """
+        # ----split style.
+
+        # ---- total style
+        trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar)
+        # ---- total style
         
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             LAST_PARAG=0
@@ -1504,7 +1594,7 @@ else:
             if len(valid_dataset)==0:
                 continue
             print("the valid set for " + str(i) + " Num Paragramphs.")
-            do_eval(steps=epoch,dataset=valid_dataset,NumPar=i,eval_num=8,eval_first=eval_first)
+            do_eval(steps=i,dataset=valid_dataset,NumPar=i,eval_num=8,eval_first=eval_first)
             eval_first=False
             torch.cuda.empty_cache()
         
@@ -1518,7 +1608,7 @@ for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=0,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
