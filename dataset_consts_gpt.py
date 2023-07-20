@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 #from datasets import load_metric
 import evaluate
 #tokenizer = AutoTokenizer.from_pretrained("t5-base")
-tokenizer = AutoTokenizer.from_pretrained("gpt2-medium")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
 tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 pad_token_id=tokenizer.pad_token_id
 import csv
@@ -71,7 +71,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         for sentences in sentences_in_target:
             t_s=tokenizer(sentences).input_ids
             if len(t_s)+prev<=200:
-                now_sentences+=sentences
+                now_sentences+=sentences+' '
                 prev+=len(t_s)
             else:
                 prev=0

@@ -71,7 +71,7 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         for sentences in sentences_in_target:
             t_s=tokenizer(sentences).input_ids
             if len(t_s)+prev<=200:
-                now_sentences+=sentences
+                now_sentences+=sentences+' '
                 prev+=len(t_s)
             else:
                 prev=0
