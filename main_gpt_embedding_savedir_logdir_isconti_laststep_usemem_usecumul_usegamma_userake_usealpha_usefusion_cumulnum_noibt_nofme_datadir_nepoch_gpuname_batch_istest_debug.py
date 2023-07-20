@@ -799,7 +799,7 @@ if CONTINUOUSLY_TRAIN:
 # num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
 
 
-def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
+def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
     whole_count_for_save=0
     #do_eval(0)
     model.train()
@@ -1573,7 +1573,7 @@ else:
             print("the training set for " + str(i) + " Num Paragramphs.")
 
             
-            trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar)
+            trainer(LAST_STEP,train_dataset=train_dataset,NumPar=i,lr_scheduler=lr_scheduler,progress_bar=progress_bar,epoch=epoch)
             
             LAST_STEP=0
             
@@ -1582,7 +1582,7 @@ else:
         # ----split style.
 
         # ---- total style
-        trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar)
+        trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar,epoch=epoch)
         # ---- total style
 
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
