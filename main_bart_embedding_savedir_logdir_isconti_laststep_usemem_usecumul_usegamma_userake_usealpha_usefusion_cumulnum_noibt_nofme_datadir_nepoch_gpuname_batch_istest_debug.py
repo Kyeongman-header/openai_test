@@ -1534,9 +1534,9 @@ else:
     print(len(whole_new_dataset))
 
     # # 이후,
-    num_training_steps = len(whole_new_dataset)
+    num_training_steps = len(whole_new_dataset) * num_epochs
     lr_scheduler = get_scheduler(
-        name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+        name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
     )
     
     progress_bar = tqdm(range(num_training_steps))
