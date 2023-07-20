@@ -1014,7 +1014,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
         running_loss +=mini_running_loss / (count+1)
         progress_bar.update(1)
         whole_count_for_save+=1
-        if i % (batch_size*3000) == 0 and i!=0:    # print every 2000 mini-batches
+        if i % 5000 == 0 and i!=0:    # print every 2000 mini-batches
             print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / whole_count_for_save :.8f}, torch saved.')
             
             writer.add_scalar("Loss/train", running_loss/whole_count_for_save, epoch * len(train_dataset) + i)
@@ -1538,9 +1538,9 @@ else:
     print(len(whole_new_dataset))
 
     # # 이후,
-    num_training_steps = len(whole_new_dataset)
+    num_training_steps = len(whole_new_dataset) * num_epochs
     lr_scheduler = get_scheduler(
-        name="linear", optimizer=optimizer, num_warmup_steps=20000, num_training_steps=num_training_steps
+        name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
     )
     
     progress_bar = tqdm(range(num_training_steps))
