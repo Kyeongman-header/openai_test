@@ -809,13 +809,9 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
     use_memory=USE_MEMORY
     
     # print(batch_sep_token_tensors.shape)
-    for i in range(LAST_STEP, len(train_dataset),batch_size):
+    for i in range(LAST_STEP, len(train_dataset),1):
     # get the inputs; data is a list of [inputs, labels]
-        if i+batch_size>len(train_dataset):
-            # batch size에 안 맞는 마지막 set은 , 그냥 버린다
-            # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
-            
-            return
+        
 
         mini_running_loss=0.0
         
