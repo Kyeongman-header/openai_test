@@ -758,11 +758,11 @@ class Network(nn.Module):
                         num_beams=self.num_beams,
                         do_sample=True,
                         top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
-                        top_p=0.95,
+                        top_p=0.70,
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=3.5,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
+                        repetition_penalty=1.4,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
