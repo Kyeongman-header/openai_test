@@ -799,7 +799,7 @@ if CONTINUOUSLY_TRAIN:
 # num_training_steps = (num_epochs-1) * len(train_dataset) + len(train_dataset)-LAST_STEP
 
 
-def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar):
+def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
     whole_count_for_save=0
     #do_eval(0)
     model.train()
@@ -1479,7 +1479,7 @@ else:
 
     for i in trange(1,30): # 최대 30개 문단까지 있다.
 
-        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+        with open("pickle_data/"+"bart_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 train_dataset = pickle.load(fi)
         if len(train_dataset)==0:
             continue
@@ -1550,7 +1550,7 @@ else:
         """
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             LAST_PARAG=0
-            with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            with open("pickle_data/"+"bart_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     train_dataset = pickle.load(fi)
             if len(train_dataset)==0:
                 continue
