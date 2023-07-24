@@ -290,7 +290,7 @@ class Network(nn.Module):
        self.W3 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
        self.W4 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
        self.W5 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
-
+       self.num_beams=3
    def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,conti_keyword_prev_predictions,order,whole,intro,tail,use_cumulative,use_memory,use_rake):#prompt_ids,prompt_attention):
        #memory states update.
        
@@ -732,6 +732,13 @@ class Network(nn.Module):
 
             one_memory=torch.unsqueeze(memory[b],dim=0) if memory is not None else None
             one_context=torch.unsqueeze(cumulation[b],dim=0) if cumulation is not None else None
+            if self.num_beams > 1:
+                beam_memory = [one_memory] * self.num_beams
+                one_memory = torch.cat(beam_memory,dim=0)
+
+                beam_context = [one_context] * self.num_beams
+                one_context = torch.cat(beam_context,dim=0)
+
             one_alpha=torch.unsqueeze(alpha[b],dim=0)
             one_beta=torch.unsqueeze(beta[b],dim=0)
             valid_contiprev_position=torch.where((conti_prev_predictions[b]!=tokenizer.pad_token_id))
@@ -748,7 +755,7 @@ class Network(nn.Module):
                                              preceding_context=None,
                                              input_ids=input_id,
                         #attention_mask=attention_mask[b],
-                        num_beams=4,
+                        num_beams=self.num_beams,
                         do_sample=True,
                         top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
                         top_p=0.95,
