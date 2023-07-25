@@ -1064,7 +1064,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
 
         
     # do_eval(epoch * len(train_dataset)+i)
-    writer.flush()
+    # writer.flush()
     print('Finished - ' + str(NumPar) + ' - Training')
 
     torch.save({'epoch':num_epochs,
