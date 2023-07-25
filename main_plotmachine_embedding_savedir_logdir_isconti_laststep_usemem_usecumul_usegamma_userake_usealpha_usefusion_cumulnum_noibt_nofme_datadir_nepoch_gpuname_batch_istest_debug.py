@@ -276,7 +276,7 @@ class Network(nn.Module):
        self.shared.requires_grad = False
        #nn.Embedding(config.vocab_size, config.d_model) 
         # 이 shared는 역할상 고정되어 있어야 한다.
-       # 하지만 bart의 embedding layer는 학습을 거치면서 업데이트 된다.
+       # 하지만 gpt의 embedding layer는 학습을 거치면서 업데이트 된다.
        self.gpt = gpt
        if USE_ALPHA:
            self.bert = bert
@@ -477,9 +477,9 @@ class Network(nn.Module):
         valid_input_ids=[]
         valid_labels=[]
         for b in range(batch_size):
-            # GPT STYLE!! BART에서는 EOS 토큰을 뺄 필요도 없고, PAD만 날리면 되며, 애초에 DECODER INPUT IDS랑 합치지도 않는다.
+            # GPT STYLE!! gpt에서는 EOS 토큰을 뺄 필요도 없고, PAD만 날리면 되며, 애초에 DECODER INPUT IDS랑 합치지도 않는다.
             
-            # 사실 bart에서는 pad를 날릴 필요조차 없다(어차피 attention mask) 즉 이 코드 전체가 gpt에서만 쓰인다.
+            # 사실 gpt에서는 pad를 날릴 필요조차 없다(어차피 attention mask) 즉 이 코드 전체가 gpt에서만 쓰인다.
 
             valid_position=torch.where((input_ids[b]!=tokenizer.pad_token_id) & (input_ids[b]!=tokenizer.eos_token_id))
             input_id=input_ids[b][valid_position]
@@ -740,7 +740,7 @@ class Network(nn.Module):
         for b in range(batch_size):
             
         
-            # GPT STYLE!! BART에서는 EOS 토큰을 뺄 필요도 없고, PAD만 날리면 되며, 애초에 DECODER INPUT IDS랑 합치지도 않는다.
+            # GPT STYLE!! gpt에서는 EOS 토큰을 뺄 필요도 없고, PAD만 날리면 되며, 애초에 DECODER INPUT IDS랑 합치지도 않는다.
             # 주의! gpt는 아예 eos 토큰이 있지도 않다.
             valid_position=torch.where((input_ids[b]!=tokenizer.pad_token_id) & (input_ids[b]!=tokenizer.eos_token_id))
             input_id=torch.unsqueeze(input_ids[b][valid_position],dim=0) #(1,dynamic_len)
@@ -808,17 +808,17 @@ vocab_size=config.vocab_size
 d_model=config.n_embd
 
 if CONTINUOUSLY_TRAIN:
-    gpt =  AutoModelForCausalLM.from_config(config).to(gpu_name) # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
+    gpt =  AutoModelForCausalLM.from_config(config).to(gpu_name) # 이후부터는 내가 finetune한 gpt를 사용(밑에서 torch로 불러온다.)
     bert = AutoModel.from_config(bert_config).to(gpu_name)
 else:
-    gpt = AutoModelForCausalLM.from_pretrained('gpt2-medium').to(gpu_name) # 최초 학습에서는 pretrained 된 bart를 사용
+    gpt = AutoModelForCausalLM.from_pretrained('gpt2-medium').to(gpu_name) # 최초 학습에서는 pretrained 된 gpt를 사용
     bert = AutoModel.from_pretrained("prajjwal1/bert-tiny").to(gpu_name)
 
 gpt.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedding unit이 추가가 된다.
 bert.resize_token_embeddings(len(bert_tokenizer))
 shared = gpt.get_input_embeddings()
 shared.requires_grad = False
-#bart.get_input_embeddings().requires_grad = False # embedding layer는 학습을 안한다. 얘가 변동되면 prev_predictions에 대한 표현도 계속 변하기 때문.
+#gpt.get_input_embeddings().requires_grad = False # embedding layer는 학습을 안한다. 얘가 변동되면 prev_predictions에 대한 표현도 계속 변하기 때문.
 #생각해보니, shared에다가 init에서 복사한 embedding module만 계속 쓰는 거잖아?
 model = Network(shared,vocab_size, d_model,gpt, bert,bert_config).to(gpu_name)
 
@@ -929,7 +929,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
 
             # _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
             _batch_labels=_batch_decoder_input_ids #(b,250)
-            # 주의!!! gpt는 이렇게 하지만 bart는 위에 코드로 해야함!
+            # 주의!!! gpt는 이렇게 하지만 gpt는 위에 코드로 해야함!
             _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
             _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
 
@@ -1502,12 +1502,22 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
 eval_first=True
 if IS_TEST:
-    for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
-
+    for i in range(LAST_PARAG,100): # 최대 100개 문단까지 있다.
         
-        with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
-            # 여기서 level_2_whole로 바꾸면, 똑같은 prompt와 keyword에 대해 length만 조절 가능한 length control 실험이 가능!
-            test_dataset = pickle.load(fi)
+        if dataset_dir !="whole":
+                if dataset_dir=='reedsy_rake': # reedsy rake는 test dataset이 없다
+                    with open("pickle_data/"+"gpt_valid_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                        test_dataset = pickle.load(fi)
+                else:
+                    with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                        test_dataset = pickle.load(fi)
+        else: # whole dataset train.
+            with open("pickle_data/"+"gpt_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                test_dataset = pickle.load(fi)
+            with open("pickle_data/"+"gpt_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:# reedsy rake는 test dataset이 없다
+                test_dataset += pickle.load(fi)
+            with open("pickle_data/"+"gpt_test_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                test_dataset += pickle.load(fi)
         
         if len(test_dataset)==0:
             continue
@@ -1521,8 +1531,9 @@ else:
     # ---total style.
     
     whole_new_dataset=[]
+    whole_new_dataset_length=[]
 
-    for i in trange(1,30): # 최대 30개 문단까지 있다.
+    for i in trange(1,100): # 최대 100개 문단까지 있다.
 
         if dataset_dir !="whole":
             with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
@@ -1534,12 +1545,11 @@ else:
                     train_dataset += pickle.load(fi)
             with open("pickle_data/"+"gpt_train_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     train_dataset += pickle.load(fi)   
-        
         if len(train_dataset)==0:
             continue
         
+        whole_new_dataset_length.append(len(train_dataset))
         
-
         # print("the training set for " + str(i) + " Num Paragramphs.")
         for i in range(0, len(train_dataset),batch_size):
             # get the inputs; data is a list of [inputs, labels]
@@ -1590,6 +1600,9 @@ else:
     )
     
     progress_bar = tqdm(range(num_training_steps))
+
+    print("1~100 dataset length")
+    print(whole_new_dataset_length)
     # # for 문 없이!
     # trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar)
     # trainer에서는 batch 배치하는 것 없이 바로 각 배열 원소별로 뽑아서 쓰면 된다!
@@ -1633,7 +1646,6 @@ else:
         
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             LAST_PARAG=0
-
             if dataset_dir !="whole":
                 with open("pickle_data/"+"gpt_valid_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     valid_dataset = pickle.load(fi)
@@ -1644,7 +1656,6 @@ else:
                     valid_dataset += pickle.load(fi)
                 with open("pickle_data/"+"gpt_valid_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     valid_dataset += pickle.load(fi)
-            
             
             if len(valid_dataset)==0:
                 continue
