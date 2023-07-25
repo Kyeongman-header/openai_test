@@ -515,7 +515,7 @@ class Network(nn.Module):
         inputs_embeds=self.shared(input_ids)
         # !!!!------plotmachine ------ !!!
         
-        inputs_embeds=torch.cat((avg_context,input_ids),dim=2)
+        inputs_embeds=torch.cat((torch.unsqueeze(avg_context,dim=1),inputs_embeds),dim=2)
         
         # !!!!------plotmachine ------ !!!
         # print("input embeds shape : ")
@@ -1510,8 +1510,17 @@ else:
 
     for i in trange(1,30): # 최대 30개 문단까지 있다.
 
-        with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                train_dataset = pickle.load(fi)
+        if dataset_dir !="whole":
+            with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+        else: # whole dataset train.
+            with open("pickle_data/"+"gpt_train_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+            with open("pickle_data/"+"gpt_train_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)
+            with open("pickle_data/"+"gpt_train_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)   
+        
         if len(train_dataset)==0:
             continue
         
