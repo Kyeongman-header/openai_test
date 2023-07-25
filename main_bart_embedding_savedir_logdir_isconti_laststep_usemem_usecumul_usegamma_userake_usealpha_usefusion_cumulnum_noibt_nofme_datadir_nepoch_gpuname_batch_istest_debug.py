@@ -273,6 +273,7 @@ class Network(nn.Module):
        super(Network, self).__init__() 
         
        self.shared = shared
+       self.shared.requires_grad = False
        #nn.Embedding(config.vocab_size, config.d_model) 
         # 이 shared는 역할상 고정되어 있어야 한다.
        # 하지만 bart의 embedding layer는 학습을 거치면서 업데이트 된다.
@@ -1093,7 +1094,10 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         if i+batch_size>eval_num or i+batch_size>len(dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
-            return
+            if i<=1: # 데이터셋이 단 한개 이하로 있는 경우
+                # self bleu 등을 구할 수 없기 때문에 그냥 넘긴다. 
+                return
+            break
     # get the inputs; data is a list of [inputs, labels]]
         batch_data=dataset[i:i+batch_size]
         first=True
@@ -1459,10 +1463,22 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
 eval_first=True
 if IS_TEST:
-    for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+    for i in range(LAST_PARAG,100): # 최대 100개 문단까지 있다.
         
-        with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
-            test_dataset = pickle.load(fi)
+        if dataset_dir !="whole":
+                if dataset_dir=='reedsy_rake': # reedsy rake는 test dataset이 없다
+                    with open("pickle_data/"+"bart_valid_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                        test_dataset = pickle.load(fi)
+                else:
+                    with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                        test_dataset = pickle.load(fi)
+        else: # whole dataset train.
+            with open("pickle_data/"+"bart_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                test_dataset = pickle.load(fi)
+            with open("pickle_data/"+"bart_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:# reedsy rake는 test dataset이 없다
+                test_dataset += pickle.load(fi)
+            with open("pickle_data/"+"bart_test_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                test_dataset += pickle.load(fi)
         
         if len(test_dataset)==0:
             continue
@@ -1476,16 +1492,25 @@ else:
     # ---total style.
     
     whole_new_dataset=[]
+    whole_new_dataset_length=[]
 
-    for i in trange(1,30): # 최대 30개 문단까지 있다.
+    for i in trange(1,100): # 최대 100개 문단까지 있다.
 
-        with open("pickle_data/"+"bart_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                train_dataset = pickle.load(fi)
+        if dataset_dir !="whole":
+            with open("pickle_data/"+"bart_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+        else: # whole dataset train.
+            with open("pickle_data/"+"bart_train_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+            with open("pickle_data/"+"bart_train_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)
+            with open("pickle_data/"+"bart_train_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)   
         if len(train_dataset)==0:
             continue
         
+        whole_new_dataset_length.append(len(train_dataset))
         
-
         # print("the training set for " + str(i) + " Num Paragramphs.")
         for i in range(0, len(train_dataset),batch_size):
             # get the inputs; data is a list of [inputs, labels]
@@ -1536,6 +1561,9 @@ else:
     )
     
     progress_bar = tqdm(range(num_training_steps))
+
+    print("1~100 dataset length")
+    print(whole_new_dataset_length)
     # # for 문 없이!
     # trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar)
     # trainer에서는 batch 배치하는 것 없이 바로 각 배열 원소별로 뽑아서 쓰면 된다!

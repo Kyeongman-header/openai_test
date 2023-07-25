@@ -273,6 +273,7 @@ class Network(nn.Module):
        super(Network, self).__init__() 
         
        self.shared = shared
+       self.shared.requires_grad = False
        #nn.Embedding(config.vocab_size, config.d_model) 
         # 이 shared는 역할상 고정되어 있어야 한다.
        # 하지만 bart의 embedding layer는 학습을 거치면서 업데이트 된다.
@@ -1133,7 +1134,10 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         if i+batch_size>eval_num or i+batch_size>len(dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
-            return
+            if i<=1: # 데이터셋이 단 한개 이하로 있는 경우
+                # self bleu 등을 구할 수 없기 때문에 그냥 넘긴다. 
+                return
+            break
     # get the inputs; data is a list of [inputs, labels]]
         batch_data=dataset[i:i+batch_size]
         first=True
@@ -1631,15 +1635,15 @@ else:
             LAST_PARAG=0
 
             if dataset_dir !="whole":
-                with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                with open("pickle_data/"+"gpt_valid_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     valid_dataset = pickle.load(fi)
             else: # whole dataset train.
-                with open("pickle_data/"+"gpt_train_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                    train_dataset = pickle.load(fi)
-                with open("pickle_data/"+"gpt_train_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                    train_dataset += pickle.load(fi)
-                with open("pickle_data/"+"gpt_train_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                    train_dataset += pickle.load(fi)  
+                with open("pickle_data/"+"gpt_valid_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    valid_dataset = pickle.load(fi)
+                with open("pickle_data/"+"gpt_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    valid_dataset += pickle.load(fi)
+                with open("pickle_data/"+"gpt_valid_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    valid_dataset += pickle.load(fi)
             
             
             if len(valid_dataset)==0:
