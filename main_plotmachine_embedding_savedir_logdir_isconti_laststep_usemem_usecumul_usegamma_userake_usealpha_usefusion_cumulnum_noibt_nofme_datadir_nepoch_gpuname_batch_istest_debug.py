@@ -490,7 +490,13 @@ class Network(nn.Module):
             valid_input_ids.append(torch.cat((input_id,padding,),0))
             # print("input id shape")
             # print(input_id.shape)
-            label=torch.cat((residual[1:],labels[b]),dim=0)
+            
+            # plotmachine style ----
+            
+            label=torch.cat((residual[0:],labels[b]),dim=0) # plotmachine은 context vector가 맨 앞에 붙어있기 때문에, 한칸씩 밀린게 inputids의 0번부터이다!
+            
+            # plotmachine style ----
+
             # print("label shape")
             # print(label.shape)
             valid_labels.append(torch.cat((label,padding,),0))
