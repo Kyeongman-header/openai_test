@@ -36,7 +36,7 @@ with open(t_v_t+"_reedsy_prompts_whole.pickle","rb") as fi:
     reedsy = pickle.load(fi)
 
 
-file=t_v_t+"_reedsy_rake"
+file=t_v_t+"_reedsy_rake_results.csv"
 f = open(file,'w', newline='')
 wr = csv.writer(f)
 #fi = open(t_v_t+"_reedsy_prompts.source",'w', newline='\n')
