@@ -1629,13 +1629,18 @@ else:
         
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             LAST_PARAG=0
-            valid_dataset_dir=""
-            if dataset_dir=="wp_rake":
-                valid_dataset_dir="gpt_valid_wp_rake"
-            else:
-                valid_dataset_dir="gpt_valid_"+dataset_dir
-            with open("pickle_data/"+valid_dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
+
+            if dataset_dir !="whole":
+                with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     valid_dataset = pickle.load(fi)
+            else: # whole dataset train.
+                with open("pickle_data/"+"gpt_train_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+                with open("pickle_data/"+"gpt_train_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)
+                with open("pickle_data/"+"gpt_train_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)  
+            
             
             if len(valid_dataset)==0:
                 continue
