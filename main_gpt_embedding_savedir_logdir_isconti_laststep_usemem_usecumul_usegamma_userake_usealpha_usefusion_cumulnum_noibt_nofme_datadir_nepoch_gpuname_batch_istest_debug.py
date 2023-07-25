@@ -1606,18 +1606,18 @@ else:
             eval_first=False
             torch.cuda.empty_cache()
         
-for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
-        LAST_PARAG=0
+# for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+#         LAST_PARAG=0
         
-        with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
-            test_dataset = pickle.load(fi)
+#         with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
+#             test_dataset = pickle.load(fi)
         
-        if len(test_dataset)==0:
-            continue
-        print("the test set for " + str(i) + " Num Paragramphs.")
+#         if len(test_dataset)==0:
+#             continue
+#         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
-        eval_first=False
-        torch.cuda.empty_cache()
+#         do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+#         eval_first=False
+#         torch.cuda.empty_cache()
 
 writer.close()
