@@ -539,7 +539,7 @@ class Network(nn.Module):
 
         labels=labels.type(torch.LongTensor).to(gpu_name)
 
-        outputs = self.gpt(input_ids = None, inputs_embeds=inputs_embeds, attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=None,alpha=None,beta=None)
+        outputs = self.gpt(input_ids = None, inputs_embeds=inputs_embeds, attention_mask = attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=None,alpha=alpha,beta=None)
 
         return outputs,memory
     
