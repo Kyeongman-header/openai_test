@@ -471,11 +471,7 @@ class Network(nn.Module):
                 input_ids=torch.cat((batch_soplot_token_tensors,input_ids,batch_eoplot_token_tensors,batch_soprev_token_tensors,conti_keyword_prev_predictions,batch_eoprev_token_tensors,batch_order_token_tensors),1)
         
 
-        # !!!!------plotmachine ------ !!!
         
-        input_ids=torch.cat((avg_context,input_ids),dim=1)
-
-        # !!!!------plotmachine ------ !!!
         
         valid_input_ids=[]
         valid_labels=[]
@@ -520,7 +516,7 @@ class Network(nn.Module):
         # !!!!------plotmachine ------ !!!
         
         inputs_embeds=torch.cat((avg_context,input_ids),dim=2)
-
+        
         # !!!!------plotmachine ------ !!!
         # print("input embeds shape : ")
         # print(inputs_embeds.shape)
@@ -1067,13 +1063,13 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
             },PATH)
     print('torch saved.')
 
-createFolder('GPTGenerations')
-createFolder('GPTGenerations/'+save_dir)
+createFolder('PlotmachineGenerations')
+createFolder('PlotmachineGenerations/'+save_dir)
 if IS_TEST:
-    eval_dir='GPTGenerations/'+save_dir+'/test'
+    eval_dir='PlotmachineGenerations/'+save_dir+'/test'
     createFolder(eval_dir)
 else:
-    eval_dir='GPTGenerations/'+save_dir+'/valid'
+    eval_dir='PlotmachineGenerations/'+save_dir+'/valid'
     createFolder(eval_dir)
 
 def do_eval(steps,dataset,NumPar,eval_num,eval_first):
