@@ -515,6 +515,7 @@ class Network(nn.Module):
         inputs_embeds=self.shared(input_ids)
         # !!!!------plotmachine ------ !!!
         
+
         inputs_embeds=torch.cat((torch.unsqueeze(avg_context,dim=1),inputs_embeds),dim=2)
         
         # !!!!------plotmachine ------ !!!
@@ -529,6 +530,8 @@ class Network(nn.Module):
 
 
         attention_mask=torch.where(input_ids==tokenizer.pad_token_id,0,1).to(gpu_name)
+        context_attention_mask=torch.ones_like(attention_mask[:,:1],dtype=torch.long)
+        attention_mask=torch.cat((context_attention_mask,attention_mask),dim=1)
         if debug:
             print("attention_mask")
             print(attention_mask)
