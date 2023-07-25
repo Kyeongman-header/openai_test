@@ -90,8 +90,11 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
 
         # for s in split_s:
         #     print(len(tokenizer(s).input_ids))
+        if len(split_s)>=100:
+            continue
         
-        
+
+
         input=tokenizer(source[t],max_length=200,padding="max_length",
             truncation=True,return_tensors="pt")
     

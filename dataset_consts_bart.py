@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 #from datasets import load_metric
 import evaluate
 #tokenizer = AutoTokenizer.from_pretrained("t5-base")
-tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large")
+tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
 tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 pad_token_id=tokenizer.pad_token_id
 import csv
@@ -90,7 +90,8 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
 
         # for s in split_s:
         #     print(len(tokenizer(s).input_ids))
-        
+        if len(split_s)>=100:
+            continue 
         
         input=tokenizer(source[t],max_length=200,padding="max_length",
             truncation=True,return_tensors="pt")
