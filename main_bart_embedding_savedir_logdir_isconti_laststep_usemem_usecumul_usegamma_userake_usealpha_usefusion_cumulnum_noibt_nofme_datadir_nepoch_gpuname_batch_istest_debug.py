@@ -745,7 +745,7 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.bart.generate(max_new_tokens=250,memory=one_memory,
+            outputs.append(self.bart.generate(max_length=250,memory=one_memory,
                                               inputs_embeds=inputs_embeds,
                                               #input_ids=input_id,
                         #attention_mask=attention_mask[b],
