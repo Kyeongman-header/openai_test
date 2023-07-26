@@ -5,13 +5,14 @@ from tqdm import tqdm, trange
 from dataset_consts import *
 from torch.utils.tensorboard import SummaryWriter
 from transformers import AutoConfig,LongformerModel
+import pytorch_metric_learning.losses as loss_fn
 import sys
 
 print("gpu : ")
 print(torch.cuda.is_available())
 
 tdataset_name=sys.argv[1] # 예제 : coherence-1
-vdataset_name=sys.argv[2] # 예제 : coherence
+vdataset_name=sys.argv[2] # 예제 : coherence-1
 num_epochs=int(sys.argv[3]) # 예제 : 1
 num_batch =int(sys.argv[4]) # 예제 : 4
 dtest=int(sys.argv[5]) # 1 or 0
@@ -53,12 +54,12 @@ if tdataset_name=="coherence-whole" or vdataset_name=="coherence-whole":
             valid_dataset = pickle.load(fi)
     with open("coherence_completeness/train_"+"coherence-new-2"+".pickle","rb") as fi:
             train_dataset = train_dataset + pickle.load(fi)
-    with open("coherence_completeness/valid_"+"coherence-new-2"+".pickle","rb") as fi:
-            valid_dataset = valid_dataset + pickle.load(fi)
     with open("coherence_completeness/train_"+"coherence-new-3"+".pickle","rb") as fi:
-            train_dataset += train_dataset + pickle.load(fi)
-    with open("coherence_completeness/valid_"+"coherence-new-3"+".pickle","rb") as fi:
-            valid_dataset += valid_dataset + pickle.load(fi)
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"coherence-new-4"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"coherence-new-5"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
 elif tdataset_name=="completeness-whole" or vdataset_name=="completeness-whole":
     with open("coherence_completeness/train_"+"completeness-new-1"+".pickle","rb") as fi:
             train_dataset = pickle.load(fi)
@@ -66,12 +67,12 @@ elif tdataset_name=="completeness-whole" or vdataset_name=="completeness-whole":
             valid_dataset = pickle.load(fi)
     with open("coherence_completeness/train_"+"completeness-new-2"+".pickle","rb") as fi:
             train_dataset = train_dataset + pickle.load(fi)
-    with open("coherence_completeness/valid_"+"completeness-new-2"+".pickle","rb") as fi:
-            valid_dataset = valid_dataset + pickle.load(fi)
     with open("coherence_completeness/train_"+"completeness-new-3"+".pickle","rb") as fi:
-            train_dataset += train_dataset + pickle.load(fi)
-    with open("coherence_completeness/valid_"+"completeness-new-3"+".pickle","rb") as fi:
-            valid_dataset += valid_dataset + pickle.load(fi)
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"completeness-new-4"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"completeness-new-5"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
 else: 
     with open("coherence_completeness/train_"+tdataset_name+".pickle","rb") as fi:
             train_dataset = pickle.load(fi)
