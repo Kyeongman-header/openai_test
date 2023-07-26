@@ -126,7 +126,11 @@ if torch.cuda.is_available():
 def eval(steps):
     mylongformer.eval()
     valid_loss=0.0
-    acc=0
+    # acc=0
+    pp=0
+    nn=0
+    len_pp=0
+    len_nn=0
     for i,(input_ids,attention_mask,global_attention_mask,labels) in enumerate(tqdm(valid_dataset)):
         # print(input_ids.shape)
         if torch.cuda.is_available():
@@ -144,14 +148,17 @@ def eval(steps):
             print(loss)
 
         for (j,p) in enumerate(probs,0):
-            if p >=0.5 and labels[j]==1:
-                acc+=1
-            elif p < 0.5 and labels[j]==0:
-                acc+=1
+            if labels[j]==1:
+                pp+=p
+                len_pp+=1
+            elif labels[j]==0:
+                nn+=p
+                len_nn+=1
         
         if debug:
-            print("acc")
-            print(acc)
+            print("avg true and false score valid")
+            print(pp/len_pp)
+            print(nn/len_nn)
             input()
 
         del input_ids
@@ -164,10 +171,13 @@ def eval(steps):
     valid_loss=(valid_loss/len(valid_dataset))
     print("valid loss : ")
     print(valid_loss)
-    print("valid acc : ")
-    print(acc/len(valid_dataset))
+    print("valid avg true score :")
+    print(pp/len_pp)
+    print("valid avg false score : ")
+    print(nn/len_nn)
     writer.add_scalar("loss/valid",valid_loss, steps)
-    writer.add_scalar("acc/valid",acc/len(valid_dataset),steps)
+    writer.add_scalar("avg true score/valid",pp/len_pp,steps)
+    writer.add_scalar("avg false score/valid",nn/len_nn,steps)
 
 optimizer = optim.AdamW(mylongformer.parameters(), lr=1e-5)
 num_training_steps = num_epochs * len(train_dataset)
@@ -190,7 +200,11 @@ for epoch in range(num_epochs):
     model_save=3000
     eval_report=2
     loss_steps=1
-    acc=0
+    # acc=0
+    pp=0
+    nn=0
+    len_pp=0
+    len_nn=0
     #eval_steps=1
     #eval(0)
     
@@ -209,14 +223,18 @@ for epoch in range(num_epochs):
             print("loss")
             print(loss)
         for (j,p) in enumerate(prob,0):
-            if p >=0.5 and labels[j]==1:
-                acc+=1
-            elif p < 0.5 and labels[j]==0:
-                acc+=1
+            if labels[j]==1:
+                pp+=p
+                len_pp+=1
+            elif labels[j]==0:
+                nn+=p
+                len_nn+=1
         
         
         if debug:
-            print(acc)
+            print("avg true and false score train")
+            print(pp/len_pp)
+            print(nn/len_nn)
             input()
         
         # print(loss)
@@ -232,12 +250,17 @@ for epoch in range(num_epochs):
 
         if i%loss_report==(loss_report-1):
             print(running_loss/(loss_report*num_batch))
-            print(acc/(loss_report*num_batch))
-            writer.add_scalar("loss/train",running_loss/(loss_report*num_batch),loss_steps)
-            writer.add_scalar("acc/train",acc/(loss_report*num_batch),loss_steps)
+            print(pp/len_pp)
+            print(nn/len_nn)
+            writer.add_scalar("loss/train",running_loss/loss_report,loss_steps)
+            writer.add_scalar("avg true score/train",pp/len_pp,loss_steps)
+            writer.add_scalar("avg false score/train",nn/len_nn,loss_steps)
             running_loss=0
-            acc=0
             loss_steps+=1
+            pp=0
+            nn=0
+            len_pp=0
+            len_nn=0
 
             # input()
         
@@ -260,8 +283,8 @@ for epoch in range(num_epochs):
             eval(eval_steps)
             eval_steps+=1
         """
-    if do_test:
-        eval(num_test)
+if do_test:
+    eval(num_test)
 
 
 print('Finished Training')
