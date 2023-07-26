@@ -46,11 +46,37 @@ print("debug mode : " + str(debug))
 
 
 
-
-with open("coherence_completeness/train_"+tdataset_name+".pickle","rb") as fi:
-        train_dataset = pickle.load(fi)
-with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
-        valid_dataset = pickle.load(fi)
+if tdataset_name=="coherence-whole" or vdataset_name=="coherence-whole":
+    with open("coherence_completeness/train_"+"coherence-new-1"+".pickle","rb") as fi:
+            train_dataset = pickle.load(fi)
+    with open("coherence_completeness/valid_"+"coherence-new-1"+".pickle","rb") as fi:
+            valid_dataset = pickle.load(fi)
+    with open("coherence_completeness/train_"+"coherence-new-2"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/valid_"+"coherence-new-2"+".pickle","rb") as fi:
+            valid_dataset = valid_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"coherence-new-3"+".pickle","rb") as fi:
+            train_dataset += train_dataset + pickle.load(fi)
+    with open("coherence_completeness/valid_"+"coherence-new-3"+".pickle","rb") as fi:
+            valid_dataset += valid_dataset + pickle.load(fi)
+elif tdataset_name=="completeness-whole" or vdataset_name=="completeness-whole":
+    with open("coherence_completeness/train_"+"completeness-new-1"+".pickle","rb") as fi:
+            train_dataset = pickle.load(fi)
+    with open("coherence_completeness/valid_"+"completeness-new-1"+".pickle","rb") as fi:
+            valid_dataset = pickle.load(fi)
+    with open("coherence_completeness/train_"+"completeness-new-2"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/valid_"+"completeness-new-2"+".pickle","rb") as fi:
+            valid_dataset = valid_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"completeness-new-3"+".pickle","rb") as fi:
+            train_dataset += train_dataset + pickle.load(fi)
+    with open("coherence_completeness/valid_"+"completeness-new-3"+".pickle","rb") as fi:
+            valid_dataset += valid_dataset + pickle.load(fi)
+else: 
+    with open("coherence_completeness/train_"+tdataset_name+".pickle","rb") as fi:
+            train_dataset = pickle.load(fi)
+    with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
+            valid_dataset = pickle.load(fi)
 
 train_dataset= torch.utils.data.DataLoader(train_dataset,
                                    batch_size=num_batch,shuffle=True)
