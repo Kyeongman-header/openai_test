@@ -760,7 +760,7 @@ class Network(nn.Module):
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
-config = AutoConfig.from_pretrained('facebook/bart-base')
+config = AutoConfig.from_pretrained('facebook/bart-large')
 bert_config = AutoConfig.from_pretrained("prajjwal1/bert-tiny")
 
 vocab_size=config.vocab_size
@@ -770,7 +770,7 @@ if CONTINUOUSLY_TRAIN:
     bart =  AutoModelForSeq2SeqLM.from_config(config).to(gpu_name) # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
     bert = AutoModel.from_config(bert_config).to(gpu_name)
 else:
-    bart = AutoModelForSeq2SeqLM.from_pretrained("facebook/bart-base").to(gpu_name) # 최초 학습에서는 pretrained 된 bart를 사용
+    bart = AutoModelForSeq2SeqLM.from_pretrained("facebook/bart-large").to(gpu_name) # 최초 학습에서는 pretrained 된 bart를 사용
     bert = AutoModel.from_pretrained("prajjwal1/bert-tiny").to(gpu_name)
 
 bart.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedding unit이 추가가 된다.
