@@ -731,15 +731,21 @@ class Network(nn.Module):
                 print(attention_mask)
                 print(attention_mask.shape)
 
+
             one_memory=torch.unsqueeze(memory[b],dim=0) if memory is not None else None
             one_context=torch.unsqueeze(cumulation[b],dim=0) if cumulation is not None else None
             if self.num_beams > 1:
-                beam_memory = [one_memory] * self.num_beams
-                one_memory = torch.cat(beam_memory,dim=0)
+                if one_memory is not None:
+                    beam_memory = [one_memory] * self.num_beams
+                    one_memory = torch.cat(beam_memory,dim=0)
+                else:
+                    one_memory = None
 
-                beam_context = [one_context] * self.num_beams
-                one_context = torch.cat(beam_context,dim=0)
-
+                if one_context is not None:    
+                    beam_context = [one_context] * self.num_beams
+                    one_context = torch.cat(beam_context,dim=0)
+                else:
+                    one_context = None
             one_alpha=torch.unsqueeze(alpha[b],dim=0)
             one_beta=torch.unsqueeze(beta[b],dim=0)
             valid_contiprev_position=torch.where((conti_prev_predictions[b]!=tokenizer.pad_token_id))
