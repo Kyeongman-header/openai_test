@@ -482,10 +482,13 @@ class Network(nn.Module):
             valid_input_ids.append(torch.cat((input_id,padding,),0))
             # print("input id shape")
             # print(input_id.shape)
-            label=torch.cat((residual[1:],labels[b]),dim=0)
+            label=valid_input_ids # GPT2는 label position shift를 모델 내부적으로 수행한다. 따라서, input id와 label은 동일해도 된다.
+            for l in range(residual):
+                label[l]=-100 # input rep에 대해서는 loss를 없애야 한다. -100을 적용하면 loss mask가 된다고 한다.
+            
             # print("label shape")
             # print(label.shape)
-            valid_labels.append(torch.cat((label,padding,),0))
+            valid_labels.append(label)
         
         input_ids=torch.stack(valid_input_ids,dim=0)
         labels=torch.stack(valid_labels,dim=0)
