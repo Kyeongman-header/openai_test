@@ -492,16 +492,17 @@ class Network(nn.Module):
             # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다고 한다. eos 토큰은 굳이 필요 없는 듯 하다.
             input_id=torch.cat((input_id,decoder_input_ids[b]),dim=0)
             padding=torch.IntTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+decoder_input_ids.shape[1]-len(input_id))).to(gpu_name)
-            valid_input_ids.append(torch.cat((input_id,padding,),0))
-            # print("input id shape")
-            # print(input_id.shape)
-            
+            valid_input_id=torch.cat((input_id,padding,),0)
+            valid_input_ids.append(valid_input_id)
+            #print("input id shape")
+            #print(input_id.shape)
+            #print(input_id)
             # plotmachine style ----
             
-            label=valid_input_ids # GPT2는 label position shift를 모델 내부적으로 수행한다.
-            for l in range(residual):
+            label=valid_input_id.clone() # GPT2는 label position shift를 모델 내부적으로 수행한다.
+            for l in range(residual.shape[0]):
                 label[l]=-100 # input rep에 대해서는 loss를 없애야 한다. -100을 적용하면 loss mask가 된다고 한다.
-            label=torch.cat((torch.IntTensor([-100]),label),dim=0) # context vector를 위한 mask도 추가.
+            label=torch.cat((torch.IntTensor([-100]).to(gpu_name),label),dim=0) # context vector를 위한 mask도 추가.
             # plotmachine style ----
 
             # print("label shape")
@@ -510,7 +511,9 @@ class Network(nn.Module):
         
         input_ids=torch.stack(valid_input_ids,dim=0)
         labels=torch.stack(valid_labels,dim=0)
-        
+    
+
+
         # print("valid_input_ids.shape label과 차원이 같고 한칸씩 label이 밀려있어야 함.")
         # print(input_ids)
         # print(input_ids.shape)
@@ -989,7 +992,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
             # print(batch_conti_prev_predictions.shape)
             # print(batch_conti_keyword_prev_predictions.shape)
 
-            outputs,new_memory,loss_attention_mask = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
+            outputs,new_memory = model(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
             
             if use_memory is True:
