@@ -479,11 +479,12 @@ class Network(nn.Module):
             # gpt 토크나이저는 eos 토큰을 따로 추가하지 않는다고 한다. eos 토큰은 굳이 필요 없는 듯 하다.
             input_id=torch.cat((input_id,decoder_input_ids[b]),dim=0)
             padding=torch.IntTensor([tokenizer.pad_token_id]*(input_ids.shape[1]+decoder_input_ids.shape[1]-len(input_id))).to(gpu_name)
-            valid_input_ids.append(torch.cat((input_id,padding,),0))
+            valid_input_id=torch.cat((input_id,padding,),0)
+            valid_input_ids.append(valid_input_id)
             # print("input id shape")
             # print(input_id.shape)
-            label=valid_input_ids # GPT2는 label position shift를 모델 내부적으로 수행한다. 따라서, input id와 label은 동일해도 된다.
-            for l in range(residual):
+            label=valid_input_id.clone() # GPT2는 label position shift를 모델 내부적으로 수행한다.
+            for l in range(residual.shape[0]):
                 label[l]=-100 # input rep에 대해서는 loss를 없애야 한다. -100을 적용하면 loss mask가 된다고 한다.
             
             # print("label shape")
