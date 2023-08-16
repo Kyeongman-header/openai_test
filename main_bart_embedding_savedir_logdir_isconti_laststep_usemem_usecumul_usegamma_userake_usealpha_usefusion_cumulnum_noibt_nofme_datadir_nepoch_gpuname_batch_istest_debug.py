@@ -756,7 +756,7 @@ class Network(nn.Module):
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=3.5,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
+                        repetition_penalty=1.4,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
@@ -1055,7 +1055,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     else:
         f2 = open(eval_dir+'/'+'generations_outputs_whole.csv','a',encoding='utf-8', newline='')
         wr2 = csv.writer(f2)
-        wr2.writerow(["steps","index","source","real text","generated_results"])
+        # wr2.writerow(["steps","index","source","real text","generated_results"])
     
     index=0
 
