@@ -291,7 +291,7 @@ class Network(nn.Module):
        self.W3 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
        self.W4 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
        self.W5 = torch.nn.Linear(d_model, d_model, bias=False).to(gpu_name)
-       self.num_beams=1
+       self.num_beams=3
    def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,conti_keyword_prev_predictions,order,whole,intro,tail,use_cumulative,use_memory,use_rake):#prompt_ids,prompt_attention):
        #memory states update.
        
@@ -798,7 +798,7 @@ class Network(nn.Module):
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
             outputs.append(self.gpt.generate(max_new_tokens=350,memory=one_memory,
-                                             preceding_context=torch.unsqueeze(torch.unsqueeze(avg_context[b],dim=0),dim=0),
+                                             preceding_context=torch.cat([torch.unsqueeze(avg_context[b],dim=0)]*self.num_beams,dim=0),
                                              input_ids=input_id,
                         #attention_mask=attention_mask[b],
                         num_beams=self.num_beams,
