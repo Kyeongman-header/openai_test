@@ -745,7 +745,7 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.bart.generate(max_length=250,memory=one_memory,
+            outputs.append(self.bart.generate(max_length=350,memory=one_memory,
                                               inputs_embeds=inputs_embeds,
                                               #input_ids=input_id,
                         #attention_mask=attention_mask[b],
@@ -756,7 +756,7 @@ class Network(nn.Module):
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=1.4,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
+                        repetition_penalty=1.4,length_penalty=0.2,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
