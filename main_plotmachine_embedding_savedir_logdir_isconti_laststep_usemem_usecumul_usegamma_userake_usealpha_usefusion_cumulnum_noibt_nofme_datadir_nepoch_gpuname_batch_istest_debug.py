@@ -798,7 +798,7 @@ class Network(nn.Module):
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
             outputs.append(self.gpt.generate(max_new_tokens=350,memory=one_memory,
-                                             preceding_context=torch.cat([torch.unsqueeze(avg_context[b],dim=0)]*self.num_beams,dim=0),
+                                             preceding_context=torch.stack([torch.unsqueeze(avg_context[b],dim=0)]*self.num_beams,dim=0),
                                              input_ids=input_id,
                         #attention_mask=attention_mask[b],
                         num_beams=self.num_beams,
