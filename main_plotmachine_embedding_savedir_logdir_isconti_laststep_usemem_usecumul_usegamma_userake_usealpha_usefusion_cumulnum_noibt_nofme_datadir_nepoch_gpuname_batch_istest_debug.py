@@ -842,7 +842,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=5e-6)
 
 if CONTINUOUSLY_TRAIN:
-    checkpoint= torch.load(PATH)
+    checkpoint= torch.load(PATH,map_location=gpu_name)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
