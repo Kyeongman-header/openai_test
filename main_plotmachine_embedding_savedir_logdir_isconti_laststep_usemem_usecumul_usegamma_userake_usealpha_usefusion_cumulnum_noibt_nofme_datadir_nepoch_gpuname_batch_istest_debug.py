@@ -1513,7 +1513,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
 eval_first=True
 if IS_TEST:
-    for i in range(LAST_PARAG,100): # 최대 100개 문단까지 있다.
+    for i in range(LAST_PARAG,30): # 최대 100개 문단까지 있다.
         
         if dataset_dir !="whole":
                 if dataset_dir=='reedsy_rake': # reedsy rake는 test dataset이 없다
