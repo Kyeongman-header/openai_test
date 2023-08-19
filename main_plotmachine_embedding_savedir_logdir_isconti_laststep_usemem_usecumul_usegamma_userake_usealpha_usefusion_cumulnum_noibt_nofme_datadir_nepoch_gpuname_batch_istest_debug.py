@@ -797,11 +797,11 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,
+            outputs.append(self.gpt.generate(max_new_tokens=350,memory=one_memory,
                                              preceding_context=torch.unsqueeze(torch.unsqueeze(avg_context[b],dim=0),dim=0),
                                              input_ids=input_id,
                         #attention_mask=attention_mask[b],
-                        # num_beams=4,
+                        num_beams=self.num_beams,
                         do_sample=True,
                         # top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
                         top_p=0.70,

@@ -749,7 +749,7 @@ class Network(nn.Module):
                                               inputs_embeds=inputs_embeds,
                                               #input_ids=input_id,
                         #attention_mask=attention_mask[b],
-                        # num_beams=4,
+                        num_beams=3,
                         do_sample=True,
                         top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
                         top_p=0.95,
