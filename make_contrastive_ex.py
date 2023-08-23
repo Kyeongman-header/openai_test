@@ -238,6 +238,7 @@ def making_completeness_examples(new_whole_data):
     examples_2=[]
     neg_examples_2=[]
     pos_examples_2=[]
+    """
     for i in range(0,len(new_whole_data[1])//2):
         sentences=sent_tokenize(' '.join(new_whole_data[1][i]))
         # print(sentences)
@@ -268,6 +269,25 @@ def making_completeness_examples(new_whole_data):
         for j in range(len(sample)//2,len(sample)):
             whole_data_3=' '.join(sample[j])
             pos_examples_2.append({'data' : whole_data_3,'label':[1]})
+    """
+    for i in range(0,len(new_whole_data[1])):
+        sentences=sent_tokenize(' '.join(new_whole_data[1][i]))
+        whole_data_2=' '.join(sentences)
+        pos_examples_2.append({'data' : whole_data_2,'label':[1]})
+
+    for num, sample in enumerate(new_whole_data[2:]):
+        for i in range(0,len(sample)//2):
+            print(sample[i])
+            neg_sample=random.choice(sample[:-1])
+
+            neg_examples_2.append({'data' : neg_sample,'label':[0]})
+            print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+            input()
+
+        for j in range(len(sample)//2,len(sample)):
+            
+            pos_examples_2.append({'data' : sample[-1],'label':[1]})
+    
 
     print("whole pos length : " + str(len(pos_examples_2)))
     print("whole neg length : " + str(len(neg_examples_2)))
@@ -312,35 +332,35 @@ whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 report(new_whole_data)
-examples_1=making_coherence_examples(new_whole_data)
-examples_2=making_completeness_examples(new_whole_data)
+#wp_examples_1=making_coherence_examples(new_whole_data)
+wp_examples_2=making_completeness_examples(new_whole_data)
 del new_whole_data
 gc.collect()
 
-"""
+
 whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 report(new_whole_data)
-examples_1+=making_coherence_examples(new_whole_data)
-examples_2+=making_completeness_examples(new_whole_data)
+#rd_examples_1=making_coherence_examples(new_whole_data)
+rd_examples_2=making_completeness_examples(new_whole_data)
 
 
 whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 report(new_whole_data)
-examples_1+=making_coherence_examples(new_whole_data)
-examples_2+=making_completeness_examples(new_whole_data)
+#bk_examples_1=making_coherence_examples(new_whole_data)
+bk_examples_2=making_completeness_examples(new_whole_data)
 del new_whole_data
 gc.collect()
 
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
-#examples_2=wp_examples_2+bk_examples_2+rd_examples_2
-"""
-making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-0")
-del examples_1
-gc.collect()
-making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-0")
+examples_2=wp_examples_2+bk_examples_2+rd_examples_2
+
+#making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-0")
+#del examples_1
+#gc.collect()
+making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_comple0teness-whole")
 
 
