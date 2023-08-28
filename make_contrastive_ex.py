@@ -277,16 +277,19 @@ def making_completeness_examples(new_whole_data):
 
     for num, sample in enumerate(new_whole_data[2:]):
         for i in range(0,len(sample)//2):
-            print(sample[i])
-            neg_sample=random.choice(sample[:-1])
+            #print(sample[i])
+            #print()
+            #print()
+            #print(sample[i][-1])
+            neg_sample=random.choice(sample[i][:-1])
 
             neg_examples_2.append({'data' : neg_sample,'label':[0]})
-            print("index : " + str(i) + " whole_data_1 : " + neg_sample)
-            input()
+            #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+            #input()
 
         for j in range(len(sample)//2,len(sample)):
-            
-            pos_examples_2.append({'data' : sample[-1],'label':[1]})
+            pos_sample=sample[j][-1]
+            pos_examples_2.append({'data' : pos_sample,'label':[1]})
     
 
     print("whole pos length : " + str(len(pos_examples_2)))
@@ -324,24 +327,24 @@ def making_pickle_data(examples,name):
     with open(name+".pickle","wb") as f:
         pickle.dump(train_dataset,f)
 
-t_v_t="valid"
+t_v_t="train"
 examples_1=[]
 examples_2=[]
 
-whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=0,range=0)
+whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=200000,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
-report(new_whole_data)
+#report(new_whole_data)
 #wp_examples_1=making_coherence_examples(new_whole_data)
 wp_examples_2=making_completeness_examples(new_whole_data)
 del new_whole_data
 gc.collect()
 
-
+"""
 whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
-report(new_whole_data)
+#report(new_whole_data)
 #rd_examples_1=making_coherence_examples(new_whole_data)
 rd_examples_2=making_completeness_examples(new_whole_data)
 
@@ -349,7 +352,7 @@ rd_examples_2=making_completeness_examples(new_whole_data)
 whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
-report(new_whole_data)
+#report(new_whole_data)
 #bk_examples_1=making_coherence_examples(new_whole_data)
 bk_examples_2=making_completeness_examples(new_whole_data)
 del new_whole_data
@@ -357,10 +360,12 @@ gc.collect()
 
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
 examples_2=wp_examples_2+bk_examples_2+rd_examples_2
+"""
+examples_2=wp_examples_2
 
 #making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-0")
 #del examples_1
 #gc.collect()
-making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_comple0teness-whole")
+making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-new-1")
 
 
