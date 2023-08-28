@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm, trange
 from datasets import load_dataset, load_metric
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-tokenizer=AutoTokenizer.from_pretrained("facebook/bart-large")
+tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
 import csv
 import ctypes as ct
 import math
@@ -300,6 +300,48 @@ def making_completeness_examples(new_whole_data):
 
     return examples_2
 
+def making_nextsentenceprediction_examples(new_whole_data):
+    examples_3=[]
+    neg_examples_3=[]
+    pos_examples_3=[]
+
+
+    for num, sample in enumerate(new_whole_data[2:]):
+        for i in range(0,len(sample)//2):
+            #print(sample[i])
+            #print()
+            #print()
+            #print(sample[i][-1])
+            sample_parag_num=random.randint(0,len(sample[i])-2) # 예를들어 길이가 3이면, 0~1까지 랜덤한 문단 하나를 뽑는다. (마지막 문단만 빼고.)
+            neg_sample=sample[i][sample_parag_num]
+            sample_parag_num=random.randint(0,len(sample[i+1]-2)) # 똑같이 뽑되 이번엔 다음 샘플에서 랜덤 하나를 뽑는다.
+            neg_sample +=tokenizer.sep_token + " " + sample[i+1][sample_parag_num]
+
+            print(neg_sample)
+            input()
+
+            neg_examples_3.append({'data' : neg_sample,'label':[0]})
+            #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+            #input()
+
+        for j in range(len(sample)//2,len(sample)):
+            sample_parag_num=random.randint(0,len(sample[j])-2) # 예를들어 길이가 3이면, 0~1까지 랜덤한 문단 하나를 뽑는다. (마지막 문단만 빼고.)
+            pos_sample=sample[j][sample_parag_num]
+            pos_sample +=tokenizer.sep_token + " " + sample[j][sample_parag_num+1]
+            print(pos_sample)
+            print()
+            input()
+            pos_examples_3.append({'data' : pos_sample,'label':[1]})
+    
+
+    print("whole pos length : " + str(len(pos_examples_3)))
+    print("whole neg length : " + str(len(neg_examples_3)))
+    examples_3=neg_examples_3+pos_examples_3
+    print("whole length : " + str(len(examples_3)))
+
+
+    return examples_3
+
 # examples=pos_examples+neg_examples
 # # 원하는 꼴.
 # # pos_examples => [{'data' : [[CLS] + '~~' + [SEP] + '~~'], 'label' : [1]}, {}, {},...]
@@ -337,6 +379,7 @@ del whole_data
 #report(new_whole_data)
 #wp_examples_1=making_coherence_examples(new_whole_data)
 wp_examples_2=making_completeness_examples(new_whole_data)
+wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
 del new_whole_data
 gc.collect()
 
@@ -347,6 +390,7 @@ del whole_data
 #report(new_whole_data)
 #rd_examples_1=making_coherence_examples(new_whole_data)
 rd_examples_2=making_completeness_examples(new_whole_data)
+rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
 
 
 whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
@@ -355,11 +399,13 @@ del whole_data
 #report(new_whole_data)
 #bk_examples_1=making_coherence_examples(new_whole_data)
 bk_examples_2=making_completeness_examples(new_whole_data)
+bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
 del new_whole_data
 gc.collect()
 
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
 examples_2=wp_examples_2+bk_examples_2+rd_examples_2
+
 """
 examples_2=wp_examples_2
 
