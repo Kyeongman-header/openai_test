@@ -111,12 +111,14 @@ def making_new_whole_data(whole_data):
         split_s=[]
         now_sentences=""
         
+
         for sentences in tt:
             t_s=tokenizer(sentences).input_ids
             if len(t_s)+prev<=200:
                 now_sentences+=" " + sentences
                 prev+=len(t_s)
             else:
+                
                 prev=0
                 split_s.append(now_sentences)
                 now_sentences=""
@@ -127,9 +129,15 @@ def making_new_whole_data(whole_data):
                 split_s[-1]+=now_sentences
             else:
                 split_s.append(now_sentences)
+        """
+        for s in split_s: 
+            print(s)
+            print("---------")
+        """
         if len(split_s)>=len(new_whole_data):
             continue
         new_whole_data[len(split_s)].append(split_s)
+
     
     return new_whole_data # it should be (100,M,K) --> M은 각각 문단 개수별 예제의 개수, K는 문단 개수.
 
@@ -312,9 +320,10 @@ def making_nextsentenceprediction_examples(new_whole_data):
             #print()
             #print()
             #print(sample[i][-1])
+            print(sample[i])
             sample_parag_num=random.randint(0,len(sample[i])-2) # 예를들어 길이가 3이면, 0~1까지 랜덤한 문단 하나를 뽑는다. (마지막 문단만 빼고.)
             neg_sample=sample[i][sample_parag_num]
-            sample_parag_num=random.randint(0,len(sample[i+1]-2)) # 똑같이 뽑되 이번엔 다음 샘플에서 랜덤 하나를 뽑는다.
+            sample_parag_num=random.randint(0,len(sample[i+1])-2) # 똑같이 뽑되 이번엔 다음 샘플에서 랜덤 하나를 뽑는다.
             neg_sample +=tokenizer.sep_token + " " + sample[i+1][sample_parag_num]
 
             print(neg_sample)
@@ -323,13 +332,16 @@ def making_nextsentenceprediction_examples(new_whole_data):
             neg_examples_3.append({'data' : neg_sample,'label':[0]})
             #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
             #input()
+        
+        print("////")
 
         for j in range(len(sample)//2,len(sample)):
+            print(sample[j])
             sample_parag_num=random.randint(0,len(sample[j])-2) # 예를들어 길이가 3이면, 0~1까지 랜덤한 문단 하나를 뽑는다. (마지막 문단만 빼고.)
             pos_sample=sample[j][sample_parag_num]
             pos_sample +=tokenizer.sep_token + " " + sample[j][sample_parag_num+1]
             print(pos_sample)
-            print()
+            #print()
             input()
             pos_examples_3.append({'data' : pos_sample,'label':[1]})
     
@@ -369,27 +381,27 @@ def making_pickle_data(examples,name):
     with open(name+".pickle","wb") as f:
         pickle.dump(train_dataset,f)
 
-t_v_t="train"
+t_v_t="valid"
 examples_1=[]
 examples_2=[]
 
-whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=200000,range=0)
+whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=0,range=100000)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 #report(new_whole_data)
 #wp_examples_1=making_coherence_examples(new_whole_data)
-wp_examples_2=making_completeness_examples(new_whole_data)
+#wp_examples_2=making_completeness_examples(new_whole_data)
 wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
 del new_whole_data
 gc.collect()
 
-"""
+
 whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 #report(new_whole_data)
 #rd_examples_1=making_coherence_examples(new_whole_data)
-rd_examples_2=making_completeness_examples(new_whole_data)
+#rd_examples_2=making_completeness_examples(new_whole_data)
 rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
 
 
@@ -398,20 +410,21 @@ new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 #report(new_whole_data)
 #bk_examples_1=making_coherence_examples(new_whole_data)
-bk_examples_2=making_completeness_examples(new_whole_data)
-bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+#bk_examples_2=making_completeness_examples(new_whole_data)
+#bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
 del new_whole_data
 gc.collect()
 
+
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
-examples_2=wp_examples_2+bk_examples_2+rd_examples_2
+#examples_2=wp_examples_2+bk_examples_2+rd_examples_2
 
-"""
-examples_2=wp_examples_2
 
-#making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-0")
+#examples_2=bk_examples_2
+
+#making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-1")
 #del examples_1
 #gc.collect()
-making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-new-1")
+#making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-1")
 
 
