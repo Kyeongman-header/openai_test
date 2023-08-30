@@ -110,7 +110,6 @@ class MyLongformer(torch.nn.Module):
         output=self.bert(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask)
         prob=self.rogistic(output.pooler_output)
         prob=self.sigmoid(prob)
-
         if labels is not None:
             loss=self.loss(prob,labels)
         return prob, loss
@@ -125,13 +124,13 @@ if torch.cuda.is_available():
      mylongformer=mylongformer.to(gpu)
 
 def eval(steps):
-    mylongformer.eval()
     valid_loss=0.0
     # acc=0
     pp=0
     nn=0
     len_pp=0
     len_nn=0
+    mylongformer.eval()
     for i,(input_ids,attention_mask,global_attention_mask,labels) in enumerate(tqdm(valid_dataset)):
         # print(input_ids.shape)
         if torch.cuda.is_available():
@@ -139,8 +138,8 @@ def eval(steps):
              attention_mask=attention_mask.to(gpu)
              global_attention_mask=global_attention_mask.to(gpu)
              labels=labels.to(gpu)
-
-        probs,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
+        with torch.no_grad():
+            probs,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
         valid_loss += loss.item()
         if debug:
             print("probs")

@@ -1235,7 +1235,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             
             # gpt의 경우 generation output이 input ids를 포함하고 있다.
             # 이걸 떼어내기 위해서 input_lengths 배열을 받아온다.
-            outputs,new_memory, input_lengths = model.generate(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
+            with torch.no_grad():
+                outputs,new_memory, input_lengths = model.generate(memory=memory.detach(),input_ids = batch_input_ids,attention_mask = batch_attention_mask,decoder_input_ids = _batch_decoder_input_ids,decoder_attention_mask=_batch_decoder_attention_masks,labels=_batch_labels,prev_predictions=batch_prev_predictions,
                                 conti_prev_predictions=batch_conti_prev_predictions,conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions,order=order,whole=whole,intro=intro,tail=tail,use_cumulative=use_cumulative,use_memory=use_memory,use_rake=USE_RAKE)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
             
             if use_memory is True:
