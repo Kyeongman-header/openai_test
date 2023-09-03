@@ -73,6 +73,32 @@ elif tdataset_name=="completeness-whole" or vdataset_name=="completeness-whole":
             train_dataset = train_dataset + pickle.load(fi)
     with open("coherence_completeness/train_"+"completeness-5"+".pickle","rb") as fi:
             train_dataset = train_dataset + pickle.load(fi)
+elif tdataset_name=="nextsentenceprediction-whole" or vdataset_name=="nextsentenceprediction-whole":
+    with open("coherence_completeness/train_"+"nextsentenceprediction-1"+".pickle","rb") as fi:
+            train_dataset = pickle.load(fi)
+    with open("coherence_completeness/valid_"+"nextsentenceprediction-1"+".pickle","rb") as fi:
+            valid_dataset = pickle.load(fi)
+    with open("coherence_completeness/train_"+"nextsentenceprediction-2"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"nextsentenceprediction-3"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"nextsentenceprediction-4"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"nextsentenceprediction-5"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+elif tdataset_name=="logical-whole" or vdataset_name=="logical-whole":
+    with open("coherence_completeness/train_"+"logical-1"+".pickle","rb") as fi:
+            train_dataset = pickle.load(fi)
+    with open("coherence_completeness/valid_"+"logical-1"+".pickle","rb") as fi:
+            valid_dataset = pickle.load(fi)
+    with open("coherence_completeness/train_"+"logical-2"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"logical-3"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"logical-4"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
+    with open("coherence_completeness/train_"+"logical-5"+".pickle","rb") as fi:
+            train_dataset = train_dataset + pickle.load(fi)
 else: 
     with open("coherence_completeness/train_"+tdataset_name+".pickle","rb") as fi:
             train_dataset = pickle.load(fi)
