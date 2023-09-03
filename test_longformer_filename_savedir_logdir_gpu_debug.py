@@ -123,6 +123,9 @@ step=0
 
 progress_bar = tqdm(range(num_whole_steps))
 
+last_fake=""
+last_real=""
+
 for line in rdr:
     
     if first:
@@ -139,20 +142,20 @@ for line in rdr:
         print("fake outputs : " + line[4].replace('[','').replace(']',''))
         print("real outputs : " + line[3].replace('[','').replace(']',''))
         input()
-
-    if keywords==last_keywords:
-        cumul_fake_outputs+=" " + fake
-        cumul_real_outputs+=" " + real
-        continue
-    else:
-        if count!=1:
+    
+    if 'nextsentenceprediction' in save_dir : # nextsentenceprediction은 아예 다른 방식이다
+        if keywords==last_keywords:
+            cumul_fake_outputs+=tokenizer.sep_token + " " + fake
+            cumul_real_outputs+=tokenizer.sep_token + " " + real
+            
             f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
+
             f_scores.append(f_score.item())
             r_scores.append(r_score.item())
+            
             step+=1
             writer.add_scalar("fake score", f_score.item(), step)
             writer.add_scalar("real score", r_score.item(), step)
-
             if debug:
                 print("eval results : " )
                 print("fake : " + cumul_fake_outputs)
@@ -163,10 +166,50 @@ for line in rdr:
                 print("real score : ")
                 print(r_score.item())
                 print("###############")
+
+            cumul_fake_outputs=fake
+            cumul_real_outputs=real
+        else:
+            cumul_fake_outputs=fake
+            cumul_real_outputs=real
+
+    else:
+        if keywords==last_keywords:
             
-        cumul_fake_outputs=fake
-        cumul_real_outputs=real
-        last_keywords=keywords
+            cumul_fake_outputs+=" " + fake
+            cumul_real_outputs+=" " + real
+            last_real=real
+            last_fake=fake
+            continue
+        else:
+            if count!=1:
+                if 'coherence' in save_dir:
+                    f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
+                elif 'completeness' in save_dir:
+                    f_score,r_score=eval(last_fake,last_real)
+
+                f_scores.append(f_score.item())
+                r_scores.append(r_score.item())
+                step+=1
+                writer.add_scalar("fake score", f_score.item(), step)
+                writer.add_scalar("real score", r_score.item(), step)
+
+                if debug:
+                    print("eval results : " )
+                    print("fake : " + cumul_fake_outputs)
+                    print("real : " + cumul_real_outputs)
+                    print("keywords : " + last_keywords)
+                    print("fake score : ")
+                    print(f_score.item())
+                    print("real score : ")
+                    print(r_score.item())
+                    print("###############")
+                
+            cumul_fake_outputs=fake
+            cumul_real_outputs=real
+            last_keywords=keywords
+            last_real=real
+            last_fake=fake
 
 
 f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)

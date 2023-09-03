@@ -347,7 +347,39 @@ def making_nextsentenceprediction_examples(new_whole_data):
 # # pos_examples => [{'data' : [[CLS] + '~~' + [SEP] + '~~'], 'label' : [1]}, {}, {},...]
 # # neg_examples => [{'data' : [[CLS] + '~~' + [SEP] + '~~'], 'label' : [0]}, {}, {},...]
 # # examples => pos_examples + neg_examples, 그리고 random.shuffle(examples)
+def making_logical_examples(new_whole_data):
+    examples_4=[]
+    neg_examples_4=[]
+    pos_examples_4=[]
+    
 
+    for num, sample in enumerate(new_whole_data[1:]):
+        for i in range(0,len(sample)//2):
+            
+            print(sample[i])
+
+            sentences=sent_tokenize(' '.join(sample[i]))
+            print(sentences)
+
+            neg_sample=' '.join(random.shuffle(sentences))
+
+
+            neg_examples_4.append({'data' : neg_sample,'label':[0]})
+            print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+            input()
+
+        for j in range(len(sample)//2,len(sample)):
+            pos_sample=' '.join(sample[j])
+            pos_examples_4.append({'data' : pos_sample,'label':[1]})
+    
+
+    print("whole pos length : " + str(len(pos_examples_4)))
+    print("whole neg length : " + str(len(neg_examples_4)))
+    examples_4=neg_examples_4+pos_examples_4
+    print("whole length : " + str(len(examples_4)))
+
+
+    return examples_4
 
 def making_pickle_data(examples,name):
     df=pd.DataFrame(examples)
