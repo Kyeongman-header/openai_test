@@ -141,8 +141,8 @@ for line in rdr:
         input()
 
     if keywords==last_keywords:
-        cumul_fake_outputs+=fake
-        cumul_real_outputs+=real
+        cumul_fake_outputs+=" " + fake
+        cumul_real_outputs+=" " + real
         continue
     else:
         if count!=1:
