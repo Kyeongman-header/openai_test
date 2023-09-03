@@ -67,7 +67,7 @@ if torch.cuda.is_available():
 
 if CONTINUOUSLY_TRAIN:
     checkpoint= torch.load(PATH)
-    mylongformer.load_state_dict(checkpoint['model_state_dict'])
+    mylongformer.load_state_dict(checkpoint['model_state_dict'],strict=False)
 
 
 def eval(fake_outputs,real_outputs):
@@ -143,7 +143,8 @@ for line in rdr:
         print("real outputs : " + line[3].replace('[','').replace(']',''))
         input()
     
-    if 'nextsentenceprediction' in save_dir : # nextsentenceprediction은 아예 다른 방식이다
+    if 'nextsentence' in save_dir : # nextsentenceprediction은 아예 다른 방식이다
+        
         if keywords==last_keywords:
             cumul_fake_outputs+=tokenizer.sep_token + " " + fake
             cumul_real_outputs+=tokenizer.sep_token + " " + real
@@ -172,6 +173,7 @@ for line in rdr:
         else:
             cumul_fake_outputs=fake
             cumul_real_outputs=real
+            last_keywords=keywords
 
     else:
         if keywords==last_keywords:
@@ -183,7 +185,7 @@ for line in rdr:
             continue
         else:
             if count!=1:
-                if 'coherence' in save_dir:
+                if 'coherence' in save_dir or 'logical' in save_dir:
                     f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
                 elif 'completeness' in save_dir:
                     f_score,r_score=eval(last_fake,last_real)
@@ -196,8 +198,13 @@ for line in rdr:
 
                 if debug:
                     print("eval results : " )
-                    print("fake : " + cumul_fake_outputs)
-                    print("real : " + cumul_real_outputs)
+                    if 'coherence' in save_dir or 'logical' in save_dir:
+                        print("fake : " + cumul_fake_outputs)
+                        print("real : " + cumul_real_outputs)
+                    elif 'completeness' in save_dir:
+                        print("fake : " + last_fake)
+                        print("real : " + last_real)
+
                     print("keywords : " + last_keywords)
                     print("fake score : ")
                     print(f_score.item())

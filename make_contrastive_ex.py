@@ -353,23 +353,45 @@ def making_logical_examples(new_whole_data):
     pos_examples_4=[]
     
 
-    for num, sample in enumerate(new_whole_data[1:]):
+    for num, sample in enumerate(new_whole_data[2:]):
         for i in range(0,len(sample)//2):
             
-            print(sample[i])
+            if sample[i]=='':
+                continue
+
+            
+            #print(sample[i])
 
             sentences=sent_tokenize(' '.join(sample[i]))
-            print(sentences)
+            #print(sentences)
+            
+            #print()
 
-            neg_sample=' '.join(random.shuffle(sentences))
+            random.shuffle(sentences)
+
+            if len(sentences)==0:
+                continue
+
+            
+            
+            neg_sample=' '.join(sentences)
 
 
             neg_examples_4.append({'data' : neg_sample,'label':[0]})
-            print("index : " + str(i) + " whole_data_1 : " + neg_sample)
-            input()
+            #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+            #input()
 
         for j in range(len(sample)//2,len(sample)):
-            pos_sample=' '.join(sample[j])
+            
+            
+            ct=' '.join(sample[j])
+            
+            #print(ct)
+            #input()
+
+            if len(ct)==0:
+                continue
+            pos_sample=ct
             pos_examples_4.append({'data' : pos_sample,'label':[1]})
     
 
@@ -404,17 +426,18 @@ def making_pickle_data(examples,name):
 t_v_t="train"
 examples_1=[]
 examples_2=[]
-"""
-whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=200000,range=100000)
+
+whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=0,range=100000)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
 del whole_data
 #report(new_whole_data)
 #wp_examples_1=making_coherence_examples(new_whole_data)
 #wp_examples_2=making_completeness_examples(new_whole_data)
-wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+#wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+wp_examples_4=making_logical_examples(new_whole_data)
 del new_whole_data
 gc.collect()
-"""
+
 """
 whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
@@ -422,8 +445,9 @@ del whole_data
 #report(new_whole_data)
 #rd_examples_1=making_coherence_examples(new_whole_data)
 #rd_examples_2=making_completeness_examples(new_whole_data)
-rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
-"""
+#rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+rd_examples_4=making_logical_examples(new_whole_data)
+
 
 whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
 new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
@@ -431,10 +455,12 @@ del whole_data
 #report(new_whole_data)
 #bk_examples_1=making_coherence_examples(new_whole_data)
 #bk_examples_2=making_completeness_examples(new_whole_data)
-bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+#bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+bk_examples_4=making_logical_examples(new_whole_data)
+
 del new_whole_data
 gc.collect()
-
+"""
 
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
 #examples_2=wp_examples_2+bk_examples_2+rd_examples_2
@@ -442,10 +468,10 @@ gc.collect()
 
 #examples_3=wp_examples_3+bk_examples_3+rd_examples_3
 
-examples_3=bk_examples_3
+examples_4=wp_examples_4
 #making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-1")
 #del examples_1
 #gc.collect()
 #making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-1")
-making_pickle_data(examples_3,"coherence_completeness/"+t_v_t+"_nextsentenceprediction-5")
-
+#making_pickle_data(examples_3,"coherence_completeness/"+t_v_t+"_nextsentenceprediction-5")
+making_pickle_data(examples_4,"coherence_completeness/"+t_v_t+"_logical-1")
