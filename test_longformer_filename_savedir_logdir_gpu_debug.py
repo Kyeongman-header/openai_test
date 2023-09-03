@@ -229,5 +229,11 @@ writer.add_scalar("real score", r_score.item(), step)
 f_scores=np.array(f_scores)
 r_scores=np.array(r_scores)
 
+writer.add_scalar("mean fake score", np.mean(f_scores), 0)
+writer.add_scalar("mean real score", np.mean(r_scores), 0)
+writer.add_scalar("var fake score", np.var(f_scores), 0)
+writer.add_scalar("var real score", np.var(r_scores), 0)
+
 print(testfile_name + "'s " + save_dir + " mean score : " + str(np.mean(f_scores)) + "\n var : " + str(np.var(f_scores)))
 print("and this is baseline (original dataset)'s same mean score : " + str(np.mean(r_scores))+ "\n var : " + str(np.var(r_scores)))
+
