@@ -1,3 +1,5 @@
+#!/bin/sh
+
 python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_rake/test/generations_outputs_1 coherence-whole bart_rake_1_coherence-whole cuda:0 0
 python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_rake/test/generations_outputs_2 coherence-whole bart_rake_2_coherence-whole cuda:0 0
 python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_rake/test/generations_outputs_3 coherence-whole bart_rake_5_coherence-whole cuda:0 0
