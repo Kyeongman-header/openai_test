@@ -195,3 +195,21 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("real_in self bleu tri/eval", in_self_bleu_tri, steps)
     writer.add_scalar("real_in self bleu four/eval", in_self_bleu_four, steps)
     writer.add_scalar("real_in self bleu fif/eval", in_self_bleu_fif, steps)
+
+for i in range(1,20): # 최대 100개 문단까지 있다.
+        
+        
+        with open("pickle_data/"+"bart_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            test_dataset = pickle.load(fi)
+        with open("pickle_data/"+"bart_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:# reedsy rake는 test dataset이 없다
+            test_dataset += pickle.load(fi)
+        with open("pickle_data/"+"bart_test_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            test_dataset += pickle.load(fi)
+        
+        if len(test_dataset)==0:
+            continue
+        
+        print("the test set for " + str(i) + " Num Paragramphs.")
+
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        eval_first=False
