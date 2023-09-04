@@ -81,11 +81,11 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         # print(batch_decoder_attention_masks.shape) # (N, b, 250)
         # print(batch_prev_predictions.shape) #(b,150)
         # print("batch dataset shape ends")
-        batch_input_ids=batch_input_ids.to(gpu_name)
-        batch_attention_mask=batch_attention_mask.to(gpu_name)
-        batch_num_decoder_input_ids=batch_num_decoder_input_ids.to(gpu_name)
-        batch_decoder_attention_masks=batch_decoder_attention_masks.to(gpu_name)
-        batch_prev_predictions=batch_prev_predictions.to(gpu_name)
+        batch_input_ids=batch_input_ids
+        batch_attention_mask=batch_attention_mask
+        batch_num_decoder_input_ids=batch_num_decoder_input_ids
+        batch_decoder_attention_masks=batch_decoder_attention_masks
+        batch_prev_predictions=batch_prev_predictions
         
         count=0
     
@@ -99,10 +99,10 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             _batch_decoder_attention_masks=batch_decoder_attention_masks[count] #(b,250)
 
             
-            # dd=torch.unsqueeze(decoder_input_id[:-1],dim=0).to(gpu_name)
-            # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
+            # dd=torch.unsqueeze(decoder_input_id[:-1],dim=0)
+            # decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0)
         # input_ids 맨 앞에 이전 preceding context를 합친다.
-            # label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
+            # label=torch.unsqueeze(d[1:],dim=0)
             # _batch_labels=_batch_decoder_input_ids[:,1:] #(b,249)
             _batch_labels=_batch_decoder_input_ids #(b,250)
             _batch_decoder_input_ids=_batch_decoder_input_ids[:,:-1] #(b,249)
@@ -178,8 +178,6 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         
 
    
-    ppl=0
-    #print("ppl is : " + str(ppl.item()))
     
 
     in_self_bleu_one=in_self_bleu_one/whole_num
