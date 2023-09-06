@@ -6,7 +6,7 @@ import random
 from torch.utils.tensorboard import SummaryWriter
 import evaluate
 _bleu=evaluate.load("bleu")
-
+_real_bleu=evaluate.load("bleu")
 def createFolder(directory):
     try:
         if not os.path.exists(directory):
@@ -31,29 +31,29 @@ def do_eval(steps,whole_predictions,whole_labels):
     print(whole_labels[33])
     
     whole_num=0
-    whole_predictions=[]
-    whole_predictions_len=0
-    whole_labels=[]
-    whole_labels_len=0
+    #whole_predictions=[]
+    whole_predictions_len=len(whole_predictions)
+    #whole_labels=[]
+    whole_labels_len=len(whole_labels)
 
-    whole_num=len(f)
+    whole_num=len(whole_predictions)
 
 
     print("len of sample generation : " + str(whole_num))
-    print("len of label generation : " + str(len()))
+    print("len of label generation : " + str(len(whole_labels)))
     
     
-
     self_num=0
+
     for j in range(N if N<whole_num else whole_num):
-        except_whole_labels=whole_labels[0:j]+whole_labels[j+1:1000]
-        real_self_bleu=_bleu.add_batch(predictions=[whole_labels[j]],references=[except_whole_labels],max_order=5)
-        
+        except_whole_labels=whole_labels[0:j]+whole_labels[j+1:N]
+        _bleu.add_batch(predictions=[whole_labels[j]],references=[except_whole_labels])
+        #print(except_whole_labels) 
             
         #print(_real_self_bleu)
         self_num+=1
-    real_self_bleu.compute()
-
+    real_self_bleu=_bleu.compute(max_order=5)
+    
     r_self_bleu_one=real_self_bleu['precisions'][0]
     r_self_bleu_bi=real_self_bleu['precisions'][1]
     r_self_bleu_tri=real_self_bleu['precisions'][2]
@@ -62,21 +62,21 @@ def do_eval(steps,whole_predictions,whole_labels):
 
     p_self_num=0
     for j in range(N if N<whole_num else whole_num): # 1000개에 대해서만 self-bleu.
-        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:1000]
+        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:N]
         #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
-        self_bleu=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=5)
+        _real_bleu.add_batch(predictions=[whole_predictions[j]],references=[except_whole_predictions])
         
         p_self_num+=1
     
-    self_bleu.compute()
+    self_bleu=_real_bleu.compute(max_order=5)
     self_bleu_one=self_bleu['precisions'][0]
     self_bleu_bi=self_bleu['precisions'][1]
     self_bleu_tri=self_bleu['precisions'][2]
     self_bleu_four=self_bleu['precisions'][3]
     self_bleu_fif=self_bleu['precisions'][4]
     
-    whole_predictions_len=whole_predictions_len/whole_num
-    whole_labels_len=(whole_labels_len/whole_num)
+    whole_predictions_len=whole_predictions_len
+    whole_labels_len=whole_labels_len
     # self_bleu_one=self_bleu_one/p_self_num
     # self_bleu_bi=self_bleu_bi/p_self_num
     # self_bleu_tri=self_bleu_tri/p_self_num
@@ -185,6 +185,7 @@ for step, line in _f.iterrows():
         cumul_real_outputs=real
         last_keywords=keywords
 
+print(count)
 
 f.append(cumul_fake_outputs)
 r.append(cumul_real_outputs)
