@@ -8,8 +8,10 @@ from dataset_consts_bart import *
 import random
 from torch.utils.tensorboard import SummaryWriter
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
+
 from rake_nltk import Rake
 r = Rake()
+
 import evaluate
 import sys
 from torch.cuda.amp import GradScaler, autocast
@@ -1090,11 +1092,11 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     use_memory=USE_MEMORY
 
     model.eval()
-    for i in trange(0, eval_num, batch_size):
+    for i in trange(0, eval_num if eval_num<len(dataset) else len(dataset), batch_size):
         if i+batch_size>eval_num or i+batch_size>len(dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
-            if i<=1: # 데이터셋이 단 한개 이하로 있는 경우
+            if i<=1: # 데이터셋이 단 한개 보다 적게 있는 경우
                 # self bleu 등을 구할 수 없기 때문에 그냥 넘긴다. 
                 return
             break
@@ -1386,7 +1388,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
     self_num=0
     for j in range(N if N<whole_num else whole_num):
-        except_whole_labels=whole_labels[0:j]+whole_labels[j+1:1000]
+        except_whole_labels=whole_labels[0:j]+whole_labels[j+1:N]
         real_self_bleu=_bleu.compute(predictions=[whole_labels[j]],references=[except_whole_labels],max_order=5)
         r_self_bleu_one+=real_self_bleu['precisions'][0]
         r_self_bleu_bi+=real_self_bleu['precisions'][1]
@@ -1400,7 +1402,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
     p_self_num=0
     for j in range(N if N<whole_num else whole_num): # 1000개에 대해서만 self-bleu.
-        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:1000]
+        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:N]
         #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
         self_bleu=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=5)
         self_bleu_one+=self_bleu['precisions'][0]
@@ -1464,8 +1466,10 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
 eval_first=True
 if IS_TEST:
-    for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
-        
+    #paragraphs=[5,10,30,50,98]
+    paragraphs=[5]
+    #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
+    for i in paragraphs:    
         if dataset_dir !="whole":
                 if dataset_dir=='reedsy_rake': # reedsy rake는 test dataset이 없다
                     with open("pickle_data/"+"bart_valid_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
@@ -1485,7 +1489,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=5000,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
@@ -1494,9 +1498,9 @@ else:
     
     whole_new_dataset=[]
     whole_new_dataset_length=[]
-
+    
     for i in trange(1,30): # 최대 100개 문단까지 있다.
-
+    
         if dataset_dir !="whole":
             with open("pickle_data/"+"bart_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                     train_dataset = pickle.load(fi)
@@ -1605,7 +1609,7 @@ else:
         # ---- total style
         trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar,epoch=epoch)
         # ---- total style
-        
+        """ 
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             LAST_PARAG=0
             if dataset_dir !="whole":
@@ -1625,8 +1629,8 @@ else:
             do_eval(steps=i,dataset=valid_dataset,NumPar=i,eval_num=8,eval_first=eval_first)
             eval_first=False
             torch.cuda.empty_cache()
-        
-# for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
+        """
+#for i in range(LAST_PARAG,20): # 최대 30개 문단까지 있다.
 
         
 #         with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_"+str(i)+".pickle","rb") as fi:
