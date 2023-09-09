@@ -78,6 +78,8 @@ def eval(steps,input_text):
         print(input_ids[0])
         print(attention_mask[0])
     else:
+        input_text=tokenizer(input_text,max_length=4096,padding="max_length",
+                truncation=True,return_tensors="pt")
         input_ids=input_text['input_ids']
         attention_mask=input_text['attention_mask']
         input_text=tokenizer.batch_decode(input_ids,skip_special_tokens=True)
@@ -107,5 +109,24 @@ for i,(input_ids,attention_mask,global_attention_mask,labels) in enumerate(tqdm(
     #print(tokenizer.batch_decode(input_ids,skip_special_tokens=True))
     #print(labels)
     #eval(0,{'input_ids':input_ids,'attention_mask':attention_mask})
-    
-    eval(0,None)
+    from transformers import AutoTokenizer
+    _tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    _tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    pad_token_id=_tokenizer.pad_token_id
+    _text='''The day I turned 25 I was not surprised when I had learned the terrible truth about humanity. It was right there, out in the open, all along. All one had to do was... Accept it. It's not as though it was on purpose. It was no one's design. It just *was. *   I awoke that morning the way I awoke every morning. A bit groggy, underneath a pile of covers, the green glow of my alarm clock across the ceiling. It was still dark, and work would begin in a few hours. I would have to continue serving like a mindless drone, * '' Oh would you like coffee or tea this morning, sir? `` * How... completely meaningless. Yes I know, how does one WORK on their birthday!? Well let me tell you, friend.'''
+    _input=_tokenizer(_text,max_length=250,padding="max_length",
+            truncation=True,return_tensors="pt")
+
+    print(_input)
+    print(_tokenizer.batch_decode(_input['input_ids'],skip_special_tokens=True))
+    eval(0,_tokenizer.batch_decode(_input['input_ids'],skip_special_tokens=True))
+    _tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
+    _tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    _pad_token_id=tokenizer.pad_token_id
+    #_text='''And if nothing horrible came to pass, I’d start to think (which is probably healthy) that what I’d been doing for years had been for naught—but in a positive way. I could leave it all behind if I was able to convince myself that what I’d applied so much meaning to actually meant nothing—that I could more than make it in the world without relying on something I was trying to convince myself was complete nonsense. At the end of the day, it all worked out. Again, the day passed without much to report. My girlfriend and I happened to exchange Christmas gifts that night, and she’d found me a new charm—this one a laptop, which was more fitting to the way I work. I’m doing my best to pretend I don’t believe it’ll bring me good fortune, but you never know what’s going to work. Though I do take my necklace off when I shower now. You never really know, do you?'''
+    _input=_tokenizer(_text,max_length=250,padding="max_length",
+            truncation=True,return_tensors="pt")
+
+    print(_input)
+    print(_tokenizer.batch_decode(_input['input_ids'],skip_special_tokens=True))
+    eval(0,_tokenizer.batch_decode(_input['input_ids'],skip_special_tokens=True))
