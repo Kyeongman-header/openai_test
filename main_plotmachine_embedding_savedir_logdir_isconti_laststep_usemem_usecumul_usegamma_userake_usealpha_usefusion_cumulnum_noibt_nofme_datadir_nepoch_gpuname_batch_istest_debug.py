@@ -13,6 +13,8 @@ r = Rake()
 import evaluate
 import sys
 from torch.cuda.amp import GradScaler, autocast
+_tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
+_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
 metric = evaluate.load("rouge")
 meteor=evaluate.load("meteor")
@@ -1162,6 +1164,18 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             one_label.append([])
         for data in batch_data:
             input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
+            
+            new_input=tokenizer(_tokenizer.batch_decode(data['input_ids'],skip_special_tokens=True),max_length=200,padding="max_length",truncation=True,return_tensors="pt")
+            input_ids=new_input['input_ids']
+            attention_mask=new_input['attention_mask']
+
+            new_decoder_input=tokenizer(_tokenizer.batch_decode(data['decoder_input_ids'],skip_special_tokens=True),max_length=250,padding="max_length",truncation=True,return_tensors="pt")            
+            num_decoder_input_ids=new_decoder_input['input_ids']
+            decoder_attention_masks=new_decoder_input['attention_mask']
+
+            new_prompt=tokenizer(_tokenizer.batch_decode(data['prompt'],skip_special_tokens=True),max_length=150,padding="max_length",truncation=True,return_tensors="pt")
+            prompt=new_prompt['input_ids']
+            
             batch_num_decoder_input_ids.append(num_decoder_input_ids)
             batch_decoder_attention_masks.append(decoder_attention_masks)
             if first:
@@ -1514,7 +1528,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
 eval_first=True
 if IS_TEST:
-    for i in range(LAST_PARAG,30): # 최대 100개 문단까지 있다.
+    paragraphs=[5,10,19,30,50,98]
+    for i in paragraphs: # 최대 100개 문단까지 있다.
         
         if dataset_dir !="whole":
                 if dataset_dir=='reedsy_rake': # reedsy rake는 test dataset이 없다
@@ -1524,11 +1539,11 @@ if IS_TEST:
                     with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                         test_dataset = pickle.load(fi)
         else: # whole dataset train.
-            with open("pickle_data/"+"gpt_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            with open("pickle_data/"+"bart_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 test_dataset = pickle.load(fi)
-            with open("pickle_data/"+"gpt_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:# reedsy rake는 test dataset이 없다
+            with open("pickle_data/"+"bart_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:# reedsy rake는 test dataset이 없다
                 test_dataset += pickle.load(fi)
-            with open("pickle_data/"+"gpt_test_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            with open("pickle_data/"+"bart_test_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 test_dataset += pickle.load(fi)
         
         if len(test_dataset)==0:

@@ -13,6 +13,8 @@ r = Rake()
 import evaluate
 import sys
 from torch.cuda.amp import GradScaler, autocast
+_tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
+_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
 metric = evaluate.load("rouge")
 meteor=evaluate.load("meteor")
@@ -1127,9 +1129,35 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         for j in range(batch_size):
             one_label.append([])
         for data in batch_data:
-            input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
+            input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt = (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
+            
+            
+            #print(input_ids.shape)
+            #print(attention_mask.shape)
+            #print(num_decoder_input_ids.shape)
+            #print(decoder_attention_masks.shape)
+            #print(prompt.shape)
+            
+            new_input=tokenizer(_tokenizer.batch_decode(data['input_ids'],skip_special_tokens=True),max_length=200,padding="max_length",truncation=True,return_tensors="pt")
+            input_ids=new_input['input_ids']
+            attention_mask=new_input['attention_mask']
+            
+            new_decoder_input=tokenizer(_tokenizer.batch_decode(data['decoder_input_ids'],skip_special_tokens=True),max_length=250,padding="max_length",truncation=True,return_tensors="pt")
+            num_decoder_input_ids=new_decoder_input['input_ids']
+            decoder_attention_masks=new_decoder_input['attention_mask']
+
+            new_prompt=tokenizer(_tokenizer.batch_decode(data['prompt'],skip_special_tokens=True),max_length=150,padding="max_length",truncation=True,return_tensors="pt")
+            prompt=new_prompt['input_ids']
+            
+            #print(input_ids.shape)
+            #print(attention_mask.shape)
+            #print(num_decoder_input_ids.shape)
+            #print(decoder_attention_masks.shape)
+            #print(prompt.shape)
+            #input()
             batch_num_decoder_input_ids.append(num_decoder_input_ids)
             batch_decoder_attention_masks.append(decoder_attention_masks)
+            
             if first:
                 batch_input_ids=input_ids
                 batch_attention_mask=attention_mask
@@ -1400,7 +1428,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("len of sample generation : " + str(whole_num))
     
     
-
+    """
     self_num=0
     for j in range(N if N<whole_num else whole_num):
         except_whole_labels=whole_labels[0:j]+whole_labels[j+1:1000]
@@ -1455,7 +1483,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("real self_bleu tri : " + str(r_self_bleu_tri))
     print("real self_bleu four : " + str(r_self_bleu_four))
     print("real self_bleu fif : " + str(r_self_bleu_fif))
-    
+    """
 
     writer.add_scalar("rouge1/eval", result['rouge1'], steps)
     writer.add_scalar("rouge2/eval", result['rouge2'], steps)
@@ -1466,6 +1494,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("in self bleu tri/eval", in_self_bleu_tri, steps)
     writer.add_scalar("in self bleu four/eval", in_self_bleu_four, steps)
     writer.add_scalar("in self bleu fif/eval",in_self_bleu_fif, steps)
+    """
     writer.add_scalar("self bleu bi/eval", self_bleu_bi, steps)
     writer.add_scalar("self bleu tri/eval", self_bleu_tri, steps)
     writer.add_scalar("self bleu four/eval", self_bleu_four, steps)
@@ -1478,12 +1507,14 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
     #writer.add_scalar("ppl",ppl.item(),steps)
-
+    """
 import random
 eval_first=True
 if IS_TEST:
-    for i in range(LAST_PARAG,30): # 최대 100개 문단까지 있다.
-        
+    paragraphs=[5,10,19,30,50,98]
+    #paragraphs=[5]
+    #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
+    for i in paragraphs:    
         if dataset_dir !="whole":
                 if dataset_dir=='reedsy_rake': # reedsy rake는 test dataset이 없다
                     with open("pickle_data/"+"gpt_valid_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
@@ -1492,11 +1523,11 @@ if IS_TEST:
                     with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                         test_dataset = pickle.load(fi)
         else: # whole dataset train.
-            with open("pickle_data/"+"gpt_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            with open("pickle_data/"+"bart_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 test_dataset = pickle.load(fi)
-            with open("pickle_data/"+"gpt_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:# reedsy rake는 test dataset이 없다
+            with open("pickle_data/"+"bart_valid_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:# reedsy rake는 test dataset이 없다
                 test_dataset += pickle.load(fi)
-            with open("pickle_data/"+"gpt_test_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            with open("pickle_data/"+"bart_test_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 test_dataset += pickle.load(fi)
         
         if len(test_dataset)==0:
