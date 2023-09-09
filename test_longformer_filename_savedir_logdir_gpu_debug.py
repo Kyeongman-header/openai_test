@@ -130,12 +130,20 @@ last_real=""
 not_last_fake=[]
 not_last_real=[]
 
+paragraphs=int(testfile_name[-1])
+
+print(paragraphs)
+
 for line in rdr:
     
     if first:
         first=False
         continue
     count+=1
+    if count==paragraphs*80:
+        break
+    
+    
     progress_bar.update(1)
     
     keywords=line[2].replace('[','').replace(']','')
