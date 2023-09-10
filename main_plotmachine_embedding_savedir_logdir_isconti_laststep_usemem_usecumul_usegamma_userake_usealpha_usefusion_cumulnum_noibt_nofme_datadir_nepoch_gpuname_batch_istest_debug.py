@@ -15,7 +15,8 @@ import sys
 from torch.cuda.amp import GradScaler, autocast
 _tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
 _tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-
+__tokenizer = AutoTokenizer.from_pretrained("gpt2")
+__tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 metric = evaluate.load("rouge")
 meteor=evaluate.load("meteor")
 _bleu=evaluate.load("bleu")
@@ -810,7 +811,7 @@ class Network(nn.Module):
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=1.4,length_penalty=-0.2,early_stopping=True,context=None,alpha=one_alpha,beta=one_beta))
+                        repetition_penalty=1.4,length_penalty=-1.0,early_stopping=True,context=None,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
@@ -1447,7 +1448,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("len of sample generation : " + str(whole_num))
     
     
-
+    """
     self_num=0
     for j in range(N if N<whole_num else whole_num):
         except_whole_labels=whole_labels[0:j]+whole_labels[j+1:1000]
@@ -1476,9 +1477,10 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     
     
 
-    
+    """
     whole_predictions_len=whole_predictions_len/whole_num
     whole_labels_len=(whole_labels_len/whole_num)
+    """
     self_bleu_one=self_bleu_one/p_self_num
     self_bleu_bi=self_bleu_bi/p_self_num
     self_bleu_tri=self_bleu_tri/p_self_num
@@ -1502,7 +1504,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("real self_bleu tri : " + str(r_self_bleu_tri))
     print("real self_bleu four : " + str(r_self_bleu_four))
     print("real self_bleu fif : " + str(r_self_bleu_fif))
-    
+    """
 
     writer.add_scalar("rouge1/eval", result['rouge1'], steps)
     writer.add_scalar("rouge2/eval", result['rouge2'], steps)
@@ -1513,6 +1515,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("in self bleu tri/eval", in_self_bleu_tri, steps)
     writer.add_scalar("in self bleu four/eval", in_self_bleu_four, steps)
     writer.add_scalar("in self bleu fif/eval",in_self_bleu_fif, steps)
+    """
     writer.add_scalar("self bleu bi/eval", self_bleu_bi, steps)
     writer.add_scalar("self bleu tri/eval", self_bleu_tri, steps)
     writer.add_scalar("self bleu four/eval", self_bleu_four, steps)
@@ -1521,6 +1524,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("real_self bleu tri/eval", r_self_bleu_tri, steps)
     writer.add_scalar("real_self bleu four/eval", r_self_bleu_four, steps)
     writer.add_scalar("real_self bleu fif/eval", r_self_bleu_fif, steps)
+    """
     #writer.add_scalar("meteor",met_result,steps)
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
@@ -1550,7 +1554,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=10000,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
