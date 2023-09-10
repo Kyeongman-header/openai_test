@@ -15,10 +15,11 @@ def createFolder(directory):
         print('Error Creating directory. ' + directory)
 createFolder('second_level')
 
-writer = SummaryWriter("./runs/"+"bart_wp_rake")
+writer = SummaryWriter("./runs/"+"test")
 
 def do_eval(steps,whole_predictions,whole_labels):
-    
+    #for label in whole_labels[:3]:
+    #    print(label)
     
     
     index=0
@@ -26,9 +27,9 @@ def do_eval(steps,whole_predictions,whole_labels):
     N=1000
     
     
-    print(whole_predictions[33])
-    print()
-    print(whole_labels[33])
+    #print(whole_predictions[33])
+    #print()
+    #print(whole_labels[33])
     
     whole_num=0
     #whole_predictions=[]
@@ -123,7 +124,8 @@ import numpy as np
 import pandas as pd
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 
-_f = pd.read_csv('bartGenerations/bart_wp_rake/test/generations_outputs_5.csv',chunksize=1000)
+_f = pd.read_csv('bartGenerations/bart_rake/test/generations_outputs_5.csv',chunksize=1000)
+
 _f= pd.concat(_f)
 
 num_whole_steps=len(_f.index)
@@ -164,7 +166,8 @@ for step, line in _f.iterrows():
         #real=line[3].replace('[','').replace(']','').replace('<','').replace('>','').replace('newline','').replace('Newline','').replace('ewline','').replace('new line','').replace('ew line','').replace('\\x90','').replace('\\x80','').replace('\\x9c','').replace('\\x84','').replace("\\x9d",'').replace('\\x99','').replace('\\x9','').replace('\\x8','')
     else:
         real=""
-
+    #print(real)
+    #input()
     if keywords==last_keywords:
         cumul_fake_outputs+=fake+". "
         cumul_real_outputs+=real+". "
@@ -175,7 +178,7 @@ for step, line in _f.iterrows():
 
         continue
     else:
-        if count!=1 and par_count<10 and is_real_nan_cumul is False:
+        if count!=1 and is_real_nan_cumul is False:
             f.append(cumul_fake_outputs)
             r.append(cumul_real_outputs)
         
