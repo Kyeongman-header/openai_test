@@ -9,6 +9,7 @@ import nltk.translate.bleu_score as bleu
 from nltk.tokenize import TweetTokenizer
 _bleu=evaluate.load("bleu")
 _real_bleu=evaluate.load("bleu")
+tweet_tokenizer = TweetTokenizer()
 def createFolder(directory):
     try:
         if not os.path.exists(directory):
@@ -63,11 +64,11 @@ def do_eval(steps,whole_predictions,whole_labels):
         refs=[]
         for predicts in except_whole_predictions:
 
-            refs.append(TweetTokenizer(predicts))
+            refs.append(tweet_tokenizer.tokenize(predicts))
 
-        print(refs)
-        hyp=TweetTokenizer(whole_predictions[j])
-        print(hyp)
+        #print(refs)
+        hyp=tweet_tokenizer.tokenize(whole_predictions[j])
+        #print(hyp)
         self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
         print(self_bleu)
         self_bleu_bi+=self_bleu[0]
@@ -110,11 +111,11 @@ def do_eval(steps,whole_predictions,whole_labels):
         refs=[]
         for predicts in except_whole_labels:
 
-            refs.append(TweetTokenizer(predicts))
+            refs.append(tweet_tokenizer.tokenize(predicts))
 
-        print(refs)
-        hyp=TweetTokenizer(whole_labels[j])
-        print(hyp)
+        #print(refs)
+        hyp=tweet_tokenizer.tokenize(whole_labels[j])
+        #print(hyp)
         self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
         print(self_bleu)
         r_self_bleu_bi+=self_bleu[0]
