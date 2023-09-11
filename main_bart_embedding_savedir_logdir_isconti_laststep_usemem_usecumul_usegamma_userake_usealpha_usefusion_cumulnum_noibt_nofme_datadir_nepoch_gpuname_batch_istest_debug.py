@@ -1384,7 +1384,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
     print("len of sample generation : " + str(whole_num))
     
-    
+    """    
 
     self_num=0
     for j in range(N if N<whole_num else whole_num):
@@ -1414,9 +1414,10 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     
     
 
-    
+    """
     whole_predictions_len=whole_predictions_len/whole_num
     whole_labels_len=(whole_labels_len/whole_num)
+    """
     self_bleu_one=self_bleu_one/p_self_num
     self_bleu_bi=self_bleu_bi/p_self_num
     self_bleu_tri=self_bleu_tri/p_self_num
@@ -1440,7 +1441,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("real self_bleu tri : " + str(r_self_bleu_tri))
     print("real self_bleu four : " + str(r_self_bleu_four))
     print("real self_bleu fif : " + str(r_self_bleu_fif))
-    
+    """
 
     writer.add_scalar("rouge1/eval", result['rouge1'], steps)
     writer.add_scalar("rouge2/eval", result['rouge2'], steps)
@@ -1451,6 +1452,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("in self bleu tri/eval", in_self_bleu_tri, steps)
     writer.add_scalar("in self bleu four/eval", in_self_bleu_four, steps)
     writer.add_scalar("in self bleu fif/eval",in_self_bleu_fif, steps)
+    """
     writer.add_scalar("self bleu bi/eval", self_bleu_bi, steps)
     writer.add_scalar("self bleu tri/eval", self_bleu_tri, steps)
     writer.add_scalar("self bleu four/eval", self_bleu_four, steps)
@@ -1460,14 +1462,15 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("real_self bleu four/eval", r_self_bleu_four, steps)
     writer.add_scalar("real_self bleu fif/eval", r_self_bleu_fif, steps)
     #writer.add_scalar("meteor",met_result,steps)
+    """
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
     #writer.add_scalar("ppl",ppl.item(),steps)
-
+    
 eval_first=True
 if IS_TEST:
-    #paragraphs=[5,10,30,50,98]
-    paragraphs=[5]
+    paragraphs=[5,10,19,30,50,98]
+    #paragraphs=[5]
     #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
     for i in paragraphs:    
         if dataset_dir !="whole":
@@ -1489,7 +1492,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=5000,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=10000,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 

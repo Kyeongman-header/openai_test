@@ -82,9 +82,10 @@ for step, line in _f.iterrows():
         continue
     else:
         if count!=1 and par_count<PAR_COUNT:
-            f.append({"text" : cumul_fake_outputs.encode('ascii','ignore').decode('ascii',errors='ignore') , "label" : "fake"})
-            if is_real_nan_cumul is False:
-                r.append({"text" : cumul_real_outputs.encode('ascii','ignore').decode('ascii',errors='ignore') , "label" : "real"})
+            if cumul_fake_outputs==cumul_fake_outputs and cumul_real_outputs==cumul_real_outputs:
+                f.append({"text" : cumul_fake_outputs.encode('ascii','ignore').decode('ascii',errors='ignore') , "label" : "fake"})
+                if is_real_nan_cumul is False:
+                    r.append({"text" : cumul_real_outputs.encode('ascii','ignore').decode('ascii',errors='ignore') , "label" : "real"})
         
         is_real_nan_cumul=False
         par_count=0
@@ -104,7 +105,7 @@ random.shuffle(mix)
 import os
 import openai
 print("mixing done.")
-
+print(len(mix))
 
 def createFolder(directory):
     try:

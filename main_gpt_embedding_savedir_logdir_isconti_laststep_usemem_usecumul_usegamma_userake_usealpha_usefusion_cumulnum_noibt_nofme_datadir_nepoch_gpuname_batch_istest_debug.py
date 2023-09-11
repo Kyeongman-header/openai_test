@@ -15,7 +15,8 @@ import sys
 from torch.cuda.amp import GradScaler, autocast
 _tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
 _tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-
+__tokenizer = AutoTokenizer.from_pretrained("gpt2")
+__tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 metric = evaluate.load("rouge")
 meteor=evaluate.load("meteor")
 _bleu=evaluate.load("bleu")
@@ -1138,7 +1139,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             #print(decoder_attention_masks.shape)
             #print(prompt.shape)
             
-            new_input=tokenizer(_tokenizer.batch_decode(data['input_ids'],skip_special_tokens=True),max_length=200,padding="max_length",truncation=True,return_tensors="pt")
+            new_input=__tokenizer(_tokenizer.batch_decode(data['input_ids'],skip_special_tokens=True),max_length=200,padding="max_length",truncation=True,return_tensors="pt")
             input_ids=new_input['input_ids']
             attention_mask=new_input['attention_mask']
             
@@ -1454,12 +1455,13 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
         self_bleu_four+=self_bleu['precisions'][3]
         self_bleu_fif+=self_bleu['precisions'][4]
         p_self_num+=1
-    
+    """
     
 
     
     whole_predictions_len=whole_predictions_len/whole_num
     whole_labels_len=(whole_labels_len/whole_num)
+    """
     self_bleu_one=self_bleu_one/p_self_num
     self_bleu_bi=self_bleu_bi/p_self_num
     self_bleu_tri=self_bleu_tri/p_self_num
@@ -1504,14 +1506,15 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("real_self bleu four/eval", r_self_bleu_four, steps)
     writer.add_scalar("real_self bleu fif/eval", r_self_bleu_fif, steps)
     #writer.add_scalar("meteor",met_result,steps)
+    """
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
     #writer.add_scalar("ppl",ppl.item(),steps)
-    """
+    
 import random
 eval_first=True
 if IS_TEST:
-    paragraphs=[5,10,19,30,50,98]
+    paragraphs=[2,5,10,19,30,50,98]
     #paragraphs=[5]
     #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
     for i in paragraphs:    
@@ -1534,7 +1537,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=10000,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
