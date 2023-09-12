@@ -10,6 +10,9 @@ from torch.utils.tensorboard import SummaryWriter
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 from rake_nltk import Rake
 r = Rake()
+import nltk.translate.bleu_score as bleu
+from nltk.tokenize import TweetTokenizer
+tweet_tokenizer = TweetTokenizer()
 import evaluate
 import sys
 from torch.cuda.amp import GradScaler, autocast
@@ -1110,12 +1113,12 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     use_memory=USE_MEMORY
 
     model.eval()
-    for i in trange(0, eval_num, batch_size):
+    for i in trange(0, eval_num if eval_num<len(dataset) else len(dataset), batch_size):
         if i+batch_size>eval_num or i+batch_size>len(dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
-            if i<=1: # 데이터셋이 단 한개 이하로 있는 경우
-                # self bleu 등을 구할 수 없기 때문에 그냥 넘긴다. 
+            if i<=1: # 데이터셋이 단 한개 보다 적게 있는 경우
+                # self bleu 등을 구할 수 없기 때문에 그냥 넘긴다.
                 return
             break
     # get the inputs; data is a list of [inputs, labels]]
@@ -1377,13 +1380,28 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                     # print(_one_prediction[j])
                     # 학습이 제대로 안되서 generate 길이가 0이면, 이게 제대로 작동 안한다.
             #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
+                    refs=[]
+                    for predicts in except_one_prediction:
+
+                        refs.append(tweet_tokenizer.tokenize(predicts))
+
+                    #print(refs)
+                    hyp=tweet_tokenizer.tokenize(_one_prediction[j])
+                    #print(hyp)
+                    self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
+                    #print(self_bleu)
+                    _in_self_bleu_bi+=self_bleu[0]
+                    _in_self_bleu_tri+=self_bleu[1]
+                    _in_self_bleu_four+=self_bleu[2]
+                    _in_self_bleu_fif+=self_bleu[3]
+                    """
                     self_bleu=_bleu.compute(predictions=[_one_prediction[j]],references=[except_one_prediction],max_order=5)
                     _in_self_bleu_one+=self_bleu['precisions'][0]
                     _in_self_bleu_bi+=self_bleu['precisions'][1]
                     _in_self_bleu_tri+=self_bleu['precisions'][2]
                     _in_self_bleu_four+=self_bleu['precisions'][3]
                     _in_self_bleu_fif+=self_bleu['precisions'][4]
-
+                    """
             in_self_bleu_one+=_in_self_bleu_one/len(_one_prediction)
             in_self_bleu_bi+=_in_self_bleu_bi/len(_one_prediction)
             in_self_bleu_tri+=_in_self_bleu_tri/len(_one_prediction)
