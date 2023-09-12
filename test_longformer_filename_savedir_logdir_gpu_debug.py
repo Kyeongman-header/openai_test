@@ -13,6 +13,7 @@ testfile_name=sys.argv[1] # 예제 : wp_all_generations_outputs
 save_dir=sys.argv[2] #all.tar
 log_dir=sys.argv[3] # coh1
 gpu=sys.argv[4] # cuda:0 or cpu
+PARA=int(sys.argv[5])
 debug=int(sys.argv[5]) # 1 or 0
 
 if debug==1:
@@ -122,7 +123,7 @@ r_scores=[]
 not_last_fake_scores=[]
 not_last_real_scores=[]
 step=0
-
+para_count=0
 progress_bar = tqdm(range(num_whole_steps))
 
 last_fake=""
@@ -161,7 +162,7 @@ for line in rdr:
     
     if 'nextsentence' in save_dir : # nextsentenceprediction은 아예 다른 방식이다
         
-        if keywords==last_keywords:
+        if keywords==last_keywords and para_count<(PARA-1):
             cumul_fake_outputs+=" " + tokenizer.sep_token + " " + fake
             cumul_real_outputs+=" " + tokenizer.sep_token + " " + real
             
@@ -171,6 +172,7 @@ for line in rdr:
             r_scores.append(r_score.item())
             
             step+=1
+            para_count+=1
             #writer.add_scalar("fake score", f_score.item(), step)
             #writer.add_scalar("real score", r_score.item(), step)
             if debug:
@@ -190,9 +192,10 @@ for line in rdr:
             cumul_fake_outputs=fake
             cumul_real_outputs=real
             last_keywords=keywords
+            para_count=0
 
     else:
-        if keywords==last_keywords:
+        if keywords==last_keywords and para_count<PARA:
             
             cumul_fake_outputs+=" " + fake
             cumul_real_outputs+=" " + real
@@ -202,6 +205,7 @@ for line in rdr:
             
             last_real=real
             last_fake=fake
+            para_count+=1
             
             continue
         else:
@@ -270,7 +274,7 @@ for line in rdr:
             not_last_fake=[]
             not_last_real.append(real)
             not_last_fake.append(fake)
-
+            para_count=0
 
 if 'coherence' in save_dir or 'logical' in save_dir:
     f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
@@ -323,3 +327,6 @@ print("and this is baseline (original dataset)'s same mean score : " + str(np.me
 if len(not_last_fake_scores)>0:
     print(testfile_name + "'s " + save_dir + " not last mean score : " + str(np.mean(not_last_fake_scores)) + "\n var : " + str(np.var(not_last_fake_scores)))
     print("and this is baseline (original dataset)'s same not last mean score : " + str(np.mean(not_last_real_scores))+ "\n var : " + str(np.var(not_last_real_scores)))
+
+writer.close()
+print("writer close")
