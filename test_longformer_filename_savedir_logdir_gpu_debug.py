@@ -153,7 +153,7 @@ for line in rdr:
 
     real=line[3].replace('[','').replace(']','')
     real=' '.join(sent_tokenize(real))
-
+    print(para_count)
     if debug:
         print("keywords : " + line[2].replace('[','').replace(']',''))
         print("fake outputs : " + line[4].replace('[','').replace(']',''))
@@ -219,7 +219,7 @@ for line in rdr:
                     not_last_f_scores=0
 
                     f_score,r_score=eval(last_fake,last_real)
-                    
+                    #print(para_count) 
                     for i in range(len(not_last_real)-1):
                         not_last_f_score,not_last_r_score=eval(not_last_fake[i],not_last_real[i])
                         not_last_f_scores+=not_last_f_score.item()
@@ -275,6 +275,7 @@ for line in rdr:
             not_last_real.append(real)
             not_last_fake.append(fake)
             para_count=0
+            print(para_count)
 
 if 'coherence' in save_dir or 'logical' in save_dir:
     f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
