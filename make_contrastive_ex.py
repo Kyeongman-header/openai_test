@@ -1,3 +1,4 @@
+import sys
 import torch
 from tqdm import tqdm, trange
 from datasets import load_dataset, load_metric
@@ -15,9 +16,10 @@ from dataset_consts import *
 import gc
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 
-
-
-
+t_v_t=sys.argv[1]
+dataset_name=sys.argv[2] # 예제 : coherence-1
+start=int(sys.argv[3])
+filenum=int(sys.argv[4])
 
 def get_whole_data(wp=False,reedsy=False,booksum=False,t_v_t="train",location="../writingPrompts/",start=0,range=0):
 
@@ -115,7 +117,7 @@ def making_new_whole_data(whole_data):
         for sentences in tt:
             t_s=tokenizer(sentences).input_ids
             if len(t_s)+prev<=200:
-                now_sentences+=" " + sentences
+                now_sentences+=sentences+" "
                 prev+=len(t_s)
             else:
                 
@@ -366,17 +368,19 @@ def making_logical_examples(new_whole_data):
             #print(sentences)
             
             #print()
+            #print(' '.join(sentences))
 
             random.shuffle(sentences)
-
+            #print(sentences)
             if len(sentences)==0:
                 continue
 
             
             
             neg_sample=' '.join(sentences)
-
-
+            
+            #print(neg_sample)
+            #input()
             neg_examples_4.append({'data' : neg_sample,'label':[0]})
             #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
             #input()
@@ -384,7 +388,7 @@ def making_logical_examples(new_whole_data):
         for j in range(len(sample)//2,len(sample)):
             
             
-            ct=' '.join(sample[j])
+            ct=' '.join(sent_tokenize(' '.join(sample[j])))
             
             #print(ct)
             #input()
@@ -392,6 +396,9 @@ def making_logical_examples(new_whole_data):
             if len(ct)==0:
                 continue
             pos_sample=ct
+            pos_sample=pos_sample[1:]
+            #print(pos_sample)
+            #input()
             pos_examples_4.append({'data' : pos_sample,'label':[1]})
     
 
@@ -423,44 +430,46 @@ def making_pickle_data(examples,name):
     with open(name+".pickle","wb") as f:
         pickle.dump(train_dataset,f)
 
-t_v_t="train"
+t_v_t=t_v_t
 examples_1=[]
 examples_2=[]
 
-whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=0,range=100000)
-new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
-del whole_data
-#report(new_whole_data)
-#wp_examples_1=making_coherence_examples(new_whole_data)
-#wp_examples_2=making_completeness_examples(new_whole_data)
-#wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
-wp_examples_4=making_logical_examples(new_whole_data)
-del new_whole_data
-gc.collect()
+examples=[]
+if "wp" in dataset_name: 
+    whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=start,range=100000)
+    new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+    del whole_data
+    #report(new_whole_data)
+    #wp_examples_1=making_coherence_examples(new_whole_data)
+    #wp_examples_2=making_completeness_examples(new_whole_data)
+    #wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+    examples+=making_logical_examples(new_whole_data)
+    del new_whole_data
+    gc.collect()
 
-"""
-whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
-new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
-del whole_data
-#report(new_whole_data)
-#rd_examples_1=making_coherence_examples(new_whole_data)
-#rd_examples_2=making_completeness_examples(new_whole_data)
-#rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
-rd_examples_4=making_logical_examples(new_whole_data)
+if "rd" in dataset_name:
+    whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
+    new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+    del whole_data
+    #report(new_whole_data)
+    #rd_examples_1=making_coherence_examples(new_whole_data)
+    #rd_examples_2=making_completeness_examples(new_whole_data)
+    #rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+    examples+=making_logical_examples(new_whole_data)
 
+if "bk" in dataset_name:
+    whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
+    new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+    del whole_data
+    #report(new_whole_data)
+    #bk_examples_1=making_coherence_examples(new_whole_data)
+    #bk_examples_2=making_completeness_examples(new_whole_data)
+    #bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+    examples+=making_logical_examples(new_whole_data)
 
-whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
-new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
-del whole_data
-#report(new_whole_data)
-#bk_examples_1=making_coherence_examples(new_whole_data)
-#bk_examples_2=making_completeness_examples(new_whole_data)
-#bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
-bk_examples_4=making_logical_examples(new_whole_data)
+    del new_whole_data
+    gc.collect()
 
-del new_whole_data
-gc.collect()
-"""
 
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
 #examples_2=wp_examples_2+bk_examples_2+rd_examples_2
@@ -468,10 +477,12 @@ gc.collect()
 
 #examples_3=wp_examples_3+bk_examples_3+rd_examples_3
 
-examples_4=wp_examples_4
+#examples_4=wp_examples_4+rd_examples_4+bk_examples_4
+
+
 #making_pickle_data(examples_1,"coherence_completeness/"+t_v_t+"_coherence-1")
 #del examples_1
 #gc.collect()
 #making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-1")
 #making_pickle_data(examples_3,"coherence_completeness/"+t_v_t+"_nextsentenceprediction-5")
-making_pickle_data(examples_4,"coherence_completeness/"+t_v_t+"_logical-1")
+making_pickle_data(examples,"coherence_completeness/"+t_v_t+"_logical-"+str(filenum))

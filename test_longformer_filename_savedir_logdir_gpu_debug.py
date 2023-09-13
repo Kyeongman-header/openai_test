@@ -14,7 +14,7 @@ save_dir=sys.argv[2] #all.tar
 log_dir=sys.argv[3] # coh1
 gpu=sys.argv[4] # cuda:0 or cpu
 PARA=int(sys.argv[5])
-debug=int(sys.argv[5]) # 1 or 0
+debug=int(sys.argv[6]) # 1 or 0
 
 if debug==1:
     debug=True
@@ -132,7 +132,6 @@ not_last_fake=[]
 not_last_real=[]
 
 paragraphs=int(testfile_name[-1])
-
 print(paragraphs)
 
 for line in rdr:
@@ -153,7 +152,7 @@ for line in rdr:
 
     real=line[3].replace('[','').replace(']','')
     real=' '.join(sent_tokenize(real))
-    print(para_count)
+    #print(para_count)
     if debug:
         print("keywords : " + line[2].replace('[','').replace(']',''))
         print("fake outputs : " + line[4].replace('[','').replace(']',''))
@@ -195,7 +194,7 @@ for line in rdr:
             para_count=0
 
     else:
-        if keywords==last_keywords and para_count<PARA:
+        if keywords==last_keywords and para_count<(PARA-1):
             
             cumul_fake_outputs+=" " + fake
             cumul_real_outputs+=" " + real
@@ -275,7 +274,7 @@ for line in rdr:
             not_last_real.append(real)
             not_last_fake.append(fake)
             para_count=0
-            print(para_count)
+            #print(para_count)
 
 if 'coherence' in save_dir or 'logical' in save_dir:
     f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)

@@ -168,6 +168,10 @@ def eval(steps):
             probs,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
         valid_loss += loss.item()
         if debug:
+            print("input_ids")
+            print(tokenizer.batch_decode(input_ids,skip_special_tokens=True))
+            print("labels")
+            print(labels)
             print("probs")
             print(probs)
             print("loss")
@@ -183,8 +187,12 @@ def eval(steps):
         
         if debug:
             print("avg true and false score valid")
-            print(pp/len_pp)
-            print(nn/len_nn)
+            if len_pp!=0:
+                print("true")
+                print(pp/len_pp)
+            if len_nn!=0:
+                print("false")
+                print(nn/len_nn)
             input()
 
         del input_ids
