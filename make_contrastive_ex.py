@@ -3,7 +3,9 @@ import torch
 from tqdm import tqdm, trange
 from datasets import load_dataset, load_metric
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+# tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+bart_tokenizer=AutoTokenizer.from_pretrained("facebook/bart-base")
 import csv
 import ctypes as ct
 import math
@@ -17,9 +19,82 @@ import gc
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
 
 t_v_t=sys.argv[1]
-dataset_name=sys.argv[2] # 예제 : coherence-1
-start=int(sys.argv[3])
-filenum=int(sys.argv[4])
+dataset_name=sys.argv[2] # 예제 : coherence (저장될 이름)
+dataset_dir=int(sys.argv[3]) # 예제 : whole
+
+
+def get_real_train_data():
+    whole_new_dataset=[]
+    whole_new_dataset_length=[]
+    batch_size=1
+    new_whole_data=[]
+    for i in range(30):
+        new_whole_data.append([])
+    for i in trange(1,30): # 최대 100개 문단까지 있다.
+    
+        if dataset_dir !="whole":
+            if dataset_dir=="reedsy_rake" and t_v_t=="test":
+                _t_v_t="valid"
+            else:
+                _t_v_t=t_v_t
+            with open("pickle_data/"+"bart_" + str(_t_v_t) + "_" + dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+        else: # whole dataset train.
+            with open("pickle_data/"+"bart_" + str(t_v_t) +"_"+ "wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset = pickle.load(fi)
+            
+            with open("pickle_data/"+"bart_"+ str(t_v_t) +"_"+"booksum_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)
+            if dataset_dir=="reedsy_rake" and t_v_t=="test":
+                _t_v_t="valid"
+            else:
+                _t_v_t=t_v_t
+            with open("pickle_data/"+"bart_"+ str(_t_v_t) +"_"+"reedsy_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                    train_dataset += pickle.load(fi)   
+        if len(train_dataset)==0:
+            continue
+        
+        whole_new_dataset_length.append(len(train_dataset))
+        
+        # print("the training set for " + str(i) + " Num Paragramphs.")
+        for i in range(0, len(train_dataset),batch_size):
+            # get the inputs; data is a list of [inputs, labels]
+                if i+batch_size>len(train_dataset):
+                    # batch size에 안 맞는 마지막 set은 , 그냥 버린다
+                    # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
+                    
+                    break
+
+                mini_running_loss=0.0
+                batch_data=train_dataset[i:i+batch_size]
+                first=True
+                batch_num_decoder_input_ids=[]
+                batch_decoder_attention_masks=[]
+                for data in batch_data:
+                    input_ids,attention_mask,num_decoder_input_ids,decoder_attention_masks,prompt= (data['input_ids'],data['input_attention'],data['decoder_input_ids'],data['decoder_attention_mask'],data['prompt'])
+                    batch_num_decoder_input_ids.append(num_decoder_input_ids)# 또 각각 decoder_input_ids에서도 <s>는 떼내야 한다.
+                    #이건 데이터셋 만들때 처리해줘야 할듯하다.
+                    batch_decoder_attention_masks.append(decoder_attention_masks)
+                    if first:
+                        batch_input_ids=input_ids # 생각해보니 input_ids에서 </s>를 떼야 될 것 같다.
+                        batch_attention_mask=attention_mask
+                        batch_prev_predictions=prompt
+                        first=False
+                    else:
+                        batch_input_ids=torch.cat((batch_input_ids,input_ids),dim=0)
+                        batch_attention_mask=torch.cat((batch_attention_mask,attention_mask),dim=0)
+                        
+                        batch_prev_predictions=torch.cat((batch_prev_predictions,prompt),dim=0)
+                batch_num_decoder_input_ids=torch.stack(batch_num_decoder_input_ids,dim=1)
+                batch_decoder_attention_masks=torch.stack(batch_decoder_attention_masks,dim=1)
+
+                # whole_new_dataset.append({'batch_input_ids':batch_input_ids,'batch_attention_mask':batch_attention_mask,'batch_prev_predictions':batch_prev_predictions,
+                #                         'batch_num_decoder_input_ids' : batch_num_decoder_input_ids,'batch_decoder_attention_masks':batch_decoder_attention_masks})
+                one_data=bart_tokenizer.batch_decode(batch_num_decoder_input_ids,skip_special_tokens=True)[0]
+                print(one_data)
+                new_whole_data[i].append(one_data)
+    return new_whole_data
+
 
 def get_whole_data(wp=False,reedsy=False,booksum=False,t_v_t="train",location="../writingPrompts/",start=0,range=0):
 
@@ -94,6 +169,7 @@ def get_whole_data(wp=False,reedsy=False,booksum=False,t_v_t="train",location=".
 
 
 
+
 def making_new_whole_data(whole_data):
 
     new_whole_data=[]
@@ -142,6 +218,9 @@ def making_new_whole_data(whole_data):
 
     
     return new_whole_data # it should be (100,M,K) --> M은 각각 문단 개수별 예제의 개수, K는 문단 개수.
+
+
+
 
 def report(new_whole_data):
     for i,sample in enumerate(new_whole_data[1:],start=1):
@@ -435,40 +514,51 @@ examples_1=[]
 examples_2=[]
 
 examples=[]
-if "wp" in dataset_name: 
-    whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=start,range=100000)
-    new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
-    del whole_data
-    #report(new_whole_data)
-    #wp_examples_1=making_coherence_examples(new_whole_data)
-    #wp_examples_2=making_completeness_examples(new_whole_data)
-    #wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
-    examples+=making_logical_examples(new_whole_data)
-    del new_whole_data
-    gc.collect()
+new_whole_data=get_real_train_data()
+if "completeness" in dataset_name:
+    examples=making_completeness_examples(new_whole_data)
+    making_pickle_data(examples,"coherence_completeness/"+t_v_t+"/"+dataset_name)
+elif "nextsentenceprediction" in dataset_name:
+    examples=making_nextsentenceprediction_examples(new_whole_data)
+    making_pickle_data(examples,"coherence_completeness/"+t_v_t+"/"+dataset_name)
+else:
+    print("there is no name of examples : " + dataset_name)
 
-if "rd" in dataset_name:
-    whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
-    new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
-    del whole_data
-    #report(new_whole_data)
-    #rd_examples_1=making_coherence_examples(new_whole_data)
-    #rd_examples_2=making_completeness_examples(new_whole_data)
-    #rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
-    examples+=making_logical_examples(new_whole_data)
 
-if "bk" in dataset_name:
-    whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
-    new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
-    del whole_data
-    #report(new_whole_data)
-    #bk_examples_1=making_coherence_examples(new_whole_data)
-    #bk_examples_2=making_completeness_examples(new_whole_data)
-    #bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
-    examples+=making_logical_examples(new_whole_data)
+# if "wp" in dataset_name: 
+#     whole_data=get_whole_data(wp=True,t_v_t=t_v_t,start=start,range=100000)
+#     new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+#     del whole_data
+#     #report(new_whole_data)
+#     #wp_examples_1=making_coherence_examples(new_whole_data)
+#     #wp_examples_2=making_completeness_examples(new_whole_data)
+#     #wp_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+#     examples+=making_logical_examples(new_whole_data)
+#     del new_whole_data
+#     gc.collect()
 
-    del new_whole_data
-    gc.collect()
+# if "rd" in dataset_name:
+#     whole_data=get_whole_data(reedsy=True,t_v_t=t_v_t,start=0,range=0)
+#     new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+#     del whole_data
+#     #report(new_whole_data)
+#     #rd_examples_1=making_coherence_examples(new_whole_data)
+#     #rd_examples_2=making_completeness_examples(new_whole_data)
+#     #rd_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+#     examples+=making_logical_examples(new_whole_data)
+
+# if "bk" in dataset_name:
+#     whole_data=get_whole_data(booksum=True,location="../booksum/",t_v_t=t_v_t,start=0,range=0)
+#     new_whole_data=making_new_whole_data(whole_data) # 문단별로 자름.
+#     del whole_data
+#     #report(new_whole_data)
+#     #bk_examples_1=making_coherence_examples(new_whole_data)
+#     #bk_examples_2=making_completeness_examples(new_whole_data)
+#     #bk_examples_3=making_nextsentenceprediction_examples(new_whole_data)
+#     examples+=making_logical_examples(new_whole_data)
+
+#     del new_whole_data
+#     gc.collect()
 
 
 #examples_1=wp_examples_1+bk_examples_1+rd_examples_1
@@ -485,4 +575,3 @@ if "bk" in dataset_name:
 #gc.collect()
 #making_pickle_data(examples_2,"coherence_completeness/"+t_v_t+"_completeness-1")
 #making_pickle_data(examples_3,"coherence_completeness/"+t_v_t+"_nextsentenceprediction-5")
-making_pickle_data(examples,"coherence_completeness/"+t_v_t+"_logical-"+str(filenum))
