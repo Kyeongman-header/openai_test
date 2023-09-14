@@ -48,7 +48,7 @@ print("debug mode : " + str(debug))
 
 
 
-
+"""
 if tdataset_name=="coherence-whole" or vdataset_name=="coherence-whole":
     with open("coherence_completeness/train_"+"coherence-1"+".pickle","rb") as fi:
             train_dataset = pickle.load(fi)
@@ -106,6 +106,11 @@ else:
             train_dataset = pickle.load(fi)
     with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
             valid_dataset = pickle.load(fi)
+"""
+with open("coherence_completeness/train_"+tdataset_name+".pickle","rb") as fi:
+            train_dataset = pickle.load(fi)
+with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
+            valid_dataset = pickle.load(fi)
 
 train_dataset= torch.utils.data.DataLoader(train_dataset,
                                    batch_size=num_batch,shuffle=True)
@@ -141,7 +146,7 @@ class MyLongformer(torch.nn.Module):
         output=self.gpt(input_ids, attention_mask=attention_mask)
         pooler_output=torch.mean(output.last_hidden_state,dim=-2)
         
-        print(pooler_output.shape)
+        #print(pooler_output.shape)
 
         prob=self.rogistic(pooler_output)
         prob=self.sigmoid(prob)

@@ -40,6 +40,7 @@ writer = SummaryWriter('./runs/'+log_dir)
 
 # tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
+tokenizer.pad_token = tokenizer.eos_token
 
 class MyLongformer(torch.nn.Module):
     def __init__(self):
