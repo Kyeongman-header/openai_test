@@ -4,7 +4,9 @@ import pickle
 from tqdm import tqdm, trange
 from dataset_consts import *
 from torch.utils.tensorboard import SummaryWriter
-from transformers import AutoConfig,LongformerModel
+# from transformers import AutoConfig,LongformerModel
+
+from transformers import AutoConfig,GPT2Model
 #import pytorch_metric_learning.losses as loss_fn
 import sys
 
@@ -46,7 +48,7 @@ print("debug mode : " + str(debug))
 
 
 
-
+"""
 if tdataset_name=="coherence-whole" or vdataset_name=="coherence-whole":
     with open("coherence_completeness/train_"+"coherence-1"+".pickle","rb") as fi:
             train_dataset = pickle.load(fi)
@@ -104,6 +106,11 @@ else:
             train_dataset = pickle.load(fi)
     with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
             valid_dataset = pickle.load(fi)
+"""
+with open("coherence_completeness/train_"+tdataset_name+".pickle","rb") as fi:
+            train_dataset = pickle.load(fi)
+with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
+            valid_dataset = pickle.load(fi)
 
 train_dataset= torch.utils.data.DataLoader(train_dataset,
                                    batch_size=num_batch,shuffle=True)
@@ -119,22 +126,29 @@ PATH = './longformer/'+save_dir
 
 writer = SummaryWriter('./runs/'+log_dir)
 
-tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
-
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
 
 class MyLongformer(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
-        self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
-        self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
+        # self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
+        # self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
+        self.config=AutoConfig.from_pretrained('gpt2')
+        self.gpt = GPT2Model.from_pretrained("gpt2")
+        # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
+
+        self.rogistic=torch.nn.Linear(self.config.n_embd,1)
         self.sigmoid=torch.nn.Sigmoid()
         self.loss=torch.nn.BCELoss()
 
     def forward(self, input_ids,attention_mask,global_attention_mask,labels=None):
-        output=self.bert(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask)
-        prob=self.rogistic(output.pooler_output)
+        output=self.gpt(input_ids, attention_mask=attention_mask)
+        pooler_output=torch.mean(output.last_hidden_state,dim=-2)
+        
+        #print(pooler_output.shape)
+
+        prob=self.rogistic(pooler_output)
         prob=self.sigmoid(prob)
         if labels is not None:
             loss=self.loss(prob,labels)
@@ -168,6 +182,10 @@ def eval(steps):
             probs,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
         valid_loss += loss.item()
         if debug:
+            print("input_ids")
+            print(tokenizer.batch_decode(input_ids,skip_special_tokens=True))
+            print("labels")
+            print(labels)
             print("probs")
             print(probs)
             print("loss")
@@ -183,8 +201,12 @@ def eval(steps):
         
         if debug:
             print("avg true and false score valid")
-            print(pp/len_pp)
-            print(nn/len_nn)
+            if len_pp!=0:
+                print("true")
+                print(pp/len_pp)
+            if len_nn!=0:
+                print("false")
+                print(nn/len_nn)
             input()
 
         del input_ids

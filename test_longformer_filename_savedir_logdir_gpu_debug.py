@@ -3,8 +3,9 @@ import pickle
 from tqdm import tqdm, trange
 from dataset_consts import *
 from torch.utils.tensorboard import SummaryWriter
-from transformers import AutoConfig,LongformerModel
+from transformers import AutoConfig,LongformerModel,GPT2Model
 import sys
+
 
 print("gpu : ")
 print(torch.cuda.is_available())
@@ -14,7 +15,7 @@ save_dir=sys.argv[2] #all.tar
 log_dir=sys.argv[3] # coh1
 gpu=sys.argv[4] # cuda:0 or cpu
 PARA=int(sys.argv[5])
-debug=int(sys.argv[5]) # 1 or 0
+debug=int(sys.argv[6]) # 1 or 0
 
 if debug==1:
     debug=True
@@ -37,22 +38,30 @@ PATH = './longformer/'+save_dir
 
 writer = SummaryWriter('./runs/'+log_dir)
 
-tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+# tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+tokenizer.pad_token = tokenizer.eos_token
 
 class MyLongformer(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
-        self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
-        self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
+        # self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
+        # self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
+        self.config=AutoConfig.from_pretrained('gpt2')
+        self.gpt = GPT2Model.from_pretrained("gpt2")
+        # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
+
+        self.rogistic=torch.nn.Linear(self.config.n_embd,1)
         self.sigmoid=torch.nn.Sigmoid()
         self.loss=torch.nn.BCELoss()
 
     def forward(self, input_ids,attention_mask,global_attention_mask,labels=None):
-        output=self.bert(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask)
-        prob=self.rogistic(output.pooler_output)
+        output=self.gpt(input_ids, attention_mask=attention_mask)
+        pooler_output=torch.mean(output.last_hidden_state,dim=-2)
+        
+
+        prob=self.rogistic(pooler_output)
         prob=self.sigmoid(prob)
-        loss=0
         if labels is not None:
             loss=self.loss(prob,labels)
         return prob, loss
@@ -132,7 +141,6 @@ not_last_fake=[]
 not_last_real=[]
 
 paragraphs=int(testfile_name[-1])
-
 print(paragraphs)
 
 for line in rdr:
@@ -153,7 +161,7 @@ for line in rdr:
 
     real=line[3].replace('[','').replace(']','')
     real=' '.join(sent_tokenize(real))
-    print(para_count)
+    #print(para_count)
     if debug:
         print("keywords : " + line[2].replace('[','').replace(']',''))
         print("fake outputs : " + line[4].replace('[','').replace(']',''))
@@ -195,7 +203,7 @@ for line in rdr:
             para_count=0
 
     else:
-        if keywords==last_keywords and para_count<PARA:
+        if keywords==last_keywords and para_count<(PARA-1):
             
             cumul_fake_outputs+=" " + fake
             cumul_real_outputs+=" " + real
@@ -275,7 +283,7 @@ for line in rdr:
             not_last_real.append(real)
             not_last_fake.append(fake)
             para_count=0
-            print(para_count)
+            #print(para_count)
 
 if 'coherence' in save_dir or 'logical' in save_dir:
     f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)

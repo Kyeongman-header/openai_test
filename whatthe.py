@@ -3,7 +3,7 @@ import pickle
 from tqdm import tqdm, trange
 from dataset_consts import *
 from torch.utils.tensorboard import SummaryWriter
-from transformers import AutoConfig,LongformerModel
+from transformers import AutoConfig,LongformerModel,GPT2Model
 #import pytorch_metric_learning.losses as loss_fn
 import sys
 
@@ -25,7 +25,8 @@ createFolder('longformer')
 PATH = './longformer/'+save_dir
 
 
-tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+# tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
 with open("coherence_completeness/valid_"+"logical-2"+".pickle","rb") as fi:
     valid_dataset = pickle.load(fi)
 valid_dataset= torch.utils.data.DataLoader(valid_dataset,shuffle=True)
@@ -33,17 +34,23 @@ valid_dataset= torch.utils.data.DataLoader(valid_dataset,shuffle=True)
 class MyLongformer(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
-        self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
-        self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
+        # self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
+        # self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
+        self.config=AutoConfig.from_pretrained('gpt2')
+        self.gpt = GPT2Model.from_pretrained("gpt2")
+        # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
+
+        self.rogistic=torch.nn.Linear(self.config.n_embd,1)
         self.sigmoid=torch.nn.Sigmoid()
         self.loss=torch.nn.BCELoss()
 
     def forward(self, input_ids,attention_mask,global_attention_mask,labels=None):
-        output=self.bert(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask)
-        prob=self.rogistic(output.pooler_output)
+        output=self.gpt(input_ids, attention_mask=attention_mask)
+        pooler_output=torch.mean(output.last_hidden_state,dim=-2)
+        
+
+        prob=self.rogistic(pooler_output)
         prob=self.sigmoid(prob)
-        loss=0
         if labels is not None:
             loss=self.loss(prob,labels)
         return prob, loss

@@ -10,11 +10,10 @@ from nltk.tokenize import TweetTokenizer
 _bleu=evaluate.load("bleu")
 _real_bleu=evaluate.load("bleu")
 tweet_tokenizer = TweetTokenizer()
-
 import sys
-
 data_dir=sys.argv[1]
 log_dir=sys.argv[2]
+Para=int(sys.argv[3])
 
 def createFolder(directory):
     try:
@@ -33,7 +32,7 @@ def do_eval(steps,whole_predictions,whole_labels):
     
     index=0
 
-    N=1000
+    N=80
     
     
     #print(whole_predictions[33])
@@ -42,13 +41,16 @@ def do_eval(steps,whole_predictions,whole_labels):
     
     whole_num=0
     #whole_predictions=[]
+    whole_predictions=whole_predictions[:N]
+    whole_labels=whole_labels[:N]
+    
     whole_predictions_len=len(whole_predictions)
     #whole_labels=[]
     whole_labels_len=len(whole_labels)
 
     whole_num=len(whole_predictions)
 
-
+    
     print("len of sample generation : " + str(whole_num))
     print("len of label generation : " + str(len(whole_labels)))
     
@@ -61,26 +63,28 @@ def do_eval(steps,whole_predictions,whole_labels):
     self_bleu_four=0
     self_bleu_fif=0
 
-    for j in trange(N if N<len(whole_predictions) else len(whole_predictions)): # 1000개에 대해서만 self-bleu.
-        except_whole_predictions=whole_predictions[0:j]+whole_predictions[j+1:N]
+    for one_predict in whole_predictions:
+        for j in range(len(one_predict)): # 1000개에 대해서만 self-bleu.
+            except_whole_predictions=one_predict[0:j]+one_predict[j+1:N]
         #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
 
         #print([except_whole_predictions])
         #print(whole_predictions[j])
-        refs=[]
-        for predicts in except_whole_predictions:
+            refs=[]
+            for predicts in except_whole_predictions:
 
-            refs.append(tweet_tokenizer.tokenize(predicts))
+                refs.append(tweet_tokenizer.tokenize(predicts))
 
         #print(refs)
-        hyp=tweet_tokenizer.tokenize(whole_predictions[j])
+            hyp=tweet_tokenizer.tokenize(one_predict[j])
         #print(hyp)
-        self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
-        print(self_bleu)
-        self_bleu_bi+=self_bleu[0]
-        self_bleu_tri+=self_bleu[1]
-        self_bleu_four+=self_bleu[2]
-        self_bleu_fif+=self_bleu[3]
+            self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
+            #print(self_bleu)
+            self_bleu_bi+=self_bleu[0]
+            self_bleu_tri+=self_bleu[1]
+            self_bleu_four+=self_bleu[2]
+            self_bleu_fif+=self_bleu[3]
+            self_num+=1
         """
         self_bleu_one+=_bleu.compute(predictions=[whole_predictions[j]],references=[except_whole_predictions],max_order=1)['bleu']
         #print(self_bleu_one)
@@ -98,12 +102,20 @@ def do_eval(steps,whole_predictions,whole_labels):
     # real_self_bleu=_bleu.compute(max_order=5)
     print("compute complete")
 
-
+    print(self_num)
+    print(len(whole_predictions)*len(whole_predictions[0]))
+    """
+    if self_num !=len(whole_predictions)*len(whole_predictions[0]):
+        print("error")
+        print()
+        writer.add_scalar("error/eval", self_num , steps)
+        return
+    """
     #print("self_bleu one : " + str(self_bleu_one/len(whole_predictions)))
-    print("self_bleu bi : " + str(self_bleu_bi/len(whole_predictions)))
-    print("self_bleu tri : " + str(self_bleu_tri/len(whole_predictions)))
-    print("self_bleu four : " + str(self_bleu_four/len(whole_predictions)))
-    print("self_bleu fif : " + str(self_bleu_fif/len(whole_predictions)))
+    print("in self_bleu bi : " + str(self_bleu_bi/self_num))
+    print("in self_bleu tri : " + str(self_bleu_tri/self_num))
+    print("in self_bleu four : " + str(self_bleu_four/self_num))
+    print("in self_bleu fif : " + str(self_bleu_fif/self_num))
     
     r_self_bleu_one=0
     r_self_bleu_bi=0
@@ -111,23 +123,24 @@ def do_eval(steps,whole_predictions,whole_labels):
     r_self_bleu_four=0
     r_self_bleu_fif=0
 
-    for j in trange(len(whole_labels)): # 1000개에 대해서만 self-bleu.
-        except_whole_labels=whole_labels[0:j]+whole_labels[j+1:N]
+    for one_label in whole_labels:
+        for j in range(len(one_label)):
+            except_whole_labels=one_label[0:j]+one_label[j+1:N]
     #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
-        refs=[]
-        for predicts in except_whole_labels:
+            refs=[]
+            for predicts in except_whole_labels:
 
-            refs.append(tweet_tokenizer.tokenize(predicts))
+                refs.append(tweet_tokenizer.tokenize(predicts))
 
         #print(refs)
-        hyp=tweet_tokenizer.tokenize(whole_labels[j])
+            hyp=tweet_tokenizer.tokenize(one_label[j])
         #print(hyp)
-        self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
-        print(self_bleu)
-        r_self_bleu_bi+=self_bleu[0]
-        r_self_bleu_tri+=self_bleu[1]
-        r_self_bleu_four+=self_bleu[2]
-        r_self_bleu_fif+=self_bleu[3]
+            self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
+            #print(self_bleu)
+            r_self_bleu_bi+=self_bleu[0]
+            r_self_bleu_tri+=self_bleu[1]
+            r_self_bleu_four+=self_bleu[2]
+            r_self_bleu_fif+=self_bleu[3]
         """
         r_self_bleu_one+=_bleu.compute(predictions=[whole_labels[j]],references=[except_whole_labels],max_order=1)['bleu']
         #print(self_bleu_one)
@@ -147,10 +160,10 @@ def do_eval(steps,whole_predictions,whole_labels):
 
 
     #print("r_self_bleu one : " + str(r_self_bleu_one/len(whole_labels)))
-    print("r_self_bleu bi : " + str(r_self_bleu_bi/len(whole_labels)))
-    print("r_self_bleu tri : " + str(r_self_bleu_tri/len(whole_labels)))
-    print("r_self_bleu four : " + str(r_self_bleu_four/len(whole_labels)))
-    print("r_self_bleu fif : " + str(r_self_bleu_fif/len(whole_labels)))
+    print("r_in_self_bleu bi : " + str(r_self_bleu_bi/self_num))
+    print("r_in_self_bleu tri : " + str(r_self_bleu_tri/self_num))
+    print("r_in_self_bleu four : " + str(r_self_bleu_four/self_num))
+    print("r_in_self_bleu fif : " + str(r_self_bleu_fif/self_num))
     """
     for j in range(N if N<whole_num else whole_num):
         except_whole_labels=whole_labels[0:j]+whole_labels[j+1:N]
@@ -187,15 +200,15 @@ def do_eval(steps,whole_predictions,whole_labels):
     # r_self_bleu_fif=r_self_bleu_fif/self_num
 
     #writer.add_scalar("self bleu one/eval", self_bleu_one/whole_predictions_len, steps)
-    writer.add_scalar("self bleu bi/eval", self_bleu_bi/whole_predictions_len, steps)
-    writer.add_scalar("self bleu tri/eval", self_bleu_tri/whole_predictions_len, steps)
-    writer.add_scalar("self bleu four/eval", self_bleu_four/whole_predictions_len, steps)
-    writer.add_scalar("self bleu fif/eval", self_bleu_fif/whole_predictions_len, steps)
+    writer.add_scalar("in self bleu bi/eval", self_bleu_bi/self_num, steps)
+    writer.add_scalar("in self bleu tri/eval", self_bleu_tri/self_num, steps)
+    writer.add_scalar("in self bleu four/eval", self_bleu_four/self_num, steps)
+    writer.add_scalar("in self bleu fif/eval", self_bleu_fif/self_num, steps)
     #writer.add_scalar("real_self bleu one/eval", r_self_bleu_one/whole_labels_len, steps)
-    writer.add_scalar("real_self bleu bi/eval", r_self_bleu_bi/whole_labels_len, steps)
-    writer.add_scalar("real_self bleu tri/eval", r_self_bleu_tri/whole_labels_len, steps)
-    writer.add_scalar("real_self bleu four/eval", r_self_bleu_four/whole_labels_len, steps)
-    writer.add_scalar("real_self bleu fif/eval", r_self_bleu_fif/whole_labels_len, steps)
+    writer.add_scalar("real_in self bleu bi/eval", r_self_bleu_bi/self_num, steps)
+    writer.add_scalar("real_in self bleu tri/eval", r_self_bleu_tri/self_num, steps)
+    writer.add_scalar("real_in self bleu four/eval", r_self_bleu_four/self_num, steps)
+    writer.add_scalar("real_in self bleu fif/eval", r_self_bleu_fif/self_num, steps)
     #writer.add_scalar("meteor",met_result,steps)
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
@@ -207,6 +220,11 @@ import math
 import numpy as np
 import pandas as pd
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2))
+
+print("dataset dir")
+print(data_dir+'.csv')
+print("log dir")
+print(log_dir+'.csv')
 
 _f = pd.read_csv(data_dir+'.csv',chunksize=1000)
 
@@ -252,9 +270,9 @@ for step, line in _f.iterrows():
         real=""
     #print(real)
     #input()
-    if keywords==last_keywords:
-        cumul_fake_outputs+=fake+". "
-        cumul_real_outputs+=real+". "
+    if keywords==last_keywords and par_count<(Para-1):
+        cumul_fake_outputs.append(fake)
+        cumul_real_outputs.append(real)
         if is_real_nan:
             is_real_nan_cumul=True
         is_real_nan=False
@@ -268,8 +286,8 @@ for step, line in _f.iterrows():
         
         is_real_nan_cumul=False
         par_count=0
-        cumul_fake_outputs=fake
-        cumul_real_outputs=real
+        cumul_fake_outputs=[fake]
+        cumul_real_outputs=[real]
         last_keywords=keywords
 
 print(count)
@@ -278,3 +296,6 @@ f.append(cumul_fake_outputs)
 r.append(cumul_real_outputs)
 
 do_eval(0,f,r)
+
+writer.close()
+print("writer closed.")
