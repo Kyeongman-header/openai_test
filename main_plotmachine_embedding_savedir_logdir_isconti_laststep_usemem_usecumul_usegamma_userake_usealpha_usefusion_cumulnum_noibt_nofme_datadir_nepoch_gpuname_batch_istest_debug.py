@@ -804,7 +804,7 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.gpt.generate(max_new_tokens=350,memory=one_memory,
+            outputs.append(self.gpt.generate(max_new_tokens=200,memory=one_memory,
                                              preceding_context=torch.stack([torch.unsqueeze(avg_context[b],dim=0)]*self.num_beams,dim=0),
                                              input_ids=input_id,
                         #attention_mask=attention_mask[b],
@@ -815,7 +815,7 @@ class Network(nn.Module):
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=1.4,length_penalty=-1.0,early_stopping=True,context=None,alpha=one_alpha,beta=one_beta))
+                        repetition_penalty=1.4,early_stopping=True,context=None,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
@@ -1363,11 +1363,13 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                 
                 _pred= tokenizer(pred,return_tensors="pt")['input_ids']
                 _predictions_len+=len(_pred[0])
+                #print(len(_pred[0]))
                 one_prediction[u].append(pred)
             
             for u,lab in enumerate(labels):
                 _lab= tokenizer(lab,return_tensors="pt")['input_ids']
                 _labels_len+=len(_lab[0])
+                #print(len(_lab[0]))
                 one_label[u].append(lab)
 
             batch_input_text=tokenizer.batch_decode(batch_input_ids,skip_special_tokens=True)
@@ -1573,7 +1575,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=10000,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 

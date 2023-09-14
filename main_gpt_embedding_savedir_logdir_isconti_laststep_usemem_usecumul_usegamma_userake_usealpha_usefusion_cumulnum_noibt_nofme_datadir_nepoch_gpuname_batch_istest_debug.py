@@ -768,7 +768,7 @@ class Network(nn.Module):
             #         no_repeat_ngram_size=3,
             #         #encoder_no_repeat_ngram_size=3,
             #         repetition_penalty=3.5,early_stopping=True,context=cumulation[b],alpha=alpha[b],beta=beta[b]))
-            outputs.append(self.gpt.generate(max_new_tokens=250,memory=one_memory,
+            outputs.append(self.gpt.generate(max_new_tokens=200,memory=one_memory,
                                              preceding_context=None,
                                              input_ids=input_id,
                         #attention_mask=attention_mask[b],
@@ -776,6 +776,7 @@ class Network(nn.Module):
                         do_sample=True,
                         top_k=50, # 확률 순위가 50위 밖인 토큰은 샘플링에서 제외
                         top_p=0.70,
+                        #length_penalty=-10.0,
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
@@ -1342,11 +1343,13 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                 
                 _pred= tokenizer(pred,return_tensors="pt")['input_ids']
                 _predictions_len+=len(_pred[0])
+                #print(len(_pred[0]))
                 one_prediction[u].append(pred)
             
             for u,lab in enumerate(labels):
                 _lab= tokenizer(lab,return_tensors="pt")['input_ids']
                 _labels_len+=len(_lab[0])
+                #print(len(_lab[0]))
                 one_label[u].append(lab)
 
             batch_input_text=tokenizer.batch_decode(batch_input_ids,skip_special_tokens=True)
