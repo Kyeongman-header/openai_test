@@ -41,6 +41,8 @@ writer = SummaryWriter('./runs/'+log_dir)
 # tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 tokenizer.pad_token = tokenizer.eos_token
+if "nextsentenceprediction" in save_dir:
+    tokenizer.add_tokens(["[SEP]"],special_tokens=True)
 
 class MyLongformer(torch.nn.Module):
     def __init__(self):
@@ -50,7 +52,8 @@ class MyLongformer(torch.nn.Module):
         self.config=AutoConfig.from_pretrained('gpt2')
         self.gpt = GPT2Model.from_pretrained("gpt2")
         # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
-
+        if "nextsentenceprediction" in save_dir:
+             self.gpt.resize_token_embeddings(len(tokenizer))
         self.rogistic=torch.nn.Linear(self.config.n_embd,1)
         self.sigmoid=torch.nn.Sigmoid()
         self.loss=torch.nn.BCELoss()
