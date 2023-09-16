@@ -109,7 +109,8 @@ else:
 """
 with open("coherence_completeness/train_"+tdataset_name+".pickle","rb") as fi:
             train_dataset = pickle.load(fi)
-with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
+#with open("coherence_completeness/valid_"+vdataset_name+".pickle","rb") as fi:
+with open("coherence_completeness/test_"+vdataset_name+".pickle","rb") as fi:
             valid_dataset = pickle.load(fi)
 
 train_dataset= torch.utils.data.DataLoader(train_dataset,
@@ -182,7 +183,10 @@ def eval(steps):
             probs,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
         valid_loss += loss.item()
         if debug:
+            print("token len")
+            print(len(input_ids[0]))
             print("input_ids")
+            print(input_ids[0])
             print(tokenizer.batch_decode(input_ids,skip_special_tokens=True))
             print("labels")
             print(labels)
@@ -227,11 +231,11 @@ def eval(steps):
     writer.add_scalar("avg true score/valid",pp/len_pp,steps)
     writer.add_scalar("avg false score/valid",nn/len_nn,steps)
 
-optimizer = optim.AdamW(mylongformer.parameters(), lr=1e-5)
+optimizer = optim.AdamW(mylongformer.parameters(), lr=1e-5,weight_decay=0.1)
 num_training_steps = num_epochs * len(train_dataset)
 
 lr_scheduler = get_scheduler(
-    name="linear", optimizer=optimizer, num_warmup_steps=50000, num_training_steps=num_training_steps
+    name="linear", optimizer=optimizer, num_warmup_steps=1000, num_training_steps=num_training_steps
 )
 
 if CONTINUOUSLY_TRAIN:

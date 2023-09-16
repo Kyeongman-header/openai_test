@@ -56,12 +56,15 @@ class MyLongformer(torch.nn.Module):
         self.loss=torch.nn.BCELoss()
 
     def forward(self, input_ids,attention_mask,global_attention_mask,labels=None):
+        
+
         output=self.gpt(input_ids, attention_mask=attention_mask)
         pooler_output=torch.mean(output.last_hidden_state,dim=-2)
         
 
         prob=self.rogistic(pooler_output)
         prob=self.sigmoid(prob)
+        loss=0
         if labels is not None:
             loss=self.loss(prob,labels)
         return prob, loss
@@ -80,23 +83,31 @@ if CONTINUOUSLY_TRAIN:
     mylongformer.load_state_dict(checkpoint['model_state_dict'],strict=False)
 
 
+
+
 def eval(fake_outputs,real_outputs):
     mylongformer.eval()
     with torch.no_grad():
-        fake=tokenizer(fake_outputs,max_length=4096,padding="max_length",
+        fake=tokenizer(fake_outputs,max_length=500,padding="max_length",
                     truncation=True,return_tensors="pt")
         input_ids=fake['input_ids'].to(gpu)
         attention_mask=fake['attention_mask'].to(gpu)
         global_attention_mask=torch.zeros_like(attention_mask).to(gpu)
         global_attention_mask[:,0]=1
+        if debug:
+            print(input_ids)
+            print(tokenizer.batch_decode(input_ids,skip_special_tokens=True))
         fake_probs,_=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,)
     
-        real=tokenizer(real_outputs,max_length=4096,padding="max_length",
+        real=tokenizer(real_outputs,max_length=500,padding="max_length",
                 truncation=True,return_tensors="pt")
         input_ids=real['input_ids'].to(gpu)
         attention_mask=real['attention_mask'].to(gpu)
         global_attention_mask=torch.zeros_like(attention_mask).to(gpu)
         global_attention_mask[:,0]=1
+        if debug:
+            print(input_ids)
+            print(tokenizer.batch_decode(input_ids,skip_special_tokens=True))
         real_probs,_=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,)
 
         del fake
@@ -171,8 +182,8 @@ for line in rdr:
     if 'nextsentence' in save_dir : # nextsentenceprediction은 아예 다른 방식이다
         
         if keywords==last_keywords and para_count<(PARA-1):
-            cumul_fake_outputs+=" " + tokenizer.sep_token + " " + fake
-            cumul_real_outputs+=" " + tokenizer.sep_token + " " + real
+            cumul_fake_outputs+=fake+" "
+            cumul_real_outputs+=real+" "
             
             f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
 
@@ -194,25 +205,25 @@ for line in rdr:
                 print(r_score.item())
                 print("###############")
 
-            cumul_fake_outputs=fake
-            cumul_real_outputs=real
+            cumul_fake_outputs=fake+" "
+            cumul_real_outputs=real+" "
         else:
-            cumul_fake_outputs=fake
-            cumul_real_outputs=real
+            cumul_fake_outputs=fake+" "
+            cumul_real_outputs=real+" "
             last_keywords=keywords
             para_count=0
 
     else:
         if keywords==last_keywords and para_count<(PARA-1):
             
-            cumul_fake_outputs+=" " + fake
-            cumul_real_outputs+=" " + real
+            cumul_fake_outputs+=fake+" "
+            cumul_real_outputs+=real+" "
 
-            not_last_real.append(real)
-            not_last_fake.append(fake)
+            not_last_real.append(real+" ")
+            not_last_fake.append(fake+" ")
             
-            last_real=real
-            last_fake=fake
+            last_real=real+" "
+            last_fake=fake+" "
             para_count+=1
             
             continue
@@ -273,15 +284,15 @@ for line in rdr:
                     
                     print("###############")
                 
-            cumul_fake_outputs=fake
-            cumul_real_outputs=real
+            cumul_fake_outputs=fake+" "
+            cumul_real_outputs=real+" "
             last_keywords=keywords
-            last_real=real
-            last_fake=fake
+            last_real=real+" "
+            last_fake=fake+" "
             not_last_real=[]
             not_last_fake=[]
-            not_last_real.append(real)
-            not_last_fake.append(fake)
+            not_last_real.append(real+" ")
+            not_last_fake.append(fake+" ")
             para_count=0
             #print(para_count)
 
