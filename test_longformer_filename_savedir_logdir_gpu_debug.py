@@ -53,7 +53,7 @@ class MyLongformer(torch.nn.Module):
         self.gpt = GPT2Model.from_pretrained("gpt2")
         # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
         if "nextsentenceprediction" in save_dir:
-             self.gpt.resize_token_embeddings(len(tokenizer))
+            self.gpt.resize_token_embeddings(len(tokenizer))
         self.rogistic=torch.nn.Linear(self.config.n_embd,1)
         self.sigmoid=torch.nn.Sigmoid()
         self.loss=torch.nn.BCELoss()
@@ -163,8 +163,8 @@ for line in rdr:
         first=False
         continue
     count+=1
-    if count==paragraphs*80:
-        break
+    #if count==paragraphs*80:
+    #    break
     
     
     progress_bar.update(1)
@@ -185,8 +185,8 @@ for line in rdr:
     if 'nextsentence' in save_dir : # nextsentenceprediction은 아예 다른 방식이다
         
         if keywords==last_keywords and para_count<(PARA-1):
-            cumul_fake_outputs+=fake+" "
-            cumul_real_outputs+=real+" "
+            cumul_fake_outputs+="[SEP]"+" " + fake+" "
+            cumul_real_outputs+="[SEP]"+" " + real+" "
             
             f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
 
