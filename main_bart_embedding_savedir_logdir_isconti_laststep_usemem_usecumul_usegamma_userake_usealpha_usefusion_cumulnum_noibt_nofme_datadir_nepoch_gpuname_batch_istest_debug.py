@@ -760,7 +760,7 @@ class Network(nn.Module):
                         no_repeat_ngram_size=3,
                         past_inputs=one_conti_prev_prediction,
                         #encoder_no_repeat_ngram_size=3,
-                        repetition_penalty=1.4,length_penalty=-0.2,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
+                        repetition_penalty=1.4,length_penalty=3.0,early_stopping=True,context=one_context,alpha=one_alpha,beta=one_beta))
         # outputs=torch.cat(outputs,dim=0)
         return outputs,memory,input_lengths
 
@@ -1510,7 +1510,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=10000,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=100000,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
