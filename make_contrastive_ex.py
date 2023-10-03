@@ -32,9 +32,9 @@ def get_real_train_data():
     whole_new_dataset_length=[]
     batch_size=1
     new_whole_data=[]
-    for i in range(30):
+    for i in range(60):
         new_whole_data.append([])
-    for j in trange(1,30): # 최대 100개 문단까지 있다.
+    for j in trange(1,60): # 최대 100개 문단까지 있다.
     
         if dataset_dir !="whole":
             
@@ -177,7 +177,7 @@ def get_whole_data(wp=False,reedsy=False,booksum=False,t_v_t="train",location=".
 def making_new_whole_data(whole_data):
 
     new_whole_data=[]
-    for i in range(30):
+    for i in range(60):
         new_whole_data.append([])
 
 
