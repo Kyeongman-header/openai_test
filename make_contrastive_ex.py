@@ -414,7 +414,7 @@ def making_nextsentenceprediction_examples(new_whole_data):
                 second_sample_parag_num=sample_parag_num
                 sample_parag_num=temp #(둘의 순서를 바꾼다. 1-0 이렇게.)
             """ 
-            neg_sample += "[SEP]" + sample[i][sample_parag_num-1] # 이러면 원래 이어져있어야 하는 두 문단이
+            neg_sample += "[SEP]" + " " + sample[i][sample_parag_num-1] # 이러면 원래 이어져있어야 하는 두 문단이
             # 반대 순서로 엮여 있게 된다.
 
             neg_examples_3.append({'data' : neg_sample,'label':[0]})
@@ -424,7 +424,7 @@ def making_nextsentenceprediction_examples(new_whole_data):
             
             sample_parag_num=random.randint(0,len(sample[j])-2) # 예를들어 길이가 3이면, 0~1까지 랜덤한 문단 하나를 뽑는다. (마지막 문단만 빼고.)
             pos_sample=sample[j][sample_parag_num]
-            pos_sample += "[SEP]" + sample[j][sample_parag_num+1]
+            pos_sample += "[SEP]" + " " + sample[j][sample_parag_num+1]
             
             pos_examples_3.append({'data' : pos_sample,'label':[1]})
     
