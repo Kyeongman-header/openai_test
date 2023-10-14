@@ -455,8 +455,8 @@ def making_nextsentenceprediction_examples(new_whole_data):
                 """
                 neg_sample=neg_sample.replace('\n',' ').replace('\\',' ')
                 neg_examples_3.append({'data' : neg_sample,'label':[0]})
-                print("index : " + str(i) + " whole_data_1 : " + neg_sample)
-                input()
+                #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+                #input()
         for j in range(0,len(sample),5):
             pos_samples=[]
             for sample_parag_num in range(0,len(sample[j])-1):
