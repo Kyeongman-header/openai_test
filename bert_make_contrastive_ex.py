@@ -1,4 +1,5 @@
 import sys
+import copy
 import torch
 from tqdm import tqdm, trange
 from datasets import load_dataset, load_metric
@@ -362,20 +363,56 @@ def making_completeness_examples(new_whole_data):
             whole_data_3=' '.join(sample[j])
             pos_examples_2.append({'data' : whole_data_3,'label':[1]})
     """
+    list_of_ending=["Thanks for reading","Thank you for reading", "https", "Prompts", "Prompt", "Writing", "Tweeter"]
     for i in range(0,len(new_whole_data[1])):
-        sentences=sent_tokenize(' '.join(new_whole_data[1][i]))
-        whole_data_2=' '.join(sentences)
+        
+        sentences=sent_tokenize(''.join(new_whole_data[1][i]))
+        temp_sentences=copy.deepcopy(sentences)
+        for sentence in sentences:
+            remove=False
+            for ending in list_of_ending:
+                if ending in sentence:
+                    remove=True
+                    break
+            if remove is True:
+                temp_sentences.remove(sentence)
+        
+        whole_data_2=' '.join(temp_sentences)
         pos_examples_2.append({'data' : whole_data_2,'label':[1]})
 
     for num, sample in enumerate(new_whole_data[2:]):
-        for i in range(0,len(sample)):
+        for i in range(0,len(sample),5):
+            
+            for sample_parag_num in range(0,len(sample[i])):
+                print(sample[i][sample_parag_num])
+                sentences=sent_tokenize(''.join(sample[i][sample_parag_num]))
+                temp_sentences=copy.deepcopy(sentences)
+                for sentence in sentences:
+                    remove=False
+                    for ending in list_of_ending:
+                        if ending in sentence:
+                            remove=True
+                            break
+                    if remove is True:
+                        temp_sentences.remove(sentence)
+                
+                sample[i][sample_parag_num]=' '.join(temp_sentences)
+                print(sample[i][sample_parag_num])
+
+            print("ending job done.")
+            input()
             for sample_parag_num in range(0,len(sample[i])-1):
+                print(sample[i][sample_parag_num])
+                
                 # neg_sample=random.choice(sample[i][:-1])
+                
                 neg_sample=sample[i][sample_parag_num]
+                neg_sample=neg_sample.replace('\n',' ').replace('\\',' ')
                 neg_examples_2.append({'data' : neg_sample,'label':[0]})
             #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
             #input()
             pos_sample=sample[i][-1]
+            pos_sample=pos_sample.replace('\n',' ').replace('\\',' ')
             for sample_parag_num in range(0,len(sample[i])-1):
                 pos_examples_2.append({'data' : pos_sample,'label':[1]})
 
@@ -399,11 +436,14 @@ def making_nextsentenceprediction_examples(new_whole_data):
 
 
     for num, sample in enumerate(new_whole_data[2:]):
-        for i in range(0,len(sample)):
+        for i in range(0,len(sample),5):
             for sample_parag_num in range(0,len(sample[i])):
                 # sample_parag_num=random.randint(1,len(sample[i])-1) # 예를들어 길이가 3이면, 1~2까지 랜덤한 문단 하나를 뽑는다. (마지막 문단 포함)
                 neg_sample=sample[i][sample_parag_num]
-                random_sample_parag_num=random.choice(list(range(0,sample_parag_num+1))+list(range(sample_parag_num+2,len(sample[i]))))
+                if sample_parag_num==0:
+                    random_sample_parag_num=random.choice(list(range(0,sample_parag_num+1))+list(range(sample_parag_num+2,len(sample[i]))))
+                else:
+                    random_sample_parag_num=random.choice([sample_parag_num-1,sample_parag_num])
                 neg_sample += "[SEP]" + " " + sample[i][random_sample_parag_num]  # 이렇게 하면 원래 정상적으로 뒤에 올 문단을 제외한 모든 문단이 뒤에 붙을 가능성이 생긴다.
                 """
                 second_sample_parag_num=random.randint(0,len(sample[i])-1) # 같은 샘플에서 또 랜덤 하나를 뽑는다.
@@ -412,24 +452,27 @@ def making_nextsentenceprediction_examples(new_whole_data):
                     temp=second_sample_parag_num
                     second_sample_parag_num=sample_parag_num
                     sample_parag_num=temp #(둘의 순서를 바꾼다. 1-0 이렇게.)
-                """ 
+                """
+                neg_sample=neg_sample.replace('\n',' ').replace('\\',' ')
                 neg_examples_3.append({'data' : neg_sample,'label':[0]})
-                #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
-                #input()
-        for j in range(0,len(sample)):
+                print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+                input()
+        for j in range(0,len(sample),5):
             pos_samples=[]
             for sample_parag_num in range(0,len(sample[j])-1):
                 # sample_parag_num=random.randint(0,len(sample[j])-2) # 예를들어 길이가 3이면, 0~1까지 랜덤한 문단 하나를 뽑는다. (마지막 문단만 빼고.)
                 pos_sample=sample[j][sample_parag_num]
                 pos_sample += "[SEP]" + " " + sample[j][sample_parag_num+1]
+                pos_sample=pos_sample.replace('\n',' ').replace('\\',' ')
                 pos_samples.append(pos_sample)
                 pos_examples_3.append({'data' : pos_sample,'label':[1]})
             pos_examples_3.append({'data' : random.choice(pos_samples),'label':[1]}) # neg sample과 개수를 맞춰주기 위해서, 일부러 pos sample 중 랜덤하게 하나를 골라서 추가해준다.        
 
     print("whole pos length : " + str(len(pos_examples_3)))
-    print(pos_examples_3[-1])
+    print(pos_examples_3[-2])
+    
     print("whole neg length : " + str(len(neg_examples_3)))
-    print(neg_examples_3[-1])
+    print(neg_examples_3[-2])
     examples_3=neg_examples_3+pos_examples_3
     print("whole length : " + str(len(examples_3)))
 
@@ -504,10 +547,10 @@ def making_logical_examples(new_whole_data):
 
 def making_pickle_data(examples,name):
     df=pd.DataFrame(examples)
-    labels=torch.FloatTensor(df['label'].values.tolist())
+    labels=torch.ShortTensor(df['label'].values.tolist())
     datas=df['data'].values.tolist()
 
-    token_datas=tokenizer(datas,max_length=500,padding="max_length",
+    token_datas=tokenizer(datas,max_length=400,padding="max_length",
                 truncation=True,return_tensors="pt")
     input_ids=token_datas['input_ids']
     attention_mask=token_datas['attention_mask']

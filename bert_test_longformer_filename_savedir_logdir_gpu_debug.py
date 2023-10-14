@@ -1,5 +1,6 @@
 import torch
 import pickle
+import copy
 from tqdm import tqdm, trange
 from dataset_consts import *
 from torch.utils.tensorboard import SummaryWriter
@@ -158,7 +159,7 @@ not_last_real=[]
 
 paragraphs=int(testfile_name[-1])
 print(paragraphs)
-
+list_of_splitter=[".","!","?",'"',"'"]
 for line in rdr:
     
     if first:
@@ -173,14 +174,22 @@ for line in rdr:
     
     keywords=line[2].replace('[','').replace(']','')
     fake=line[4].replace('[','').replace(']','')
-    fake=' '.join(sent_tokenize(fake))
-
+    #fake=' '.join(sent_tokenize(fake))
+    print(fake)
+    sentences=sent_tokenize(fake)
+    temp_sentences=copy.deepcopy(sentences)
+    for sentence in sentences:
+        
+        if (sentence[-1] in list_of_splitter) is not True:
+            temp_sentences.remove(sentence)
+    fake=' '.join(temp_sentences)
+    # 완료되지 않은 마지막 문장 삭제해주기.
     real=line[3].replace('[','').replace(']','')
     real=' '.join(sent_tokenize(real))
     #print(para_count)
     if debug:
         print("keywords : " + line[2].replace('[','').replace(']',''))
-        print("fake outputs : " + line[4].replace('[','').replace(']',''))
+        print("fake outputs : " + fake)
         print("real outputs : " + line[3].replace('[','').replace(']',''))
         input()
     
