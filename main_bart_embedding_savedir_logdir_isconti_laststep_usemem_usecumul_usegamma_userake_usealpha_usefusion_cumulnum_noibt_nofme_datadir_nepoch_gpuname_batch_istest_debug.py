@@ -1039,12 +1039,12 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
     print('torch saved.')
 
 createFolder('bartGenerations')
-createFolder('bartGenerations/'+save_dir)
+createFolder('bartGenerations/'+log_dir)
 if IS_TEST:
-    eval_dir='bartGenerations/'+save_dir+'/test'
+    eval_dir='bartGenerations/'+log_dir+'/test'
     createFolder(eval_dir)
 else:
-    eval_dir='bartGenerations/'+save_dir+'/valid'
+    eval_dir='bartGenerations/'+log_dir+'/valid'
     createFolder(eval_dir)
 
 def do_eval(steps,dataset,NumPar,eval_num,eval_first):
@@ -1487,7 +1487,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     
 eval_first=True
 if IS_TEST:
-    paragraphs=[5,10,19,30,50,98]
+    paragraphs=[5,10,19,30,50]
     #paragraphs=[5]
     #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
     for i in paragraphs:    
