@@ -1,0 +1,8 @@
+#!/bin/sh
+#python longformer_finetune_dname_nepoch_nbatch_dotest_ntest_conti_saved_logd_gpu_debug.py completeness_long completeness_long 1 24 1 1 0 gpt-completeness_long gpt-completeness_long cuda:0 0
+#python bert_longformer_finetune_dname_nepoch_nbatch_dotest_ntest_conti_saved_logd_gpu_debug.py completeness_bert completeness_bert 1 24 1 1 0 bert-completeness bert-completeness cuda:0 0
+
+#python longformer_finetune_dname_nepoch_nbatch_dotest_ntest_conti_saved_logd_gpu_debug.py nextsentenceprediction_long nextsentenceprediction_long 1 24 1 1 0 gpt-nextsentenceprediction_long gpt-nextsentenceprediction_long cuda:0 0
+python bert_longformer_finetune_dname_nepoch_nbatch_dotest_ntest_conti_saved_logd_gpu_debug.py nextsentenceprediction_bert nextsentenceprediction_bert 1 24 1 1 0 bert-nextsentenceprediction bert-nextsentenceprediction cuda:0 0
+#sh test_completeness.sh
+sh test_nextsentenceprediction.sh
