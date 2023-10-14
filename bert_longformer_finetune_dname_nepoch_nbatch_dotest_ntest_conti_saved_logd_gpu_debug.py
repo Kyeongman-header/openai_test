@@ -138,7 +138,7 @@ class MyLongformer(torch.nn.Module):
         # self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
         # self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
         self.config=AutoConfig.from_pretrained('bert-base-uncased')
-        self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased")
+        self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased",num_labels=2)
         # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
         
         self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
@@ -162,7 +162,8 @@ class MyLongformer(torch.nn.Module):
         # if labels is not None:
         #     loss=self.loss(prob,labels)
         prob=output.logits[:,1] # 참일 확률.
-
+        #print(prob)
+        #input()
         return prob, loss
 
 # outputs = model(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask)
@@ -188,7 +189,8 @@ def eval(steps):
              input_ids=input_ids.to(gpu)
              attention_mask=attention_mask.to(gpu)
              global_attention_mask=global_attention_mask.to(gpu)
-             labels=labels.to(gpu)
+             labels=labels.to(torch.long).to(gpu)
+             #labels=torch.where(labels==1,torch.tensor([0,1]).to(gpu),torch.tensor([1,0]).to(gpu))
         with torch.no_grad():
             probs,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
         valid_loss += loss.item()
@@ -276,8 +278,11 @@ for epoch in range(num_epochs):
              input_ids=input_ids.to(gpu)
              attention_mask=attention_mask.to(gpu)
              global_attention_mask=global_attention_mask.to(gpu)
-             labels=labels.to(gpu)
-
+             labels=labels.to(torch.long).to(gpu)
+             #print(labels)
+             #labels=torch.where(labels==1,torch.tensor([0,1]).to(gpu),torch.tensor([1,0]).to(gpu))
+             #labels=labels.view(-1)
+             #print(labels)
         prob,loss=mylongformer(input_ids=input_ids,attention_mask=attention_mask,global_attention_mask=global_attention_mask,labels=labels)
         if debug:
             print("prob")
