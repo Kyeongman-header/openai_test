@@ -384,7 +384,7 @@ def making_completeness_examples(new_whole_data):
         for i in range(0,len(sample),5):
             
             for sample_parag_num in range(0,len(sample[i])):
-                print(sample[i][sample_parag_num])
+                #print(sample[i][sample_parag_num])
                 sentences=sent_tokenize(''.join(sample[i][sample_parag_num]))
                 temp_sentences=copy.deepcopy(sentences)
                 for sentence in sentences:
@@ -397,12 +397,12 @@ def making_completeness_examples(new_whole_data):
                         temp_sentences.remove(sentence)
                 
                 sample[i][sample_parag_num]=' '.join(temp_sentences)
-                print(sample[i][sample_parag_num])
+                #print(sample[i][sample_parag_num])
 
-            print("ending job done.")
-            input()
+            #print("ending job done.")
+            #input()
             for sample_parag_num in range(0,len(sample[i])-1):
-                print(sample[i][sample_parag_num])
+                #print(sample[i][sample_parag_num])
                 
                 # neg_sample=random.choice(sample[i][:-1])
                 
@@ -455,8 +455,8 @@ def making_nextsentenceprediction_examples(new_whole_data):
                 """
                 neg_sample=neg_sample.replace('\n',' ').replace('\\',' ')
                 neg_examples_3.append({'data' : neg_sample,'label':[0]})
-                print("index : " + str(i) + " whole_data_1 : " + neg_sample)
-                input()
+                #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
+                #input()
         for j in range(0,len(sample),5):
             pos_samples=[]
             for sample_parag_num in range(0,len(sample[j])-1):
