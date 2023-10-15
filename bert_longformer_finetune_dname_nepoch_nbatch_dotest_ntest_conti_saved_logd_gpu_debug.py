@@ -138,7 +138,10 @@ class MyLongformer(torch.nn.Module):
         # self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
         # self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
         self.config=AutoConfig.from_pretrained('bert-base-uncased')
-        self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased",num_labels=2)
+        if "completeness" in save_dir:
+             self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased",num_labels=3)
+        else:
+             self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased",num_labels=2)
         # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
         
         self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
@@ -161,7 +164,10 @@ class MyLongformer(torch.nn.Module):
         
         # if labels is not None:
         #     loss=self.loss(prob,labels)
-        prob=output.logits[:,1] # 참일 확률.
+        if "completeness" in save_dir:
+            prob=output.logits
+        else:
+            prob=output.logits[:,1] # 참일 확률.
         #print(prob)
         #input()
         return prob, loss
@@ -180,8 +186,10 @@ def eval(steps):
     # acc=0
     pp=0
     nn=0
+    nnn=0
     len_pp=0
     len_nn=0
+    len_nnn=0
     mylongformer.eval()
     for i,(input_ids,attention_mask,global_attention_mask,labels) in enumerate(tqdm(valid_dataset)):
         # print(input_ids.shape)
@@ -206,24 +214,48 @@ def eval(steps):
             print(probs)
             print("loss")
             print(loss)
-
-        for (j,p) in enumerate(probs,0):
-            if labels[j]==1:
-                pp+=p
-                len_pp+=1
-            elif labels[j]==0:
-                nn+=p
-                len_nn+=1
-        
-        if debug:
-            print("avg true and false score valid")
-            if len_pp!=0:
-                print("true")
-                print(pp/len_pp)
-            if len_nn!=0:
-                print("false")
-                print(nn/len_nn)
-            input()
+        if "completeness" in save_dir:
+            for (j,p) in enumerate(probs,0):
+                if labels[j]==1:
+                    pp+=p[1]
+                    len_pp+=1
+                elif labels[j]==0:
+                    nn+=p[0]
+                    len_nn+=1
+                elif labels[j]==2:
+                    nnn+=p[2]
+                    len_nnn+=1
+            
+            if debug:
+                print("avg true and false score valid")
+                if len_pp!=0:
+                    print("ending")
+                    print(pp/len_pp)
+                if len_nn!=0:
+                    print("middle")
+                    print(nn/len_nn)
+                if len_nnn!=0:
+                    print("front")
+                    print(nnn/len_nnn)
+                input()
+        else:
+            for (j,p) in enumerate(probs,0):
+                if labels[j]==1:
+                    pp+=p
+                    len_pp+=1
+                elif labels[j]==0:
+                    nn+=p
+                    len_nn+=1
+            
+            if debug:
+                print("avg true and false score valid")
+                if len_pp!=0:
+                    print("true")
+                    print(pp/len_pp)
+                if len_nn!=0:
+                    print("false")
+                    print(nn/len_nn)
+                input()
 
         del input_ids
         del attention_mask
@@ -239,9 +271,14 @@ def eval(steps):
     print(pp/len_pp)
     print("valid avg false score : ")
     print(nn/len_nn)
+    
     writer.add_scalar("loss/valid",valid_loss, steps)
     writer.add_scalar("avg true score/valid",pp/len_pp,steps)
     writer.add_scalar("avg false score/valid",nn/len_nn,steps)
+    if "completeness" in save_dir:
+        print("valid avg ending score : ")
+        print(nnn/len_nnn)
+        writer.add_scalar("avg ending score/valid",nnn/len_nnn,steps)
 
 optimizer = optim.AdamW(mylongformer.parameters(), lr=1e-5,weight_decay=0.1)
 num_training_steps = num_epochs * len(train_dataset)
@@ -267,8 +304,10 @@ for epoch in range(num_epochs):
     # acc=0
     pp=0
     nn=0
+    nnn=0
     len_pp=0
     len_nn=0
+    len_nnn=0
     #eval_steps=1
     #eval(0)
     
@@ -289,19 +328,56 @@ for epoch in range(num_epochs):
             print(prob)
             print("loss")
             print(loss)
-        for (j,p) in enumerate(prob,0):
-            if labels[j]==1:
-                pp+=p
-                len_pp+=1
-            elif labels[j]==0:
-                nn+=p
-                len_nn+=1
+        if "completeness" in save_dir:
+            for (j,p) in enumerate(prob,0):
+                if labels[j]==1:
+                    pp+=p[1]
+                    len_pp+=1
+                elif labels[j]==0:
+                    nn+=p[0]
+                    len_nn+=1
+                elif labels[j]==2:
+                    nnn+=p[2]
+                    len_nnn+=1
+            
+            if debug:
+                print("avg true and false score valid")
+                if len_pp!=0:
+                    print("ending")
+                    print(pp/len_pp)
+                if len_nn!=0:
+                    print("middle")
+                    print(nn/len_nn)
+                if len_nnn!=0:
+                    print("front")
+                    print(nnn/len_nnn)
+                input()
+        else:
+            for (j,p) in enumerate(prob,0):
+                if labels[j]==1:
+                    pp+=p
+                    len_pp+=1
+                elif labels[j]==0:
+                    nn+=p
+                    len_nn+=1
+            
+            if debug:
+                print("avg true and false score valid")
+                if len_pp!=0:
+                    print("true")
+                    print(pp/len_pp)
+                if len_nn!=0:
+                    print("false")
+                    print(nn/len_nn)
+                input()
         
         
         if debug:
             print("avg true and false score train")
             print(pp/len_pp)
             print(nn/len_nn)
+            if "completeness" in save_dir:
+                print(nnn/len_nnn)
             input()
         
         # print(loss)
@@ -322,6 +398,10 @@ for epoch in range(num_epochs):
             writer.add_scalar("loss/train",running_loss/loss_report,loss_steps)
             writer.add_scalar("avg true score/train",pp/len_pp,loss_steps)
             writer.add_scalar("avg false score/train",nn/len_nn,loss_steps)
+            if "completeness" in save_dir:
+                print("valid avg ending score : ")
+                print(nnn/len_nnn)
+                writer.add_scalar("avg ending score/valid",nnn/len_nnn,loss_steps)
             running_loss=0
             loss_steps+=1
             pp=0

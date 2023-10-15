@@ -48,7 +48,10 @@ class MyLongformer(torch.nn.Module):
         # self.config=AutoConfig.from_pretrained('allenai/longformer-base-4096')
         # self.bert = LongformerModel.from_pretrained("allenai/longformer-base-4096")
         self.config=AutoConfig.from_pretrained('bert-base-uncased')
-        self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased")
+        if "completeness" in save_dir:
+             self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased",num_labels=3)
+        else:
+             self.bert = BertForSequenceClassification.from_pretrained("bert-base-uncased",num_labels=2)
         # self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
         
         self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
@@ -71,8 +74,12 @@ class MyLongformer(torch.nn.Module):
         
         # if labels is not None:
         #     loss=self.loss(prob,labels)
-        prob=output.logits[:,1] # 참일 확률.
-
+        if "completeness" in save_dir:
+            prob=output.logits
+        else:
+            prob=output.logits[:,1] # 참일 확률.
+        #print(prob)
+        #input()
         return prob, loss
 
 # outputs = model(input_ids, attention_mask=attention_mask, global_attention_mask=global_attention_mask)
@@ -157,6 +164,13 @@ last_real=""
 not_last_fake=[]
 not_last_real=[]
 
+f_score_front=[]
+f_score_middle=[]
+f_score_ending=[]
+r_score_front=[]
+r_score_middle=[]
+r_score_ending=[]
+
 paragraphs=int(testfile_name[-1])
 print(paragraphs)
 list_of_splitter=[".","!","?",'"',"'"]
@@ -228,139 +242,92 @@ for line in rdr:
             para_count=0
 
     else:
-        if keywords==last_keywords and para_count<(PARA-1):
-            
-            cumul_fake_outputs+=fake+" "
-            cumul_real_outputs+=real+" "
-
-            not_last_real.append(real+" ")
-            not_last_fake.append(fake+" ")
-            
-            last_real=real+" "
-            last_fake=fake+" "
-            para_count+=1
-            
-            continue
+        para_count+=1
+        f_score,r_score=eval(fake,real)
+        if para_count/PARA<0.33:
+            f_score_front.append(f_score[0,0].item())
+            r_score_front.append(r_score[0,0].item())
+        elif para_count/PARA<0.66:
+            f_score_middle.append(f_score[0,1].item())
+            r_score_middle.append(r_score[0,1].item())
         else:
-            if count!=1:
-                if 'coherence' in save_dir or 'logical' in save_dir:
-                    f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
-                    f_scores.append(f_score.item())
-                    r_scores.append(r_score.item())
-                elif 'completeness' in save_dir:
-                    not_last_r_scores=0
-                    not_last_f_scores=0
+            f_score_ending.append(f_score[0,2].item())
+            r_score_ending.append(r_score[0,2].item())
+        
+        
 
-                    f_score,r_score=eval(last_fake,last_real)
-                    #print(para_count) 
-                    for i in range(len(not_last_real)-1):
-                        not_last_f_score,not_last_r_score=eval(not_last_fake[i],not_last_real[i])
-                        not_last_f_scores+=not_last_f_score.item()
-                        not_last_r_scores+=not_last_r_score.item()
-                    
-                    if len(not_last_real)-1 !=0:
-                        not_last_f_scores=not_last_f_scores/(len(not_last_real)-1)
-                        not_last_r_scores=not_last_r_scores/(len(not_last_real)-1)
-                    
-                    not_last_fake_scores.append(not_last_f_scores)
-                    not_last_real_scores.append(not_last_r_scores)
+        step+=1
+            
+        if debug:
+            print("eval results : " )
+            
+            print("fake : " + fake)
+            print("real : " + real)
+            
+            print("keywords : " + last_keywords)
+            
+            print("para_count : " + str(para_count))
+            print("f_score")
+            print(f_score)
+            print("r_score")
+            print(r_score)
+            print("order : ")
+            print(para_count/PARA)
+            print("f_score_front")
+            print(f_score_front)
+            print("f_score_middle")
+            print(f_score_middle)
+            print("f_score_ending")
+            print(f_score_ending)
+            print("r_score_front")
+            print(r_score_front)
+            print("r_score_middle")
+            print(r_score_middle)
+            print("r_score_ending")
+            print(r_score_ending)
 
-                    f_scores.append(f_score.item())
-                    r_scores.append(r_score.item())
-                
-                
-                step+=1
-                #writer.add_scalar("fake score", f_score.item(), step)
-                #writer.add_scalar("real score", r_score.item(), step)
+            print("###############")
 
-                if debug:
-                    print("eval results : " )
-                    if 'coherence' in save_dir or 'logical' in save_dir:
-                        print("fake : " + cumul_fake_outputs)
-                        print("real : " + cumul_real_outputs)
-                    elif 'completeness' in save_dir:
-                        print("fake : " + last_fake)
-                        print("real : " + last_real)
-                        print("not last fake : ")
-                        print(not_last_fake)
-                        print("not last real : ")
-                        print(not_last_real)
-                        print("not last fake score : ")
-                        print(not_last_f_scores)
-                        print("not last real score : ")
-                        print(not_last_r_scores)
-
-                    print("keywords : " + last_keywords)
-                    print("fake score : ")
-                    print(f_score.item())
-                    print("real score : ")
-                    print(r_score.item())
-                    
-                    print("###############")
-                
-            cumul_fake_outputs=fake+" "
-            cumul_real_outputs=real+" "
-            last_keywords=keywords
-            last_real=real+" "
-            last_fake=fake+" "
-            not_last_real=[]
-            not_last_fake=[]
-            not_last_real.append(real+" ")
-            not_last_fake.append(fake+" ")
+        if para_count==PARA:
             para_count=0
-            #print(para_count)
 
-if 'coherence' in save_dir or 'logical' in save_dir:
-    f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
-    f_scores.append(f_score.item())
-    r_scores.append(r_score.item())
-elif 'completeness' in save_dir:
-    not_last_r_scores=0
-    not_last_f_scores=0
 
-    f_score,r_score=eval(last_fake,last_real)
+if 'nextsentence' in save_dir :
+    writer.add_scalar("mean fake score", np.mean(f_scores), 0)
+    writer.add_scalar("mean real score", np.mean(r_scores), 0)
+    writer.add_scalar("var fake score", np.var(f_scores), 0)
+    writer.add_scalar("var real score", np.var(r_scores), 0)
 
-    for i in range(len(not_last_real)-1):
-        
-        not_last_f_score,not_last_r_score=eval(not_last_fake[i],not_last_real[i])
-        not_last_f_scores+=not_last_f_score.item()
-        not_last_r_scores+=not_last_r_score.item()
+
+    print(testfile_name + "'s " + save_dir + " mean score : " + str(np.mean(f_scores)) + "\n var : " + str(np.var(f_scores)))
+    print("and this is baseline (original dataset)'s same mean score : " + str(np.mean(r_scores))+ "\n var : " + str(np.var(r_scores)))
+
+    if len(not_last_fake_scores)>0:
+        print(testfile_name + "'s " + save_dir + " not last mean score : " + str(np.mean(not_last_fake_scores)) + "\n var : " + str(np.var(not_last_fake_scores)))
+        print("and this is baseline (original dataset)'s same not last mean score : " + str(np.mean(not_last_real_scores))+ "\n var : " + str(np.var(not_last_real_scores)))
+
+else:
+    writer.add_scalar("mean fake front score", np.mean(f_score_front), 0)
+    writer.add_scalar("mean fake middle score", np.mean(f_score_middle), 0)
+    writer.add_scalar("mean fake ending score", np.mean(f_score_ending), 0)
+
+    writer.add_scalar("mean real front score", np.mean(r_score_front), 0)
+    writer.add_scalar("mean real middle score", np.mean(r_score_middle), 0)
+    writer.add_scalar("mean real ending score", np.mean(r_score_ending), 0)
     
-    if len(not_last_real)-1!=0:
-        not_last_f_scores=not_last_f_scores/(len(not_last_real)-1)
-        not_last_r_scores=not_last_r_scores/(len(not_last_real)-1)
-        
-    not_last_fake_scores.append(not_last_f_scores)
-    not_last_real_scores.append(not_last_r_scores)
-        
-    f_scores.append(f_score.item())
-    r_scores.append(r_score.item())
-
-
-f_scores=np.array(f_scores)
-r_scores=np.array(r_scores)
-
-if len(not_last_fake_scores)>0:
-    not_last_fake_scores=np.array(not_last_fake_scores)
-    not_last_real_scores=np.array(not_last_real_scores)
-
-writer.add_scalar("mean fake score", np.mean(f_scores), 0)
-writer.add_scalar("mean real score", np.mean(r_scores), 0)
-writer.add_scalar("var fake score", np.var(f_scores), 0)
-writer.add_scalar("var real score", np.var(r_scores), 0)
-if len(not_last_fake_scores)>0:
-    writer.add_scalar("mean not last fake score", np.mean(not_last_fake_scores), 0)
-    writer.add_scalar("mean not last real score", np.mean(not_last_real_scores), 0)
-    writer.add_scalar("var not last fake score", np.var(not_last_fake_scores), 0)
-    writer.add_scalar("var not last real score", np.var(not_last_real_scores), 0)
-
-
-print(testfile_name + "'s " + save_dir + " mean score : " + str(np.mean(f_scores)) + "\n var : " + str(np.var(f_scores)))
-print("and this is baseline (original dataset)'s same mean score : " + str(np.mean(r_scores))+ "\n var : " + str(np.var(r_scores)))
-
-if len(not_last_fake_scores)>0:
-    print(testfile_name + "'s " + save_dir + " not last mean score : " + str(np.mean(not_last_fake_scores)) + "\n var : " + str(np.var(not_last_fake_scores)))
-    print("and this is baseline (original dataset)'s same not last mean score : " + str(np.mean(not_last_real_scores))+ "\n var : " + str(np.var(not_last_real_scores)))
+    print("mean fake front score")
+    print(np.mean(f_score_front))
+    print("mean fake middle score")
+    print(np.mean(f_score_middle))
+    print("mean fake ending score")
+    print(np.mean(f_score_ending))
+    print("mean real front score")
+    print(np.mean(r_score_front))
+    print("mean real middle score")
+    print(np.mean(r_score_middle))
+    print("mean real ending score")
+    print(np.mean(r_score_ending))
 
 writer.close()
 print("writer close")
+
