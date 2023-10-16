@@ -149,6 +149,7 @@ r_scores=[]
 not_last_fake_scores=[]
 not_last_real_scores=[]
 step=0
+__step=0
 para_count=0
 progress_bar = tqdm(range(num_whole_steps))
 
@@ -236,8 +237,8 @@ for line in rdr:
             cumul_real_outputs=real+" "
             last_keywords=keywords
             para_count=0
-
-            if step<10:
+            
+            if __step<10*PARA:
                 max_false_score.append(for_picking_accum_fake_score)
                 max_false_text.append(for_picking_fake_outputs)
             else:
@@ -245,9 +246,10 @@ for line in rdr:
                     i=(for_picking_accum_fake_score>np.array(max_false_score)).tolist().index(True)
                     max_false_score[i]=for_picking_accum_fake_score
                     max_false_text[i]=for_picking_fake_outputs
-            print(max_false_score)
-            print(max_false_score)
-            input()
+            #print(max_false_score)
+            #print(max_false_score)
+            #input()
+            __step+=1
             for_picking_fake_outputs=""
             for_picking_accum_fake_score=0
 
@@ -307,9 +309,9 @@ for line in rdr:
                         #    min_false_nonlast_text[i]=' '.join(not_last_fake)+' '+last_fake
                 
                 step+=1
-                print(max_false_score)
-                print(max_false_text)
-                input()
+                #print(max_false_score)
+                #print(max_false_text)
+                #input()
                 #writer.add_scalar("fake score", f_score.item(), step)
                 #writer.add_scalar("real score", r_score.item(), step)
 
@@ -389,24 +391,29 @@ if len(not_last_fake_scores)>0:
 print("max fake scores")
 print(max_false_score)
 print("texts")
+"""
 for text in max_false_text:
     print("-------------------------------------------------------------------------------------")
     print("#####################################################################################")
     print("-------------------------------------------------------------------------------------")
     print()
     print(text)
-
-if len(min_false_nonlast_score)==0:
+    file_name = testfile_name+"_"save_dir+"_picking"+'.txt'
+"""
+with open(file_name, 'w+') as file:
+    file.write('\n#############################\n#############################\n\n'.join(max_false_text)) 
+"""
+if len(min_false_nonlast_score)!=0:
     print("max nonlast fake scores")
-    print(max_false_nonlast_score)
+    print(min_false_nonlast_score)
     print("texts")
-    for text in max_false_nonlast_text:
+    for text in min_false_nonlast_text:
         print("-------------------------------------------------------------------------------------")
         print("#####################################################################################")
         print("-------------------------------------------------------------------------------------")
         print()
         print(text)
-
+"""
 
 
 """
