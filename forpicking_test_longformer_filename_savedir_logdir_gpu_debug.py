@@ -399,7 +399,7 @@ for text in max_false_text:
     print()
     print(text)
 """
-file_name = testfile_name+"_"save_dir+"_picking"+'.txt'
+file_name = testfile_name+"_"+save_dir+"_picking"+'.txt'
 
 with open(file_name, 'w+') as file:
     file.write('\n#############################\n#############################\n\n'.join(max_false_text)) 
