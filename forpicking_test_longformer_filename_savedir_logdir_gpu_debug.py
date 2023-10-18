@@ -149,6 +149,7 @@ r_scores=[]
 not_last_fake_scores=[]
 not_last_real_scores=[]
 step=0
+__step=0
 para_count=0
 progress_bar = tqdm(range(num_whole_steps))
 
@@ -205,7 +206,7 @@ for line in rdr:
         if keywords==last_keywords and para_count<(PARA-1):
             cumul_fake_outputs+="[SEP]"+" " + fake+" "
             cumul_real_outputs+="[SEP]"+" " + real+" "
-            for_picking_fake_outputs+=fake + " "
+            for_picking_fake_outputs+=fake + "\n"
             
             f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
 
@@ -236,8 +237,8 @@ for line in rdr:
             cumul_real_outputs=real+" "
             last_keywords=keywords
             para_count=0
-
-            if step<10:
+            
+            if __step<10*PARA:
                 max_false_score.append(for_picking_accum_fake_score)
                 max_false_text.append(for_picking_fake_outputs)
             else:
@@ -245,10 +246,13 @@ for line in rdr:
                     i=(for_picking_accum_fake_score>np.array(max_false_score)).tolist().index(True)
                     max_false_score[i]=for_picking_accum_fake_score
                     max_false_text[i]=for_picking_fake_outputs
-            
+            #print(max_false_score)
+            #print(max_false_score)
+            #input()
+            __step+=1
             for_picking_fake_outputs=""
             for_picking_accum_fake_score=0
-
+            for_picking_fake_outputs+=fake + "\n"
     else:
         if keywords==last_keywords and para_count<(PARA-1):
             
@@ -290,22 +294,24 @@ for line in rdr:
                     f_scores.append(f_score.item())
                     r_scores.append(r_score.item())
                     if step<10:
-                        max_false_score.append(f_score.item())
-                        max_false_text.append(' '.join(not_last_fake)+' ' + last_fake)
-                        min_false_nonlast_score.append(not_last_f_scores)
-                        min_false_nonlast_text.append(' '.join(not_last_fake)+' ' + last_fake)
+                        max_false_score.append(f_score.item()-not_last_f_scores)
+                        max_false_text.append('\n'.join(not_last_fake)+'\n' + last_fake)
+                        #min_false_nonlast_score.append(not_last_f_scores)
+                        #min_false_nonlast_text.append(' '.join(not_last_fake)+' ' + last_fake)
                     else:
-                        if True in (f_score.item()>np.array(max_false_score)):
-                            i=(f_score.item()>np.array(max_false_score)).tolist().index(True)
-                            max_false_score[i]=f_score.item()
-                            max_false_text[i]=' '.join(not_last_fake)+' '+last_fake
-                        if True in (not_last_f_scores<np.array(max_false_score)):
-                            i=(not_last_f_scores<np.array(max_false_score)).tolist().index(True)
-                            min_false_nonlast_score[i]=not_last_f_scores
-                            min_false_nonlast_text[i]=' '.join(not_last_fake)+' '+last_fake
+                        if True in ((f_score.item()-not_last_f_scores)>np.array(max_false_score)):
+                            i=((f_score.item()-not_last_f_scores)>np.array(max_false_score)).tolist().index(True)
+                            max_false_score[i]=(f_score.item()-not_last_f_scores)
+                            max_false_text[i]='\n'.join(not_last_fake)+'\n'+last_fake
+                        #if True in (not_last_f_scores<np.array(max_false_score)):
+                        #    i=(not_last_f_scores<np.array(max_false_score)).tolist().index(True)
+                        #    min_false_nonlast_score[i]=not_last_f_scores
+                        #    min_false_nonlast_text[i]=' '.join(not_last_fake)+' '+last_fake
                 
                 step+=1
-
+                #print(max_false_score)
+                #print(max_false_text)
+                #input()
                 #writer.add_scalar("fake score", f_score.item(), step)
                 #writer.add_scalar("real score", r_score.item(), step)
 
@@ -345,7 +351,7 @@ for line in rdr:
             not_last_fake.append(fake+" ")
             para_count=0
             #print(para_count)
-
+    
 if 'coherence' in save_dir or 'logical' in save_dir:
     f_score,r_score=eval(cumul_fake_outputs,cumul_real_outputs)
     f_scores.append(f_score.item())
@@ -380,6 +386,39 @@ if len(not_last_fake_scores)>0:
     not_last_fake_scores=np.array(not_last_fake_scores)
     not_last_real_scores=np.array(not_last_real_scores)
 
+
+
+print("max fake scores")
+print(max_false_score)
+print("texts")
+
+for text in max_false_text:
+    print("-------------------------------------------------------------------------------------")
+    print("#####################################################################################")
+    print("-------------------------------------------------------------------------------------")
+    print()
+    print(text)
+
+file_name = testfile_name+"_"+save_dir+"_picking"+'.txt'
+print(file_name)
+with open(file_name, 'w+') as file:
+    file.write('\n#############################\n#############################\n\n'.join(max_false_text)) 
+
+"""
+if len(min_false_nonlast_score)!=0:
+    print("max nonlast fake scores")
+    print(min_false_nonlast_score)
+    print("texts")
+    for text in min_false_nonlast_text:
+        print("-------------------------------------------------------------------------------------")
+        print("#####################################################################################")
+        print("-------------------------------------------------------------------------------------")
+        print()
+        print(text)
+"""
+
+
+"""
 writer.add_scalar("mean fake score", np.mean(f_scores), 0)
 writer.add_scalar("mean real score", np.mean(r_scores), 0)
 writer.add_scalar("var fake score", np.var(f_scores), 0)
@@ -397,6 +436,6 @@ print("and this is baseline (original dataset)'s same mean score : " + str(np.me
 if len(not_last_fake_scores)>0:
     print(testfile_name + "'s " + save_dir + " not last mean score : " + str(np.mean(not_last_fake_scores)) + "\n var : " + str(np.var(not_last_fake_scores)))
     print("and this is baseline (original dataset)'s same not last mean score : " + str(np.mean(not_last_real_scores))+ "\n var : " + str(np.var(not_last_real_scores)))
-
+"""
 writer.close()
 print("writer close")
