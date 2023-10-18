@@ -69,6 +69,7 @@ use_fusion=int(sys.argv[10])
 
 cumul_num=int(sys.argv[11]) # 3
 
+
 no_ibt=int(sys.argv[12])
 no_fme=int(sys.argv[13])
 
@@ -79,6 +80,7 @@ gpu_name=sys.argv[16] # cuda:0
 batch_size=int(sys.argv[17])
 is_test=int(sys.argv[18])
 debug = int(sys.argv[19]) # 1
+ALPHA_VAL=int(sys.argv[20]) if len(sys.argv)==21 else 0.25 # 0.5
 
 if debug ==1:
     debug=True
@@ -399,8 +401,8 @@ class Network(nn.Module):
             batch_order_token_tensors=batch_ending_token_tensors
         
 
-        alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
-        beta=torch.FloatTensor([[0.5]]).to(gpu_name)
+        alpha=torch.FloatTensor([ALPHA_VAL]).to(gpu_name)
+        beta=torch.FloatTensor([0.5-ALPHA_VAL]).to(gpu_name)
         alpha=torch.stack([alpha]*batch_size,dim=0)
         beta=torch.stack([beta]*batch_size,dim=0)
         
@@ -633,8 +635,8 @@ class Network(nn.Module):
             batch_order_token_tensors=batch_ending_token_tensors
         
 
-        alpha=torch.FloatTensor([[0.5]]).to(gpu_name)
-        beta=torch.FloatTensor([[0.5]]).to(gpu_name)
+        alpha=torch.FloatTensor([ALPHA_VAL]).to(gpu_name)
+        beta=torch.FloatTensor([0.5-ALPHA_VAL]).to(gpu_name)
         alpha=torch.stack([alpha]*batch_size,dim=0)
         beta=torch.stack([beta]*batch_size,dim=0)
         
