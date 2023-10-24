@@ -20,9 +20,14 @@ _tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
 _tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 __tokenizer = AutoTokenizer.from_pretrained("gpt2")
 __tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-metric = evaluate.load("rouge")
-meteor=evaluate.load("meteor")
-_bleu=evaluate.load("bleu")
+from rouge import Rouge
+import itertools
+rouge = Rouge()
+
+# metric = evaluate.load("rouge")
+# meteor=evaluate.load("meteor")
+# _bleu=evaluate.load("bleu")
+
 
 
 def sorting(lst):
@@ -1420,15 +1425,19 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                 print("label : ")
                 print(whole_one_label)
                 continue
-            whole_labels.append(whole_one_label)
+            whole_labels.extend(list(itertools.chain(*one_label)))
             whole_labels_len+=_labels_len
-            whole_predictions.append(whole_one_prediction)
+            # whole_predictions.append(whole_one_prediction)
+            whole_predictions.extend(list(itertools.chain(*one_prediction)))
             whole_predictions_len+=_predictions_len
-            metric.add_batch(predictions=[whole_one_prediction], references=[whole_one_label])
+
+            # metric.add_batch(predictions=[whole_one_prediction], references=[whole_one_label])
             whole_num+=1
         
 
-    result=metric.compute()
+    print(whole_predictions[:13])
+    print(whole_labels[:13])
+    result=rouge.get_scores(whole_predictions, whole_labels,avg=True)
     print(result)
    
     ppl=0
@@ -1508,10 +1517,15 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("real self_bleu fif : " + str(r_self_bleu_fif))
     """
 
-    writer.add_scalar("rouge1/eval", result['rouge1'], steps)
-    writer.add_scalar("rouge2/eval", result['rouge2'], steps)
-    writer.add_scalar("rougeL/eval", result['rougeL'], steps)
-    writer.add_scalar("rougeLsum/eval", result['rougeLsum'], steps)
+    writer.add_scalar("rouge1-F/eval", result['rouge-1']['f'], steps)
+    writer.add_scalar("rouge1-P/eval", result['rouge-1']['p'], steps)
+    writer.add_scalar("rouge1-R/eval", result['rouge-1']['r'], steps)
+    writer.add_scalar("rouge2-F/eval", result['rouge-2']['f'], steps)
+    writer.add_scalar("rouge2-P/eval", result['rouge-2']['p'], steps)
+    writer.add_scalar("rouge2-R/eval", result['rouge-2']['r'], steps)
+    writer.add_scalar("rougel-F/eval", result['rouge-l']['f'], steps)
+    writer.add_scalar("rougel-P/eval", result['rouge-l']['p'], steps)
+    writer.add_scalar("rougel-R/eval", result['rouge-l']['r'], steps)
     writer.add_scalar("in self bleu one/eval",in_self_bleu_one, steps)
     writer.add_scalar("in self bleu bi/eval", in_self_bleu_bi, steps)
     writer.add_scalar("in self bleu tri/eval", in_self_bleu_tri, steps)
