@@ -1573,12 +1573,9 @@ if IS_TEST:
     for i in paragraphs: # 최대 100개 문단까지 있다.
         
         if dataset_dir !="whole":
-                if dataset_dir=='reedsy_rake': # reedsy rake는 test dataset이 없다
-                    with open("pickle_data/"+"gpt_valid_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                        test_dataset = pickle.load(fi)
-                else:
-                    with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
-                        test_dataset = pickle.load(fi)
+                
+            with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+                test_dataset = pickle.load(fi)
         else: # whole dataset train.
             with open("pickle_data/"+"bart_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 test_dataset = pickle.load(fi)
