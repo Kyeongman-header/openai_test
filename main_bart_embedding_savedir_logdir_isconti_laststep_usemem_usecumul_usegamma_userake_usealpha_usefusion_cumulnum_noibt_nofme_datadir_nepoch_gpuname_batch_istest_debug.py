@@ -83,7 +83,7 @@ gpu_name=sys.argv[16] # cuda:0
 batch_size=int(sys.argv[17])
 is_test=int(sys.argv[18])
 debug = int(sys.argv[19]) # 1
-ALPHA_VAL=float(sys.argv[20]) if len(sys.argv)==21 else 0.25 # 0.5
+ALPHA_VAL=float(sys.argv[20]) if len(sys.argv)==21 else 0.5 # 0.5
 
 if debug ==1:
     debug=True
