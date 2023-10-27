@@ -1537,7 +1537,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("real self_bleu four : " + str(r_self_bleu_four))
     print("real self_bleu fif : " + str(r_self_bleu_fif))
     """
-
+    print(whole_predictions_len)
+    print(whole_labels_len)
     writer.add_scalar("rouge1-F/eval", result['rouge-1']['f'], steps)
     writer.add_scalar("rouge1-P/eval", result['rouge-1']['p'], steps)
     writer.add_scalar("rouge1-R/eval", result['rouge-1']['r'], steps)
@@ -1569,7 +1570,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
 eval_first=True
 if IS_TEST:
-    paragraphs=[5,10,19,30,50,98]
+    paragraphs=[5,10,19,30,50]
     for i in paragraphs: # 최대 100개 문단까지 있다.
         
         if dataset_dir !="whole":
@@ -1708,7 +1709,7 @@ else:
         # ---- total style
         trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar,epoch=epoch)
         # ---- total style
-        
+        """ 
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             LAST_PARAG=0
             if dataset_dir !="whole":
@@ -1728,7 +1729,7 @@ else:
             do_eval(steps=i,dataset=valid_dataset,NumPar=i,eval_num=8,eval_first=eval_first)
             eval_first=False
             torch.cuda.empty_cache()
-        
+        """
 # for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
         
@@ -1744,3 +1745,4 @@ else:
 #         torch.cuda.empty_cache()
 
 writer.close()
+print("writer close")

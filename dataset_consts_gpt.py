@@ -101,8 +101,8 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         labels=tokenizer(split_s,max_length=400,padding="max_length",
             truncation=True,return_tensors="pt")
         
-        # prompt_id=tokenizer(prompt[t],max_length=150,padding="max_length",
-        #     truncation=True,return_tensors="pt").input_ids
+        prompt_id=tokenizer(prompt[t],max_length=150,padding="max_length",
+            truncation=True,return_tensors="pt").input_ids
     
         input_ids=input.input_ids.to(torch.int32)
         input_attention=input.attention_mask.to(torch.int32)
@@ -119,8 +119,8 @@ def return_dataset_2(target,source,prompt): # target을 5분할 한다.
         for labels in encoder_input_ids
     ]"""
         
-        whole_datasets[len(split_s)].append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask,})# "prompt":prompt_id })
-        one_datasets.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask,})# "prompt":prompt_id })
+        whole_datasets[len(split_s)].append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask,"prompt":prompt_id })
+        one_datasets.append({"input_ids":input_ids,"input_attention":input_attention,"decoder_input_ids" : decoder_input_ids,"decoder_attention_mask":decoder_attention_mask, "prompt":prompt_id })
         
         # (30, N, data) -> n이 index, i이 데이터셋이 된다.
         # 사용시에는, (각각 순서대로의 param num에 대해서 따로 학습을 해주며, (0~30)

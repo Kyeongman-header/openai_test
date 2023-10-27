@@ -1394,6 +1394,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     # result=metric.compute()
     print(whole_predictions[:13])
     print(whole_labels[:13])
+    print(len(whole_prediction))
+    print(len(whole_labels))
     result=rouge.get_scores(whole_predictions, whole_labels,avg=True)
     print(result)
    
@@ -1473,6 +1475,17 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("real self_bleu four : " + str(r_self_bleu_four))
     print("real self_bleu fif : " + str(r_self_bleu_fif))
     """
+    print(result['rouge-1']['f'])
+    print( result['rouge-1']['p'])
+    print( result['rouge-1']['r'])
+    print(result['rouge-2']['f'])
+    print(result['rouge-2']['p'])
+    print(result['rouge-2']['r'])
+    print(result['rouge-l']['f'])
+    print(result['rouge-l']['p'])
+    print(result['rouge-l']['r'])
+    print(whole_predictions_len)
+    print(whole_labels_len)
 
     writer.add_scalar("rouge1-F/eval", result['rouge-1']['f'], steps)
     writer.add_scalar("rouge1-P/eval", result['rouge-1']['p'], steps)
@@ -1503,7 +1516,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("predictions avg len",whole_predictions_len,steps)
     writer.add_scalar("references avg len",whole_labels_len,steps)
     #writer.add_scalar("ppl",ppl.item(),steps)
-    
+     
 eval_first=True
 if IS_TEST:
     paragraphs=[5,10,19,30,50]
@@ -1525,7 +1538,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=100000,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=3,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
@@ -1681,3 +1694,4 @@ else:
 #         torch.cuda.empty_cache()
 
 writer.close()
+print("writer close")
