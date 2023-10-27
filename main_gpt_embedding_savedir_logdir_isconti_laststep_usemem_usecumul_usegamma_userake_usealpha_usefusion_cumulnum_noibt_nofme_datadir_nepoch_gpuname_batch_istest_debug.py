@@ -1688,7 +1688,7 @@ else:
         # ---- total style
         trainer(0,whole_new_dataset,0,lr_scheduler,progress_bar,epoch=epoch)
         # ---- total style
-        
+        """
         for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
             LAST_PARAG=0
             if dataset_dir !="whole":
@@ -1708,7 +1708,7 @@ else:
             do_eval(steps=i,dataset=valid_dataset,NumPar=i,eval_num=8,eval_first=eval_first)
             eval_first=False
             torch.cuda.empty_cache()
-        
+        """
 # for i in range(LAST_PARAG,30): # 최대 30개 문단까지 있다.
 
         
@@ -1724,3 +1724,4 @@ else:
 #         torch.cuda.empty_cache()
 
 writer.close()
+print("writer close")
