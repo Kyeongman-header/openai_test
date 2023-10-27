@@ -9,7 +9,7 @@
 conda activate torch
 ml cuda
 
-python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_alpha20 bart_alpha20 0 0 1 1 0 0 1 0 1 0 0 whole 1 cuda:0 4 0 0 0.2
+python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_alpha20 bart_alpha20 0 0 1 1 0 0 1 0 1 0 0 whole 1 cuda:0 8 0 0 0.2
 
 python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_alpha20 bart_alpha20 0 0 1 1 0 0 1 0 1 0 0 whole 1 cuda:0 1 1 0 0.2
 
