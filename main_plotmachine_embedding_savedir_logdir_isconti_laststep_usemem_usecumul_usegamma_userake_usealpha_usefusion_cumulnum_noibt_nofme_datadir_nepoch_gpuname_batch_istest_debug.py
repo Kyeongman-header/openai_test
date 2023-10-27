@@ -1537,7 +1537,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     print("real self_bleu four : " + str(r_self_bleu_four))
     print("real self_bleu fif : " + str(r_self_bleu_fif))
     """
-
+    print(whole_predictions_len)
+    print(whole_labels_len)
     writer.add_scalar("rouge1-F/eval", result['rouge-1']['f'], steps)
     writer.add_scalar("rouge1-P/eval", result['rouge-1']['p'], steps)
     writer.add_scalar("rouge1-R/eval", result['rouge-1']['r'], steps)
