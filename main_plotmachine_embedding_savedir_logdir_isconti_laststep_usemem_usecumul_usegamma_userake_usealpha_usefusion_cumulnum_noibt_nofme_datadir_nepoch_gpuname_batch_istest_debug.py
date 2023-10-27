@@ -1569,7 +1569,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
 eval_first=True
 if IS_TEST:
-    paragraphs=[5,10,19,30,50,98]
+    paragraphs=[5,10,19,30,50]
     for i in paragraphs: # 최대 100개 문단까지 있다.
         
         if dataset_dir !="whole":
