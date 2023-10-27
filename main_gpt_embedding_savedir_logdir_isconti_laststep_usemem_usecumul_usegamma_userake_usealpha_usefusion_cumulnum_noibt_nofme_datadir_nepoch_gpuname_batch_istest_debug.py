@@ -1550,7 +1550,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 import random
 eval_first=True
 if IS_TEST:
-    paragraphs=[5,10,19,30,50]
+    paragraphs=[2,5,10,15,20,25]
     #paragraphs=[5]
     #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
     for i in paragraphs:    
@@ -1568,8 +1568,8 @@ if IS_TEST:
         if len(test_dataset)==0:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
-
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=3,eval_first=eval_first)
+        print(len(test_dataset))
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=100000,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
