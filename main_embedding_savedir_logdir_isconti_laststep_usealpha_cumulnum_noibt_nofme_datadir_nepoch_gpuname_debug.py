@@ -214,6 +214,7 @@ class Network(nn.Module):
        self.rogistic=torch.nn.Linear(self.config.hidden_size,1)
        self.sigmoid=torch.nn.Sigmoid()
        self.grucell=nn.GRUCell(d_model,d_model).to(gpu_name)
+       self.transform=
        """
        self.wHr = nn.Linear(d_model,d_model).to(gpu_name)
        self.wMr = nn.Linear(d_model,d_model).to(gpu_name)
@@ -252,6 +253,8 @@ class Network(nn.Module):
             print("order:")
             print(order)
 
+
+        short_prev=prev_predictions # 뒤에서 사용
         prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to(gpu_name),prev_predictions),1)
         
         prev_predictions = self.shared(prev_predictions)
@@ -267,21 +270,7 @@ class Network(nn.Module):
         else:
             cumulation=None
         
-        alpha=0.5
-        beta=0.5
-        if USE_ALPHA:
-            previous=torch.mul((memory+cumulation),1/2)
-            output=self.bert(previous)
-            alpha=self.rogistic(output.pooler_output)
-            alpha=self.sigmoid(alpha) 
-            alpha=torch.mul((alpha),1/2)
-            beta=0.5-alpha
-
-        if debug:
-            print("alpha :")
-            print(alpha)
-            print("beta : ")
-            print(beta)
+        
         
         if intro:
             decoding_token_tensor=intro_token_tensor
@@ -299,6 +288,22 @@ class Network(nn.Module):
         else:
             order_token_tensor=ending_token_tensor
         
+
+        alpha=0.5
+        beta=0.5
+        if USE_ALPHA:
+            previous=torch.cat((short_prev,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
+            output=self.bert(previous)
+            alpha=self.rogistic(output.pooler_output)
+            alpha=self.sigmoid(alpha) 
+            alpha=torch.mul((alpha),1/2)
+            beta=0.5-alpha
+
+        if debug:
+            print("alpha :")
+            print(alpha)
+            print("beta : ")
+            print(beta)
        
          
        
@@ -345,14 +350,14 @@ class Network(nn.Module):
 
         
 
-        outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,decoder_attention_mask=decoder_attention_mask,labels=labels,output_hidden_states=True,memory=memory,cumulation=cumulation,alpha=alpha,beta=beta)
+        outputs = self.bart(input_ids = None,inputs_embeds=inputs_embeds,attention_mask = attention_mask,decoder_input_ids = decoder_input_ids,decoder_attention_mask=decoder_attention_mask,labels=labels,output_hidden_states=True,memory=memory,context=cumulation,alpha=alpha,beta=beta)
 
         return outputs,memory
     
    def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,order,whole,intro,tail,use_memory,use_cumulative):#prompt_ids,prompt_attention):
 
        
-        
+        short_prev=prev_predictions # 뒤에서 사용
         prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to(gpu_name),prev_predictions),1)
         prev_predictions = self.shared(prev_predictions)
         #print(for_concat_prev_predictions.shape)
@@ -365,15 +370,7 @@ class Network(nn.Module):
         else:
             cumulation=None
         
-        alpha=0.5
-        beta=0.5
-        if USE_ALPHA:
-            previous=torch.mul((memory+cumulation),1/2)
-            output=self.bert(previous)
-            alpha=self.rogistic(output.pooler_output)
-            alpha=self.sigmoid(alpha) 
-            alpha=torch.mul((alpha),1/2)
-            beta=0.5-alpha
+        
        
 
 
@@ -391,7 +388,22 @@ class Network(nn.Module):
         else:
             order_token_tensor=ending_token_tensor
 
+        alpha=0.5
+        beta=0.5
+        if USE_ALPHA:
+            previous=torch.cat((short_prev,decoding_token_tensor,order_token_tensor,next_is_ending_token_tensor),1)
+            output=self.bert(previous)
+            alpha=self.rogistic(output.pooler_output)
+            alpha=self.sigmoid(alpha) 
+            alpha=torch.mul((alpha),1/2)
+            beta=0.5-alpha
 
+        if debug:
+            print("alpha :")
+            print(alpha)
+            print("beta : ")
+            print(beta)
+        
         if use_cumulative is False or input_ids.shape[1]+conti_prev_predictions.shape[1]+5 > 1020 or intro:
             # print("no previous decoder output used because of too long summary.")
 
@@ -453,7 +465,7 @@ class Network(nn.Module):
                 top_p=0.95,
                 no_repeat_ngram_size=3,
                 #encoder_no_repeat_ngram_size=3,
-                repetition_penalty=3.5,early_stopping=True,cumulation=cumulation,alpha=alpha,beta=beta),memory
+                repetition_penalty=3.5,early_stopping=True,context=cumulation,alpha=alpha,beta=beta),memory
 
 config = AutoConfig.from_pretrained('facebook/bart-base')
 bert_config = AutoConfig.from_pretrained("prajjwal1/bert-tiny")
@@ -1018,24 +1030,24 @@ def trainer(LAST_STEP):
                     cumul_prev_predictions.insert(0,prev_predictions)
                 
                 
-                # if use_cumulative:
-                #     r.extract_keywords_from_text(tokenizer.decode(prev_predictions[0],skip_special_tokens=True))
-                #     top_features = r.get_ranked_phrases()
-                #     topK=10
-                #     if len(top_features)==0:
-                #         cumul_prev_predictions.insert(0,sep_token_tensor)
-                #     else:
-                #         top_features = clean_top_features(top_features, topK)
-                #         keywordsSTR = convert_keys_to_str(top_features)
+                if use_cumulative:
+                    r.extract_keywords_from_text(tokenizer.decode(prev_predictions[0],skip_special_tokens=True))
+                    top_features = r.get_ranked_phrases()
+                    topK=10
+                    if len(top_features)==0:
+                        cumul_prev_predictions.insert(0,sep_token_tensor)
+                    else:
+                        top_features = clean_top_features(top_features, topK)
+                        keywordsSTR = convert_keys_to_str(top_features)
 
-                #         cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
-                #     if debug:
-                #         print("keywords from last output:")
-                #         print(keywordsSTR)
-                #         print("shape")
-                #         print(tokenizer(keywordsSTR,return_tensors='pt').input_ids.shape)
-                # if debug:    
-                #     input()
+                        cumul_prev_predictions.insert(0,tokenizer(keywordsSTR,return_tensors='pt').input_ids.to(gpu_name))
+                    if debug:
+                        print("keywords from last output:")
+                        print(keywordsSTR)
+                        print("shape")
+                        print(tokenizer(keywordsSTR,return_tensors='pt').input_ids.shape)
+                if debug:    
+                    input()
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()

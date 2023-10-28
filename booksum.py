@@ -1,4 +1,5 @@
 import csv
+import pandas as pd
 import ctypes as ct
 import math
 import numpy as np
@@ -13,16 +14,20 @@ from dataset_consts import *
 count=0
 
 
-file="booksum"
+file="booksum_train"
 
 encoder_max_length = 1024
 decoder_max_length = 1024
 batch_size = 1
 
-f = open(file+'.csv', 'r', encoding='utf-8') # 이 아래의 부분을 함수화하려고 했는데, 어째서인지 함수로 만들면 9,600 line까지만 처리된다.
+# f = open(file+'.csv', 'r', encoding='utf-8') # 이 아래의 부분을 함수화하려고 했는데, 어째서인지 함수로 만들면 9,600 line까지만 처리된다.
 
-rdr = csv.reader(f)
+# rdr = csv.reader(f)
 
+f = pd.read_csv(file+'.csv',chunksize=1000)
+f= pd.concat(f)
+
+print(len(f.index))
 
 first=True
 
@@ -51,10 +56,11 @@ sum_ana_max=0
 sum_ana_min=999999
 sum_ana_len_arr=[]
 
-for line in rdr:
+for index, line in f.iterrows():
         #print(line)
         #total_target.append(print(line[1]))
         #total_source.append(line[1])
+    
     
     if first:
         first=False
@@ -66,7 +72,6 @@ for line in rdr:
     # print(line[1])
     # print(line[2])
     # print(line[3])
-
     chapter=line[9]
     chapter_len=int(float(line[10]))
     summary=line[13]
@@ -117,6 +122,7 @@ for line in rdr:
 
 
 def report():
+    print("num " + str(num))
     print("text avg " + str(text_avg/num))
     print("text max " + str(text_max))
     print("text min " + str(text_min))

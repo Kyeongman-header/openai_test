@@ -911,6 +911,7 @@ class GenerationMixin:
         synced_gpus: Optional[bool] = False,
         exponential_decay_length_penalty: Optional[Tuple[Union[int, float]]] = None,
         memory: Optional[torch.FloatTensor] =None,
+        overall_summary_embeddings:Optional[torch.FloatTensor] =None,
         **model_kwargs,
         
     ) -> Union[GreedySearchOutput, SampleOutput, BeamSearchOutput, BeamSampleOutput, torch.LongTensor]:
@@ -1212,7 +1213,7 @@ class GenerationMixin:
             # if model is encoder decoder encoder_outputs are created
             # and added to `model_kwargs`
             model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
-                inputs_tensor, model_kwargs, model_input_name,memory=memory,
+                inputs_tensor, model_kwargs, model_input_name,memory=memory,overall_summary_embeddings=overall_summary_embeddings,
             )
 
         # 4. Prepare `input_ids` which will be used for auto-regressive generation
@@ -2001,7 +2002,7 @@ class GenerationMixin:
                     break
 
             # prepare model inputs
-            model_inputs = self.prepare_inputs_for_generation(input_ids,memory, **model_kwargs)
+            model_inputs = self.prepare_inputs_for_generation(input_ids,memory=memory, **model_kwargs)
 
             # forward pass to get next token
             outputs = self(

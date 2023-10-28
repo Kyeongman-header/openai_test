@@ -1,5 +1,14 @@
 #!/bin/sh
-
+#SBATCH --job-name  bart_c1
+#SBATCH --time      96:00:00
+#SBATCH -c          10
+#SBATCH --mem       30G
+#SBATCH --gpus      1
+#SBATCH --mail-type END
+#SBATCH --mail-user zzangmane@snu.ac.kr
+source activate torch
+#conda activate torch
+ml cuda
 
 python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_rake_c1 bart_rake_c1 0 0 1 1 0 0 1 0 1 0 0 whole 2 cuda:0 4 0 0
 
