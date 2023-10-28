@@ -351,7 +351,7 @@ class Network(nn.Module):
                 gamma=ratio[0,2]/torch.sum(ratio)
             else:
                 alpha=self.rogistic(output.pooler_output)
-                alpha=self.sigmoid(alpha) 
+                alpha=self.sigmoid(alpha)
                 alpha=torch.mul((alpha),1/2)
                 beta=0.5-alpha
 

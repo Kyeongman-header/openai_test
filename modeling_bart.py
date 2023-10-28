@@ -92,6 +92,7 @@ def _make_causal_mask(input_ids_shape: torch.Size, dtype: torch.dtype, past_key_
     """
     Make causal mask used for bi-directional self-attention.
     """
+
     bsz, tgt_len = input_ids_shape
     mask = torch.full((tgt_len, tgt_len), torch.tensor(torch.finfo(dtype).min))
     mask_cond = torch.arange(mask.size(-1))
@@ -298,6 +299,11 @@ class BartEncoderLayer(nn.Module):
             num_heads=config.encoder_attention_heads,
             dropout=config.attention_dropout,
         )
+        self.context_attn=BartAttention(
+            embed_dim=self.embed_dim,
+            num_heads=config.encoder_attention_heads,
+            dropout=config.attention_dropout,
+        )
         self.self_attn_layer_norm = nn.LayerNorm(self.embed_dim)
         self.dropout = config.dropout
         self.activation_fn = ACT2FN[config.activation_function]
@@ -312,8 +318,12 @@ class BartEncoderLayer(nn.Module):
         attention_mask: torch.FloatTensor,
         layer_head_mask: torch.FloatTensor,
         
-        memory : Optional[torch.FloatTensor] =None,
+        alpha: Optional[torch.FloatTensor] = 0,
+        beta: Optional[torch.FloatTensor] = 0,
+        context : Optional[torch.FloatTensor] =None,
 
+        memory : Optional[torch.FloatTensor] =None,
+        
         output_attentions: Optional[bool] = False,
         
     ) -> Tuple[torch.FloatTensor, Optional[torch.FloatTensor]]:
@@ -328,6 +338,17 @@ class BartEncoderLayer(nn.Module):
                 Whether or not to return the attentions tensors of all attention layers. See `attentions` under
                 returned tensors for more detail.
         """
+        
+        
+        # print("conditional - there is memory ? :" )
+        # print(memory is not None)
+        # print("conditional - there is context ? :" )
+        # print(context is not None)
+        # print("conditional - there is alpha ? :" )
+        # print(alpha)
+        # print("conditional - there is beta ? :" )
+        # print(beta)
+
         residual = hidden_states
         hidden_states, attn_weights, _ = self.self_attn(
             hidden_states=hidden_states,
@@ -335,14 +356,35 @@ class BartEncoderLayer(nn.Module):
             layer_head_mask=layer_head_mask,
             output_attentions=output_attentions,
         )
-        if memory is not None:
+        hidden_states_2=None
+        if memory is not None: # 이제 encoder는 memory를 사용하지 않는다.
             hidden_states_2, attn_weights_2, _ = self.memory_attn(
-                hidden_states=hidden_states,
+                hidden_states=residual, # hidden states는 위에서 이미 변조가 되었으니까 residual로 해야하는거 아님?(의미상으로)
                 key_value_states=memory,
             )
 
-            hidden_states = torch.mul((hidden_states_2+hidden_states),1/2) # 1/2로 나눠준다. (avg니까)
-
+            
+        hidden_states_3=None
+        if context is not None: # 이제 encoder는 memory를 사용하지 않는다.
+            hidden_states_3, attn_weights_3, _ = self.context_attn(
+                hidden_states=residual, # hidden states는 위에서 이미 변조가 되었으니까 residual로 해야하는거 아님?(의미상으로)
+                key_value_states=context,
+            )
+        
+        if hidden_states_2 is not None and hidden_states_3 is not None:
+            hidden_states = torch.mul((hidden_states),1-alpha-beta)
+            hidden_states_2 = torch.mul((hidden_states_2),alpha)
+            hidden_states_3 = torch.mul((hidden_states_3),beta)
+            hidden_states = hidden_states+hidden_states_2+hidden_states_3
+        if hidden_states_2 is not None and hidden_states_3 is None:
+            hidden_states = torch.mul((hidden_states),1-alpha)
+            hidden_states_2 = torch.mul((hidden_states_2),alpha)
+            hidden_states = hidden_states+hidden_states_2
+        if hidden_states_2 is None and hidden_states_3 is not None:
+            hidden_states = torch.mul((hidden_states),1-alpha)
+            hidden_states_3 = torch.mul((hidden_states_3),alpha)
+            hidden_states = hidden_states+hidden_states_3
+        
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
         hidden_states = residual + hidden_states
         hidden_states = self.self_attn_layer_norm(hidden_states)
@@ -380,6 +422,12 @@ class BartDecoderLayer(nn.Module):
             dropout=config.attention_dropout,
             is_decoder=True,
         )
+        # self.memory_attn=BartAttention(
+        #     embed_dim=self.embed_dim,
+        #     num_heads=config.encoder_attention_heads,
+        #     dropout=config.attention_dropout,
+        # )
+
         self.dropout = config.dropout
         self.activation_fn = ACT2FN[config.activation_function]
         self.activation_dropout = config.activation_dropout
@@ -407,6 +455,9 @@ class BartDecoderLayer(nn.Module):
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = True,
+
+        memory : Optional[torch.FloatTensor] =None,
+
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
         Args:
@@ -427,6 +478,8 @@ class BartDecoderLayer(nn.Module):
                 returned tensors for more detail.
         """
         residual = hidden_states
+        # print("decoderlayer - there is memory ? :" )
+        # print(memory is not None)
 
         # Self Attention
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
@@ -439,6 +492,13 @@ class BartDecoderLayer(nn.Module):
             layer_head_mask=layer_head_mask,
             output_attentions=output_attentions,
         )
+        # if memory is not None:
+        #     hidden_states_2, attn_weights_2, _ = self.memory_attn(
+        #         hidden_states=residual,
+        #         key_value_states=memory,
+        #     )
+
+        #     hidden_states = torch.mul((hidden_states_2+hidden_states),1/2)
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
         hidden_states = residual + hidden_states
         hidden_states = self.self_attn_layer_norm(hidden_states)
@@ -758,7 +818,9 @@ class BartEncoder(BartPretrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-        
+        alpha: Optional[torch.FloatTensor] = 0,
+        beta: Optional[torch.FloatTensor] = 0,
+        context : Optional[torch.FloatTensor] =None,
         memory : Optional[torch.FloatTensor] =None,
 
     ) -> Union[Tuple, BaseModelOutput]:
@@ -873,7 +935,12 @@ class BartEncoder(BartPretrainedModel):
                         attention_mask,
                         layer_head_mask=(head_mask[idx] if head_mask is not None else None),
                         output_attentions=output_attentions,
-                        memory=memory,
+
+                        alpha=alpha,
+                        beta=beta,
+                        context=context,
+
+                        memory=memory, # 이제 encoder에서는 memory를 사용하지 않고 대신 cumulative decoder output을 쓴다.
                     )
 
                 hidden_states = layer_outputs[0]
@@ -962,6 +1029,7 @@ class BartDecoder(BartPretrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        memory : Optional[torch.FloatTensor] =None,
     ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
         r"""
         Args:
@@ -1133,6 +1201,7 @@ class BartDecoder(BartPretrainedModel):
                     past_key_value=past_key_value,
                     output_attentions=output_attentions,
                     use_cache=use_cache,
+                    # memory=memory,
                 )
             hidden_states = layer_outputs[0]
 
@@ -1221,6 +1290,9 @@ class BartModel(BartPretrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        alpha: Optional[torch.FloatTensor] = 0,
+        beta: Optional[torch.FloatTensor] = 0,
+        context : Optional[torch.FloatTensor] =None,
         memory:Optional[torch.FloatTensor] =None,
     ) -> Union[Tuple, Seq2SeqModelOutput]:
 
@@ -1257,7 +1329,13 @@ class BartModel(BartPretrainedModel):
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
                 return_dict=return_dict,
-                memory=memory,
+                
+                alpha=alpha,
+                beta= beta,
+                context =context,
+
+
+                memory=memory, # 이제 encoder에서는 memory를 사용하지 않는다.
             )
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
         elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):
@@ -1281,6 +1359,7 @@ class BartModel(BartPretrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            # memory=memory,
         )
 
         if not return_dict:
@@ -1362,6 +1441,9 @@ class BartForConditionalGeneration(BartPretrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         
+        alpha: Optional[torch.FloatTensor] = 0,
+        beta: Optional[torch.FloatTensor] = 0,
+        context : Optional[torch.FloatTensor] =None,
         memory: Optional[torch.FloatTensor] =None,
 
     ) -> Union[Tuple, Seq2SeqLMOutput]:
@@ -1387,6 +1469,14 @@ class BartForConditionalGeneration(BartPretrainedModel):
         # print(decoder_input_ids)
         # print("conditional - there is memory ? :" )
         # print(memory is not None)
+        # print("conditional - there is memory ? :" )
+        # print(memory is not None)
+        # print("conditional - there is context ? :" )
+        # print(context is not None)
+        # print("conditional - there is alpha ? :" )
+        # print(alpha)
+        # print("conditional - there is beta ? :" )
+        # print(beta)
 
         outputs = self.model(
             input_ids,
@@ -1404,6 +1494,9 @@ class BartForConditionalGeneration(BartPretrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            alpha=alpha,
+            beta=beta,
+            context =context,
             memory=memory,
         )
         lm_logits = self.lm_head(outputs[0]) + self.final_logits_bias
@@ -1439,7 +1532,8 @@ class BartForConditionalGeneration(BartPretrainedModel):
         cross_attn_head_mask=None,
         use_cache=None,
         encoder_outputs=None,
-        memory=None,
+        
+        
         **kwargs
     ):
         # cut decoder_input_ids if past is used
@@ -1447,7 +1541,11 @@ class BartForConditionalGeneration(BartPretrainedModel):
         # print(decoder_input_ids)
         if past is not None:
             decoder_input_ids = decoder_input_ids[:, -1:]
-
+        memory=kwargs.get("memory", None)
+        context=kwargs.get("context", None)
+        alpha=kwargs.get("alpha", None)
+        beta=kwargs.get("beta", None)
+        
         return {
             "input_ids": None,  # encoder_outputs is defined. input_ids not needed
             "encoder_outputs": encoder_outputs,
@@ -1458,6 +1556,9 @@ class BartForConditionalGeneration(BartPretrainedModel):
             "decoder_head_mask": decoder_head_mask,
             "cross_attn_head_mask": cross_attn_head_mask,
             "memory":memory,
+            "context":context,
+            "alpha":alpha,
+            "beta":beta,
             "use_cache": use_cache,  # change this to avoid caching (presumably for debugging)
         }
 

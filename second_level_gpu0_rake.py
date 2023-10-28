@@ -45,16 +45,17 @@ def createFolder(directory):
     except OSError:
         print('Error Creating directory. ' + directory)
 
-save_dir=sys.argv[1]
-log_dir=sys.argv[2]
-conti=sys.argv[3]
+save_dir=sys.argv[1] # rake_all
+log_dir=sys.argv[2] # rake_all
+conti=sys.argv[3] # 0 
 
-last_step=int(sys.arg[4])
-use_mem=sys.arg[5]
-use_cumul=sys.arg[6]
+last_step=int(sys.arg[4]) # 0
+use_mem=sys.arg[5] # 1
+use_cumul=sys.arg[6] # 1
 
-cumul_num=int(sys.arg[7])
+cumul_num=int(sys.arg[7]) # 3
 
+gpu_name=sys.argv[8] # cuda:0
 
 
 createFolder('second_level')
@@ -94,18 +95,18 @@ middle_id=tokenizer.convert_tokens_to_ids("<m>")
 ending_id=tokenizer.convert_tokens_to_ids("<e>")
 
 # by_id=tokenizer.convert_tokens_to_ids("<by>")
-soplot_token_tensor=torch.LongTensor([[soplot_id]]).to('cuda:0')
-eoplot_token_tensor=torch.LongTensor([[eoplot_id]]).to('cuda:0')
-soprev_token_tensor=torch.LongTensor([[soprev_id]]).to('cuda:0')
-eoprev_token_tensor=torch.LongTensor([[eoprev_id]]).to('cuda:0')
-sep_token_tensor=torch.LongTensor([[sep_id]]).to('cuda:0')
-# by_token_tensor=torch.LongTensor([[by_id]]).to('cuda:0')
-intro_token_tensor=torch.LongTensor([[intro_id]]).to('cuda:0')
-body_token_tensor=torch.LongTensor([[body_id]]).to('cuda:0')
-tail_token_tensor=torch.LongTensor([[tail_id]]).to('cuda:0')
-front_token_tensor=torch.LongTensor([[front_id]]).to('cuda:0')
-middle_token_tensor=torch.LongTensor([[middle_id]]).to('cuda:0')
-ending_token_tensor=torch.LongTensor([[ending_id]]).to('cuda:0')
+soplot_token_tensor=torch.LongTensor([[soplot_id]]).to(gpu_name)
+eoplot_token_tensor=torch.LongTensor([[eoplot_id]]).to(gpu_name)
+soprev_token_tensor=torch.LongTensor([[soprev_id]]).to(gpu_name)
+eoprev_token_tensor=torch.LongTensor([[eoprev_id]]).to(gpu_name)
+sep_token_tensor=torch.LongTensor([[sep_id]]).to(gpu_name)
+# by_token_tensor=torch.LongTensor([[by_id]]).to(gpu_name)
+intro_token_tensor=torch.LongTensor([[intro_id]]).to(gpu_name)
+body_token_tensor=torch.LongTensor([[body_id]]).to(gpu_name)
+tail_token_tensor=torch.LongTensor([[tail_id]]).to(gpu_name)
+front_token_tensor=torch.LongTensor([[front_id]]).to(gpu_name)
+middle_token_tensor=torch.LongTensor([[middle_id]]).to(gpu_name)
+ending_token_tensor=torch.LongTensor([[ending_id]]).to(gpu_name)
 
 #train_total_target=last_target[:TRAIN_RANGE]
 # train_total_source=total_target[:TRAIN_RANGE]
@@ -145,14 +146,14 @@ class Network(nn.Module):
        self.shared.requires_grad = False # 이 shared는 역할상 고정되어 있어야 한다.
        # 하지만 bart의 embedding layer는 학습을 거치면서 업데이트 된다.
        self.bart = bart
-       self.grucell=nn.GRUCell(d_model,d_model).to('cuda:0')
+       self.grucell=nn.GRUCell(d_model,d_model).to(gpu_name)
        """
-       self.wHr = nn.Linear(d_model,d_model).to('cuda:0')
-       self.wMr = nn.Linear(d_model,d_model).to('cuda:0')
-       self.wHz = nn.Linear(d_model,d_model).to('cuda:0')
-       self.wMz = nn.Linear(d_model,d_model).to('cuda:0')
-       self.wHn = nn.Linear(d_model,d_model).to('cuda:0')
-       self.wMn = nn.Linear(d_model,d_model).to('cuda:0')
+       self.wHr = nn.Linear(d_model,d_model).to(gpu_name)
+       self.wMr = nn.Linear(d_model,d_model).to(gpu_name)
+       self.wHz = nn.Linear(d_model,d_model).to(gpu_name)
+       self.wMz = nn.Linear(d_model,d_model).to(gpu_name)
+       self.wHn = nn.Linear(d_model,d_model).to(gpu_name)
+       self.wMn = nn.Linear(d_model,d_model).to(gpu_name)
        """
 
    def forward(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,prev_predictions,conti_prev_predictions,order,whole,intro,tail):#prompt_ids,prompt_attention):
@@ -162,7 +163,7 @@ class Network(nn.Module):
         #print("prev_predictions shape:")
         #print(for_concat_prev_predictions.shape)
 
-        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to('cuda:0'),prev_predictions),1)
+        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to(gpu_name),prev_predictions),1)
         prev_predictions = self.shared(prev_predictions)
        #print(prev_predictions.shape)
         
@@ -192,8 +193,8 @@ class Network(nn.Module):
        
        #print("input id shape")
        #print(input_ids.shape)
-    #    order_token_tensor=torch.LongTensor([[order]]).to('cuda:0')
-    #    whole_token_tensor=torch.LongTensor([[whole]]).to('cuda:0')
+    #    order_token_tensor=torch.LongTensor([[order]]).to(gpu_name)
+    #    whole_token_tensor=torch.LongTensor([[whole]]).to(gpu_name)
         if intro:
             decoding_token_tensor=intro_token_tensor
         elif tail:
@@ -225,7 +226,7 @@ class Network(nn.Module):
                 list_attention_mask[0][i]=1
 
         #attention_mask=torch.cat((prompt_attention,attention_mask),1)
-        attention_mask=torch.LongTensor(list_attention_mask).to('cuda:0')
+        attention_mask=torch.LongTensor(list_attention_mask).to(gpu_name)
 
         #print("attention mask")
         #print(attention_mask.shape)
@@ -240,7 +241,7 @@ class Network(nn.Module):
         #print(attention_mask.shape)
 
         #inputs_embeds=torch.cat((prev_predictions,inputs_embeds),1)
-        #attention_mask=torch.cat((torch.LongTensor([[1]*prev_predictions.shape[1]]).to('cuda:0'),attention_mask),1)
+        #attention_mask=torch.cat((torch.LongTensor([[1]*prev_predictions.shape[1]]).to(gpu_name),attention_mask),1)
 
         #print("prev concat input embeds shape : ")
         #print(inputs_embeds.shape)
@@ -258,7 +259,7 @@ class Network(nn.Module):
    def generate(self, memory,input_ids,attention_mask,decoder_input_ids,decoder_attention_mask,labels,output_hidden_states,prev_predictions,conti_prev_predictions,order,whole,intro,tail):#prompt_ids,prompt_attention):
        
         
-        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to('cuda:0'),prev_predictions),1)
+        prev_predictions=torch.cat((torch.LongTensor([[tokenizer.pad_token_id]*(1024-prev_predictions.shape[1])]).to(gpu_name),prev_predictions),1)
         prev_predictions = self.shared(prev_predictions)
         #print(for_concat_prev_predictions.shape)
         if USE_MEMORY :
@@ -319,7 +320,7 @@ class Network(nn.Module):
                 list_attention_mask[0][i]=1
 
         #attention_mask=torch.cat((prompt_attention,attention_mask),1)
-        attention_mask=torch.LongTensor(list_attention_mask).to('cuda:0')
+        attention_mask=torch.LongTensor(list_attention_mask).to(gpu_name)
 
         #attention_mask=torch.cat((prompt_attention,attention_mask),1)
         #print("concat and embedded input ids shape :")
@@ -328,8 +329,8 @@ class Network(nn.Module):
         #print(attention_mask.shape)
 
         #inputs_embeds=torch.cat((prev_predictions,inputs_embeds),1)
-        #attention_mask=torch.cat((torch.LongTensor([[1]*prev_predictions.shape[1]]).to('cuda:0'),attention_mask),1)
-        #dummy_decoder_input_ids = torch.tensor([[tokenizer.pad_token_id]]).to('cuda:0')
+        #attention_mask=torch.cat((torch.LongTensor([[1]*prev_predictions.shape[1]]).to(gpu_name),attention_mask),1)
+        #dummy_decoder_input_ids = torch.tensor([[tokenizer.pad_token_id]]).to(gpu_name)
         #source= tokenizer.batch_decode(input_ids,skip_special_tokens=True)
         #print("source")
         #print(source)
@@ -344,13 +345,13 @@ class Network(nn.Module):
 
 config = AutoConfig.from_pretrained('facebook/bart-base')
 if CONTINUOUSLY_TRAIN:
-    bart =  AutoModelForSeq2SeqLM.from_config(config).to('cuda:0') # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
+    bart =  AutoModelForSeq2SeqLM.from_config(config).to(gpu_name) # 이후부터는 내가 finetune한 bart를 사용(밑에서 torch로 불러온다.)
 else:
-    bart = AutoModelForSeq2SeqLM.from_pretrained('facebook/bart-base').to('cuda:0') # 최초 학습에서는 pretrained 된 bart를 사용
+    bart = AutoModelForSeq2SeqLM.from_pretrained('facebook/bart-base').to(gpu_name) # 최초 학습에서는 pretrained 된 bart를 사용
 bart.resize_token_embeddings(len(tokenizer)) # 이렇게 하면 랜덤한 embedding unit이 추가가 된다.
 #bart.get_input_embeddings().requires_grad = False # embedding layer는 학습을 안한다. 얘가 변동되면 prev_predictions에 대한 표현도 계속 변하기 때문.
 #생각해보니, shared에다가 init에서 복사한 embedding module만 계속 쓰는 거잖아?
-model = Network(config.vocab_size, config.d_model,bart).to('cuda:0')
+model = Network(config.vocab_size, config.d_model,bart).to(gpu_name)
 
 # -----------train ends, eval starts.
 # f = open('rake_fme_second_level_val_results.csv','w', newline='')
@@ -400,9 +401,9 @@ def do_eval(steps):
 
         prev_predictions=data['prompt']
 
-        input_ids=input_ids.to('cuda:0')
-        attention_mask=attention_mask.to('cuda:0')
-        memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:0') # first memory.
+        input_ids=input_ids.to(gpu_name)
+        attention_mask=attention_mask.to(gpu_name)
+        memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
         #print(prev_predictions)
         cumul_prev_predictions=[]
         conti_prev_predictions=""
@@ -414,7 +415,7 @@ def do_eval(steps):
 
         for d in num_decoder_input_ids:
         
-            prev_predictions=prev_predictions.to('cuda:0')
+            prev_predictions=prev_predictions.to(gpu_name)
             '''
             word=""
             if count==0:
@@ -431,28 +432,28 @@ def do_eval(steps):
             prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
             
             prompt=tokenizer(prompt,return_tensors="pt")
-            prompt_attention=prompt.attention_mask.to('cuda:0')
-            prompt_ids=prompt.input_ids.to('cuda:0')
+            prompt_attention=prompt.attention_mask.to(gpu_name)
+            prompt_ids=prompt.input_ids.to(gpu_name)
             '''
             #print("before concat, prompt ids shape :")
             #print(prompt_ids.shape)
 
         #print(d)
-        #ex_d=torch.unsqueeze(d[:-1],dim=0).to('cuda:0')
-        #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][:-1],dim=0).to('cuda:0')
+        #ex_d=torch.unsqueeze(d[:-1],dim=0).to(gpu_name)
+        #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1][:-1],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-        #label=torch.unsqueeze(d[1:],dim=0).to('cuda:0')
-            #ex_d=torch.unsqueeze(d,dim=0).to('cuda:0')
+        #label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
+            #ex_d=torch.unsqueeze(d,dim=0).to(gpu_name)
         
         #print(decoder_attention_masks[count-1][0])
 
-            #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1],dim=0).to('cuda:0')
-            #label=torch.unsqueeze(d,dim=0).to('cuda:0')
+            #decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count-1],dim=0).to(gpu_name)
+            #label=torch.unsqueeze(d,dim=0).to(gpu_name)
             
-            ex_d=torch.unsqueeze(d[:-1],dim=0).to('cuda:0')
-            decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to('cuda:0')
+            ex_d=torch.unsqueeze(d[:-1],dim=0).to(gpu_name)
+            decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-            label=torch.unsqueeze(d[1:],dim=0).to('cuda:0')
+            label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
             """with torch.no_grad():
             outputs,memory = model(input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,labels=label,decoder_attention_mask=decoder_attention_mask,output_hidden_states=True,prev_predictions=prev_predictions,prompt_ids=prompt_ids,prompt_attention=prompt_attention,memory=memory.detach())
@@ -506,7 +507,7 @@ def do_eval(steps):
             whole=len(num_decoder_input_ids)
 
             if USE_MEMORY is False:
-                memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:0')
+                memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
             
             _memory=memory
             outputs,memory=model.generate(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ex_d,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,order=order,whole=whole,intro=intro,tail=tail)#prompt_ids=prompt_ids,prompt_attention=prompt_attention)
@@ -518,10 +519,10 @@ def do_eval(steps):
                 
                 #dlabel = tokenizer.batch_decode(label,skip_special_tokens=True)
                 #dlabel = tokenizer(dlabel,return_tensors="pt").input_ids
-                ddd=dd[:,:-1].to('cuda:0')
-                dd_attention_mask=dd_attention_mask[:,:-1].to('cuda:0')
+                ddd=dd[:,:-1].to(gpu_name)
+                dd_attention_mask=dd_attention_mask[:,:-1].to(gpu_name)
                 # input_ids 맨 앞에 이전 preceding context를 합친다.
-                dlabel=dd[:,1:].to('cuda:0')
+                dlabel=dd[:,1:].to(gpu_name)
                 
                 for_perplexity,_=model(memory=_memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = ddd,decoder_attention_mask=dd_attention_mask,labels=dlabel,output_hidden_states=True,prev_predictions=prev_predictions,
                                        conti_prev_predictions=conti_prev_predictions,order=order,whole=whole,intro=intro,tail=tail)
@@ -782,12 +783,12 @@ def trainer(LAST_STEP):
         
             prev_predictions=data['prompt']
         
-            input_ids=input_ids.to('cuda:0')
-            attention_mask=attention_mask.to('cuda:0')
+            input_ids=input_ids.to(gpu_name)
+            attention_mask=attention_mask.to(gpu_name)
             
 
-            memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:0') # first memory.
-            #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to('cuda:0')
+            memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name) # first memory.
+            #cumul_prev_predictions = torch.zeros_like(torch.empty(1,1)).to(gpu_name)
             cumul_prev_predictions=[]
             conti_prev_predictions=""
         #print(prev_predictions)
@@ -795,7 +796,7 @@ def trainer(LAST_STEP):
             for d in num_decoder_input_ids:
 
                 #input()
-                prev_predictions=prev_predictions.to('cuda:0')
+                prev_predictions=prev_predictions.to(gpu_name)
                 decoder_attention_mask=decoder_attention_masks[count]
                 '''    
                 word=""
@@ -811,16 +812,16 @@ def trainer(LAST_STEP):
                 prompt="MAKE A " + word + " PART OF THE ENTIRE ARTICLE. The plot : "
                 
                 prompt=tokenizer(prompt,return_tensors="pt")
-                prompt_attention=prompt.attention_mask.to('cuda:0')
-                prompt_ids=prompt.input_ids.to('cuda:0')
+                prompt_attention=prompt.attention_mask.to(gpu_name)
+                prompt_ids=prompt.input_ids.to(gpu_name)
                 '''
             #print("before concat, prompt ids shape :")
             #print(prompt_ids.shape)
                 #print(decoder_attention_masks.shape) 
-                dd=torch.unsqueeze(d[:-1],dim=0).to('cuda:0')
-                decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to('cuda:0')
+                dd=torch.unsqueeze(d[:-1],dim=0).to(gpu_name)
+                decoder_attention_mask=torch.unsqueeze(decoder_attention_masks[count][:-1],dim=0).to(gpu_name)
             # input_ids 맨 앞에 이전 preceding context를 합친다.
-                label=torch.unsqueeze(d[1:],dim=0).to('cuda:0')
+                label=torch.unsqueeze(d[1:],dim=0).to(gpu_name)
             
                 
                 # zero the parameter gradients
@@ -854,7 +855,7 @@ def trainer(LAST_STEP):
                 order=count
                 whole=len(num_decoder_input_ids)
                 if USE_MEMORY is False:
-                    memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to('cuda:0')
+                    memory = torch.zeros_like(torch.empty(1,1024,config.d_model)).to(gpu_name)
                 outputs,memory = model(memory=memory.detach(),input_ids = input_ids,attention_mask = attention_mask,decoder_input_ids = dd,decoder_attention_mask=decoder_attention_mask,labels=label,output_hidden_states=True,prev_predictions=prev_predictions,conti_prev_predictions=conti_prev_predictions,order=order,whole=whole,intro=intro,tail=tail)#prompt_ids=prompt_ids,prompt_attention=prompt_attention) # 중요! memory.detach()를 하지 않으면 매번 memory cell에 대한 gradient는 계속 이어져나가 계산되기 때문에, 두번 그래디언트 업데이트 했다고 오류 뜬다.
                 
                 loss = outputs.loss
