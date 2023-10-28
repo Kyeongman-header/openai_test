@@ -1098,12 +1098,12 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
     print('torch saved.')
 
 createFolder('PlotmachineGenerations')
-createFolder('PlotmachineGenerations/'+save_dir)
+createFolder('PlotmachineGenerations/'+log_dir)
 if IS_TEST:
-    eval_dir='PlotmachineGenerations/'+save_dir+'/test'
+    eval_dir='PlotmachineGenerations/'+log_dir+'/test'
     createFolder(eval_dir)
 else:
-    eval_dir='PlotmachineGenerations/'+save_dir+'/valid'
+    eval_dir='PlotmachineGenerations/'+log_dir+'/valid'
     createFolder(eval_dir)
 
 def do_eval(steps,dataset,NumPar,eval_num,eval_first):
@@ -1575,7 +1575,7 @@ if IS_TEST:
         
         if dataset_dir !="whole":
                 
-            with open("pickle_data/"+"gpt_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
+            with open("pickle_data/"+"bart_test_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:
                 test_dataset = pickle.load(fi)
         else: # whole dataset train.
             with open("pickle_data/"+"bart_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
