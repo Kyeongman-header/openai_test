@@ -364,6 +364,7 @@ def making_completeness_examples(new_whole_data):
             pos_examples_2.append({'data' : whole_data_3,'label':[1]})
     """
     list_of_ending=["Thanks for reading","Thank you for reading", "https", "Prompts", "Prompt", "Writing", "Tweeter"]
+    """
     for i in range(0,len(new_whole_data[1])):
         
         sentences=sent_tokenize(''.join(new_whole_data[1][i]))
@@ -379,12 +380,15 @@ def making_completeness_examples(new_whole_data):
         
         whole_data_2=' '.join(temp_sentences)
         pos_examples_2.append({'data' : whole_data_2,'label':[1]})
-
-    for num, sample in enumerate(new_whole_data[2:]):
+    """
+    front_example=[]
+    middle_example=[]
+    ending_example=[]
+    for num, sample in enumerate(new_whole_data[5:]):
         for i in range(0,len(sample),5):
             
             for sample_parag_num in range(0,len(sample[i])):
-                print(sample[i][sample_parag_num])
+                #print(sample[i][sample_parag_num])
                 sentences=sent_tokenize(''.join(sample[i][sample_parag_num]))
                 temp_sentences=copy.deepcopy(sentences)
                 for sentence in sentences:
@@ -397,33 +401,65 @@ def making_completeness_examples(new_whole_data):
                         temp_sentences.remove(sentence)
                 
                 sample[i][sample_parag_num]=' '.join(temp_sentences)
-                print(sample[i][sample_parag_num])
+                #print(sample[i][sample_parag_num])
 
-            print("ending job done.")
-            input()
-            for sample_parag_num in range(0,len(sample[i])-1):
-                print(sample[i][sample_parag_num])
+            #print("ending job done.")
+            #input()
+            for sample_parag_num in range(0,len(sample[i])):
+                #print(sample[i][sample_parag_num])
                 
                 # neg_sample=random.choice(sample[i][:-1])
                 
-                neg_sample=sample[i][sample_parag_num]
-                neg_sample=neg_sample.replace('\n',' ').replace('\\',' ')
-                neg_examples_2.append({'data' : neg_sample,'label':[0]})
-            #print("index : " + str(i) + " whole_data_1 : " + neg_sample)
-            #input()
-            pos_sample=sample[i][-1]
-            pos_sample=pos_sample.replace('\n',' ').replace('\\',' ')
-            for sample_parag_num in range(0,len(sample[i])-1):
-                pos_examples_2.append({'data' : pos_sample,'label':[1]})
+                s=sample[i][sample_parag_num]
+                s=s.replace('\n',' ').replace('\\',' ').replace('-',' ')
+                label=0
+                
 
+                if (sample_parag_num+1)/len(sample[i])<0.33:
+                    label=0
+                    front_example.append({'data' : s,'label':[label]})
+                elif (sample_parag_num+1)/len(sample[i])<0.66:
+                    label=1
+                    middle_example.append({'data' : s,'label':[label]})
+                else:
+                    label=2
+                    ending_example.append({'data' : s,'label':[label]})
+                
+    length=max([len(front_example),len(middle_example),len(ending_example)])
+                
+    while len(front_example)<length:
+        front_example.append(random.choice(front_example))
+    while len(middle_example)<length:
+        middle_example.append(random.choice(middle_example))
+    while len(ending_example)<length:
+        ending_example.append(random.choice(ending_example))
+                
+    print("front_example")
+    print(front_example[-1])
+    print(len(front_example))
+    print("middle_example")
+    print(middle_example[-1])
+    print(len(middle_example))
+    print("ending_example")
+    print(ending_example[-1])
+    print(len(ending_example))
+
+    examples_2=front_example + middle_example + ending_example
+                #print("index : " + str(i) + " whole_data_1 : " + s + " label : "+str(label))
+            #input()
+            
+            #input()
+            # 그리고 이 sample들 개수를 맞춰줘야 한다.
                 
     
-
+    """
     print("whole pos length : " + str(len(pos_examples_2)))
     print(pos_examples_2[-1])
     print("whole neg length : " + str(len(neg_examples_2)))
     print(neg_examples_2[-1])
     examples_2=neg_examples_2+pos_examples_2
+    """
+
     print("whole length : " + str(len(examples_2)))
 
 

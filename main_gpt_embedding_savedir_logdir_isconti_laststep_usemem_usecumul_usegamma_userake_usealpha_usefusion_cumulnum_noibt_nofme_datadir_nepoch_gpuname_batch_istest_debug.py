@@ -1579,7 +1579,7 @@ else:
     whole_new_dataset=[]
     whole_new_dataset_length=[]
 
-    for i in trange(1,100): # 최대 100개 문단까지 있다.
+    for i in trange(1,30): # 최대 100개 문단까지 있다.
 
         if dataset_dir !="whole":
             with open("pickle_data/"+"gpt_train_"+dataset_dir+"/level_2_" + str(i) + ".pickle","rb") as fi:

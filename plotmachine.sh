@@ -10,9 +10,9 @@ source activate torch
 #conda activate torch
 ml cuda
 
-python main_plotmachine_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py plotmachine_rake plotmachine_rake 0 0 1 0 0 0 1 0 0 0 1 whole 2 cuda:0 4 0 0
+python main_plotmachine_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py plotmachine_rake plotmachine_rake 0 0 1 0 0 0 0 0 0 0 1 whole 1 cuda:0 4 0 0 
 
-python main_plotmachine_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py plotmachine_rake plotmachine_rake 0 0 1 0 0 0 1 0 0 0 1 whole 1 cuda:0 1 1 0
+python main_plotmachine_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py plotmachine_rake plotmachine_rake 0 0 1 0 0 0 0 0 0 0 1 whole 1 cuda:0 1 1 0
 
 python test_longformer_filename_savedir_logdir_gpu_debug.py PlotmachineGenerations/plotmachine_rake/test/generations_outputs_5 completeness-gpt plotmachine_5_completeness-gpt cuda:0 5 0
 

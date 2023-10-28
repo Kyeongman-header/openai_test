@@ -238,7 +238,7 @@ for line in rdr:
             last_keywords=keywords
             para_count=0
             
-            if __step<10*PARA:
+            if __step<10:
                 max_false_score.append(for_picking_accum_fake_score)
                 max_false_text.append(for_picking_fake_outputs)
             else:

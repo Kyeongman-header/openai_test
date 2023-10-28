@@ -6,7 +6,9 @@ import random
 from torch.utils.tensorboard import SummaryWriter
 import evaluate
 _bleu=evaluate.load("bleu")
-
+import nltk.translate.bleu_score as bleu
+from nltk.tokenize import TweetTokenizer
+tweet_tokenizer= TweetTokenizer()
 def createFolder(directory):
     try:
         if not os.path.exists(directory):
@@ -16,7 +18,7 @@ def createFolder(directory):
 createFolder('second_level')
 
 writer = SummaryWriter("./runs/"+"real")
-
+batch_size=1
 def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     
     
@@ -39,7 +41,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     whole_labels=[]
     whole_labels_len=0
 
-    for i in trange(0, eval_num, batch_size):
+    for i in trange(0, eval_num if eval_num<len(dataset) else len(dataset), batch_size):
         if i+batch_size>eval_num or i+batch_size>len(dataset):
             # batch size에 안 맞는 마지막 set은 , 그냥 버린다
             # batch size는 커봐야 4 정도니까 이정도는 괜찮다.
@@ -151,13 +153,28 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                     # print(_one_prediction[j])
                     # 학습이 제대로 안되서 generate 길이가 0이면, 이게 제대로 작동 안한다.
             #self_bleu=BLEU(except_whole_predictions,weights).get_score([whole_predictions[j]])
+                    refs=[]
+                    for predicts in except_one_label:
+
+                        refs.append(tweet_tokenizer.tokenize(predicts))
+
+                    #print(refs)
+                    hyp=tweet_tokenizer.tokenize(_one_label[j])
+                    #print(hyp)
+                    self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
+                    #print(self_bleu)
+                    _in_self_bleu_bi+=self_bleu[0]
+                    _in_self_bleu_tri+=self_bleu[1]
+                    _in_self_bleu_four+=self_bleu[2]
+                    _in_self_bleu_fif+=self_bleu[3]
+                    """
                     self_bleu=_bleu.compute(predictions=[_one_label[j]],references=[except_one_label],max_order=5)
                     _in_self_bleu_one+=self_bleu['precisions'][0]
                     _in_self_bleu_bi+=self_bleu['precisions'][1]
                     _in_self_bleu_tri+=self_bleu['precisions'][2]
                     _in_self_bleu_four+=self_bleu['precisions'][3]
                     _in_self_bleu_fif+=self_bleu['precisions'][4]
-
+                    """
             in_self_bleu_one+=_in_self_bleu_one/len(_one_label)
             in_self_bleu_bi+=_in_self_bleu_bi/len(_one_label)
             in_self_bleu_tri+=_in_self_bleu_tri/len(_one_label)
@@ -196,7 +213,10 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     writer.add_scalar("real_in self bleu four/eval", in_self_bleu_four, steps)
     writer.add_scalar("real_in self bleu fif/eval", in_self_bleu_fif, steps)
 
-for i in range(1,20): # 최대 100개 문단까지 있다.
+
+eval_first=True
+paragraphs=[5,10,19,30,50]
+for i in paragraphs: # 최대 100개 문단까지 있다.
         
         
         with open("pickle_data/"+"bart_test_"+"wp_rake"+"/level_2_" + str(i) + ".pickle","rb") as fi:
@@ -211,5 +231,5 @@ for i in range(1,20): # 최대 100개 문단까지 있다.
         
         print("the test set for " + str(i) + " Num Paragramphs.")
 
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=80,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=10000,eval_first=eval_first)
         eval_first=False

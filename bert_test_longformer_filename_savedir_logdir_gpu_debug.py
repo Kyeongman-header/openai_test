@@ -189,7 +189,7 @@ for line in rdr:
     keywords=line[2].replace('[','').replace(']','')
     fake=line[4].replace('[','').replace(']','')
     #fake=' '.join(sent_tokenize(fake))
-    print(fake)
+    #print(fake)
     sentences=sent_tokenize(fake)
     temp_sentences=copy.deepcopy(sentences)
     for sentence in sentences:

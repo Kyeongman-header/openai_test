@@ -236,7 +236,12 @@ for step, line in _f.iterrows():
     #    continue
     count+=1
     #progress_bar.update(1)
-    #print(line[2])
+    
+    print(line[4])
+    hyp=tweet_tokenizer.tokenize(line[4])
+    print(len(hyp))
+    input()
+
     if line[0]=='steps':
         continue
 

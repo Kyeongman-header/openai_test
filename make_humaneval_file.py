@@ -41,6 +41,8 @@ last_keywords=""
 cumul_fake_outputs=""
 cumul_real_outputs=""
 
+
+
 f=[]
 r=[]
 step=0

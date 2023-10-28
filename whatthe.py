@@ -6,6 +6,9 @@ from torch.utils.tensorboard import SummaryWriter
 from transformers import AutoConfig,LongformerModel,GPT2Model
 #import pytorch_metric_learning.losses as loss_fn
 import sys
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS']='0'
+
 
 print("gpu : ")
 print(torch.cuda.is_available())

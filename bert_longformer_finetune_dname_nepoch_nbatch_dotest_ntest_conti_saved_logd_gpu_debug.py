@@ -229,13 +229,13 @@ def eval(steps):
             if debug:
                 print("avg true and false score valid")
                 if len_pp!=0:
-                    print("ending")
+                    print("middle")
                     print(pp/len_pp)
                 if len_nn!=0:
-                    print("middle")
+                    print("front")
                     print(nn/len_nn)
                 if len_nnn!=0:
-                    print("front")
+                    print("ending")
                     print(nnn/len_nnn)
                 input()
         else:
@@ -343,13 +343,13 @@ for epoch in range(num_epochs):
             if debug:
                 print("avg true and false score valid")
                 if len_pp!=0:
-                    print("ending")
+                    print("middle")
                     print(pp/len_pp)
                 if len_nn!=0:
-                    print("middle")
+                    print("front")
                     print(nn/len_nn)
                 if len_nnn!=0:
-                    print("front")
+                    print("ending")
                     print(nnn/len_nnn)
                 input()
         else:
@@ -370,15 +370,6 @@ for epoch in range(num_epochs):
                     print("false")
                     print(nn/len_nn)
                 input()
-        
-        
-        if debug:
-            print("avg true and false score train")
-            print(pp/len_pp)
-            print(nn/len_nn)
-            if "completeness" in save_dir:
-                print(nnn/len_nnn)
-            input()
         
         # print(loss)
         
@@ -433,5 +424,9 @@ for epoch in range(num_epochs):
 if do_test:
     eval(num_test)
 
-
+torch.save({'epoch':num_epochs,
+            'model_state_dict': mylongformer.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            },PATH)
 print('Finished Training')
+

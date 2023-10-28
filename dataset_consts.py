@@ -19,8 +19,8 @@ import random
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 #rouge = load_metric("rouge")
-rouge = evaluate.load('rouge')
-meteor= evaluate.load('meteor')
+#rouge = evaluate.load('rouge')
+#meteor= evaluate.load('meteor')
 max_length=1024
 batch_size=4
 class Contrastive_Dataset(torch.utils.data.Dataset):
