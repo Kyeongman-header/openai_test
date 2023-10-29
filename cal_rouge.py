@@ -13,9 +13,9 @@ import nltk.translate.bleu_score as bleu
 from nltk.tokenize import TweetTokenizer
 tweet_tokenizer = TweetTokenizer()
 from rake_nltk import Rake
-
+from tqdm import tqdm, trange
 testfile_name=sys.argv[1]
-num_para=sys.argv[2]
+num_para=int(sys.argv[2])
 
 f = open(testfile_name+'.csv', 'r', encoding='utf-8')
 rdr = csv.reader(f)
@@ -37,11 +37,16 @@ in_self_bleu_tri=0
 in_self_bleu_four=0
 in_self_bleu_fif=0
 whole_num=0
+progress_bar = tqdm(range(num_whole_steps))
 for line in rdr:
     
+    if count==200:
+        break
+    progress_bar.update(1)
     if first:
         first=False
         continue
+    
     fake=line[4]
     real=line[3]
     label_len=len(tokenizer(real,return_tensors="pt")['input_ids'])
@@ -52,7 +57,7 @@ for line in rdr:
     count+=1
     one_fake.append(fake)
     one_label.append(real)
-    if len(one_fake)%num_para==0:
+    if (len(one_fake)) % num_para==0:
         _in_self_bleu_one=0
         _in_self_bleu_bi=0
         _in_self_bleu_tri=0
@@ -100,8 +105,8 @@ __whole_predictions=[]
 __whole_labels=[]
 for j,pred in enumerate(whole_predictions):
     if len(pred)!=0 or len(whole_labels[j])==0:
-        del __whole_predictions.append(pred)
-        del __whole_labels.append(whole_labels[j])
+        __whole_predictions.append(pred)
+        __whole_labels.append(whole_labels[j])
 print("after remove empty hyp or ref")
 print(len(__whole_predictions))
 print(len(__whole_labels))
