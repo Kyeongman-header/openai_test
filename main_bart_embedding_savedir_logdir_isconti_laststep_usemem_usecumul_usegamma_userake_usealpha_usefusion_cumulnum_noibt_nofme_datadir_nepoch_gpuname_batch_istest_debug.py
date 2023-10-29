@@ -1394,7 +1394,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     # result=metric.compute()
     print(whole_predictions[:13])
     print(whole_labels[:13])
-    print(len(whole_prediction))
+    print(len(whole_predictions))
     print(len(whole_labels))
     result=rouge.get_scores(whole_predictions, whole_labels,avg=True)
     print(result)
@@ -1520,7 +1520,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 eval_first=True
 if IS_TEST:
     paragraphs=[2,5,10,15,20,25]
-    #paragraphs=[5]
+    #paragraphs=[]
     #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
     for i in paragraphs:    
         if dataset_dir !="whole":
@@ -1538,7 +1538,7 @@ if IS_TEST:
             continue
         print("the test set for " + str(i) + " Num Paragramphs.")
         print(len(test_dataset))
-        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=100000,eval_first=eval_first)
+        do_eval(steps=i,dataset=test_dataset,NumPar=i,eval_num=10000,eval_first=eval_first)
         eval_first=False
         torch.cuda.empty_cache()
 
