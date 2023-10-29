@@ -40,8 +40,6 @@ whole_num=0
 progress_bar = tqdm(range(num_whole_steps))
 for line in rdr:
     
-    if count==200:
-        break
     progress_bar.update(1)
     if first:
         first=False
