@@ -1400,8 +1400,8 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
     __whole_labels=[]
     for j,pred in enumerate(whole_predictions):
         if len(pred)!=0 or len(whole_labels[j])==0:
-            del __whole_predictions.append(pred)
-            del __whole_labels.append(whole_labels[j])
+            __whole_predictions.append(pred)
+            __whole_labels.append(whole_labels[j])
     print("after remove empty hyp or ref")
     print(len(__whole_predictions))
     print(len(__whole_labels))
