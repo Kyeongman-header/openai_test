@@ -9,9 +9,9 @@
 conda activate torch
 ml cuda
 
-python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_rd bart_rd 0 0 1 1 0 0 1 0 1 0 0 whole 1 cuda:0 8 0 0 0.1
+python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_rd bart_rd 0 0 1 1 0 0 1 0 1 0 0 reedsy_rake 1 cuda:0 8 0 0
 
-python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_rd bart_rd 0 0 1 1 0 0 1 0 1 0 0 whole 1 cuda:0 1 1 0 0.1
+python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_rd bart_rd 0 0 1 1 0 0 1 0 1 0 0 whole 1 cuda:0 1 1 0
 
 python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_rd/test/generations_outputs_2 completeness-gpt bart_rd_2_completeness-gpt cuda:0 2 0
 
