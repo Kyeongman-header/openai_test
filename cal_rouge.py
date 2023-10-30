@@ -36,6 +36,12 @@ in_self_bleu_bi=0
 in_self_bleu_tri=0
 in_self_bleu_four=0
 in_self_bleu_fif=0
+fake_in_self_bleu_one=0
+fake_in_self_bleu_bi=0
+fake_in_self_bleu_tri=0
+fake_in_self_bleu_four=0
+fake_in_self_bleu_fif=0
+
 whole_num=0
 progress_bar = tqdm(range(num_whole_steps))
 for line in rdr:
@@ -92,7 +98,46 @@ for line in rdr:
         in_self_bleu_tri+=_in_self_bleu_tri/len(one_label)
         in_self_bleu_four+=_in_self_bleu_four/len(one_label)
         in_self_bleu_fif+=_in_self_bleu_fif/len(one_label)
+        
+        _in_self_bleu_one=0
+        _in_self_bleu_bi=0
+        _in_self_bleu_tri=0
+        _in_self_bleu_four=0
+        _in_self_bleu_fif=0
+
+
+        for j in range(len(one_fake)):
+            except_one_fake=one_fake[0:j]+one_fake[j+1:]
+            refs=[]
+            for predicts in except_one_fake:
+                refs.append(tweet_tokenizer.tokenize(predicts))
+            #print(refs)
+            hyp=tweet_tokenizer.tokenize(one_fake[j])
+            #print(hyp)
+            self_bleu=bleu.sentence_bleu(refs,hyp,weights=[(1./2.,1./2.),(1./3.,1./3.,1./3.),(1./4.,1./4.,1./4.,1./4.),(1./5.,1./5.,1./5.,1./5.,1./5.)])
+            #print(self_bleu)
+            _in_self_bleu_bi+=self_bleu[0]
+            _in_self_bleu_tri+=self_bleu[1]
+            _in_self_bleu_four+=self_bleu[2]
+            _in_self_bleu_fif+=self_bleu[3]
+            """
+            self_bleu=_bleu.compute(predictions=[_one_label[j]],references=[except_one_label],max_order=5)
+            _in_self_bleu_one+=self_bleu['precisions'][0]
+            _in_self_bleu_bi+=self_bleu['precisions'][1]
+            _in_self_bleu_tri+=self_bleu['precisions'][2]
+            _in_self_bleu_four+=self_bleu['precisions'][3]
+            _in_self_bleu_fif+=self_bleu['precisions'][4]
+            """
+
+        fake_in_self_bleu_one+=_in_self_bleu_one/len(one_label)
+        fake_in_self_bleu_bi+=_in_self_bleu_bi/len(one_label)
+        fake_in_self_bleu_tri+=_in_self_bleu_tri/len(one_label)
+        fake_in_self_bleu_four+=_in_self_bleu_four/len(one_label)
+        fake_in_self_bleu_fif+=_in_self_bleu_fif/len(one_label)
+        
         whole_num+=1
+        one_label=[]
+        one_fake=[]
 
 print("whole texts")
 print(whole_num)
@@ -121,6 +166,15 @@ print("in_self_bleu_bi : " + str(in_self_bleu_bi))
 print("in_self_bleu_tri : " + str(in_self_bleu_tri))
 print("in_self_bleu_four : " + str(in_self_bleu_four))
 print("in_self_bleu_fif : " + str(in_self_bleu_fif))
-    
+fake_in_self_bleu_one=fake_in_self_bleu_one/whole_num
+fake_in_self_bleu_bi=fake_in_self_bleu_bi/whole_num
+fake_in_self_bleu_tri=fake_in_self_bleu_tri/whole_num
+fake_in_self_bleu_four=fake_in_self_bleu_four/whole_num
+fake_in_self_bleu_fif=fake_in_self_bleu_fif/whole_num
+print("fake_in_self_bleu_one : " + str(fake_in_self_bleu_one))
+print("fake_in_self_bleu_bi : " + str(fake_in_self_bleu_bi))
+print("fake_in_self_bleu_tri : " + str(fake_in_self_bleu_tri))
+print("fake_in_self_bleu_four : " + str(fake_in_self_bleu_four))
+print("fake_in_self_bleu_fif : " + str(fake_in_self_bleu_fif))
 
     
