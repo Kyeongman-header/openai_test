@@ -147,7 +147,7 @@ print(len(whole_labels))
 __whole_predictions=[]
 __whole_labels=[]
 for j,pred in enumerate(whole_predictions):
-    if len(pred)!=0 or len(whole_labels[j])!=0:
+    if len(pred)!=0 and len(whole_labels[j])!=0:
         __whole_predictions.append(pred)
         __whole_labels.append(whole_labels[j])
 print("after remove empty hyp or ref")
