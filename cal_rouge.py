@@ -27,8 +27,8 @@ first=True
 count=0
 whole_labels=[]
 whole_predictions=[]
-whole_labels_len=0
-whole_predictions_len=0
+whole_labels_len=[]
+whole_predictions_len=[]
 one_fake=[]
 one_label=[]
 in_self_bleu_one=0
@@ -53,8 +53,10 @@ for line in rdr:
     
     fake=line[4]
     real=line[3]
-    label_len=len(tokenizer(real,return_tensors="pt")['input_ids'])
-    predict_len=len(tokenizer(fake,return_tensors="pt")['input_ids'])
+    label_len=len(tokenizer(real,return_tensors="pt")['input_ids'][0])
+    predict_len=len(tokenizer(fake,return_tensors="pt")['input_ids'][0])
+    #print(label_len)
+    #print(predict_len)
     whole_predictions_len.append(predict_len)
     whole_labels_len.append(label_len)
     
