@@ -55,7 +55,9 @@ for line in rdr:
     real=line[3]
     label_len=len(tokenizer(real,return_tensors="pt")['input_ids'])
     predict_len=len(tokenizer(fake,return_tensors="pt")['input_ids'])
-
+    whole_predictions_len.append(predict_len)
+    whole_labels_len.append(label_len)
+    
     whole_predictions.append(fake)
     whole_labels.append(real)
     count+=1
@@ -146,10 +148,14 @@ print(len(whole_predictions))
 print(len(whole_labels))
 __whole_predictions=[]
 __whole_labels=[]
+__whole_predictions_len=[]
+__whole_labels_len=[]
 for j,pred in enumerate(whole_predictions):
     if len(pred)!=0 and len(whole_labels[j])!=0:
         __whole_predictions.append(pred)
         __whole_labels.append(whole_labels[j])
+        __whole_predictions_len.append(whole_predictions_len[j])
+        __whole_labels_len.append(whole_labels_len[j])
 print("after remove empty hyp or ref")
 print(len(__whole_predictions))
 print(len(__whole_labels))
@@ -176,5 +182,30 @@ print("fake_in_self_bleu_bi : " + str(fake_in_self_bleu_bi))
 print("fake_in_self_bleu_tri : " + str(fake_in_self_bleu_tri))
 print("fake_in_self_bleu_four : " + str(fake_in_self_bleu_four))
 print("fake_in_self_bleu_fif : " + str(fake_in_self_bleu_fif))
+print(result['rouge-1']['f'])
+print(result['rouge-1']['p'])
+print(result['rouge-1']['r'])
+print(result['rouge-2']['f'])
+print(result['rouge-2']['p'])
+print(result['rouge-2']['r'])
+print(result['rouge-l']['f'])
+print(result['rouge-l']['p'])
+print(result['rouge-l']['r'])
+print("prediction length")
+print(np.mean(np.array(__whole_predictions_len)))
+print("labels lenght")
+print(np.mean(np.array(__whole_labels_len)))
 
     
+total_results=[in_self_bleu_one,in_self_bleu_bi,in_self_bleu_tri,in_self_bleu_four,in_self_bleu_fif,fake_in_self_bleu_one,fake_in_self_bleu_bi,fake_in_self_bleu_tri,fake_in_self_bleu_four,fake_in_self_bleu_fif,
+               result['rouge-1']['f'],result['rouge-1']['p'],result['rouge-1']['r'],result['rouge-2']['f'],result['rouge-2']['p'],result['rouge-2']['r'],result['rouge-l']['f'],result['rouge-l']['p'],result['rouge-l']['r'],
+               np.mean(np.array(__whole_predictions_len)),np.mean(np.array(__whole_labels_len))]
+total_results_name=["in_self_bleu_one","in_self_bleu_bi","in_self_bleu_tri","in_self_bleu_four","in_self_bleu_fif","fake_in_self_bleu_one","fake_in_self_bleu_bi","fake_in_self_bleu_tri","fake_in_self_bleu_four","fake_in_self_bleu_fif",
+               "result['rouge-1']['f']","result['rouge-1']['p']","result['rouge-1']['r']","result['rouge-2']['f']","result['rouge-2']['p']","result['rouge-2']['r']","result['rouge-l']['f']","result['rouge-l']['p']","result['rouge-l']['r']",
+               "np.mean(np.array(__whole_predictions_len))","np.mean(np.array(__whole_labels_len))"]
+
+file_name = testfile_name+'.txt'
+
+with open(file_name, 'w+') as file:
+    for i, val in enumerate(total_results):
+        file.write(total_results_name[i] + " : " + str(val) + '\n')
