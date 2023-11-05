@@ -977,7 +977,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
 
             if use_cumulative:
                 last_sents=[]
-                lan_batch_prev_predictions=tokenizer.batch_decode(batch_prev_predictions) #(b)
+                lan_batch_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True) #(b)
                 for b in range(batch_size):
                     last_sents.append(' '.join(sent_tokenize(lan_batch_prev_predictions[b])[-CUMUL_NUM:]))
 
@@ -1265,7 +1265,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
 
             if use_cumulative:
                 last_sents=[]
-                lan_batch_prev_predictions=tokenizer.batch_decode(batch_prev_predictions) #(b)
+                lan_batch_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True) #(b)
                 for b in range(batch_size):
                     last_sents.append(' '.join(sent_tokenize(lan_batch_prev_predictions[b])[-CUMUL_NUM:]))
 
