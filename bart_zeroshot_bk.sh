@@ -1,39 +1,60 @@
 #!/bin/bash0
-#SBATCH --job-name  bk
-#SBATCH --time      96:00:00
-#SBATCH -c          10
-#SBATCH --mem       20G
-#SBATCH --gpus      1
-#SBATCH --mail-type END
-#SBATCH --mail-user zzangmane@snu.ac.kr
+#SBATCH __job_name  bk
+#SBATCH __time      96:00:00
+#SBATCH _c          10
+#SBATCH __mem       20G
+#SBATCH __gpus      1
+#SBATCH __mail_type END
+#SBATCH __mail_user zzangmane@snu.ac.kr
 conda activate torch
 ml cuda
 
 # python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_bk bart_bk 0 0 1 1 0 0 1 0 1 0 0 booksum_rake 1 cuda:0 8 0 0
 
-python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_bk bart_bk 0 0 1 1 0 0 1 0 1 0 0 whole 1 cuda:0 1 1 0
+python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_bk_rake bart_bk_zero_wp 0 0 1 1 0 0 1 0 3 0 0 wp_rake 1 cuda:0 1 1 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_2 completeness-gpt bart_bk_2_completeness-gpt cuda:0 2 0
+python main_bart_embedding_savedir_logdir_isconti_laststep_usemem_usecumul_usegamma_userake_usealpha_usefusion_cumulnum_noibt_nofme_datadir_nepoch_gpuname_batch_istest_debug.py bart_bk_rake bart_bk_zero_rd 0 0 1 1 0 0 1 0 3 0 0 reedsy_rake 1 cuda:0 1 1 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_5 completeness-gpt bart_bk_5_completeness-gpt cuda:0 5 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_5 completeness_gpt bart_bk_zero_wp_5_completeness_gpt cuda:0 5 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_10 completeness-gpt bart_bk_10_completeness-gpt cuda:0 10 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_10 completeness_gpt bart_bk_zero_wp_10_completeness_gpt cuda:0 10 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_15 completeness-gpt bart_bk_15_completeness-gpt cuda:0 15 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_19 completeness_gpt bart_bk_zero_wp_19_completeness_gpt cuda:0 19 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_20 completeness-gpt bart_bk_20_completeness-gpt cuda:0 20 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_30 completeness_gpt bart_bk_zero_wp_30_completeness_gpt cuda:0 30 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_25 completeness-gpt bart_bk_25_completeness-gpt cuda:0 25 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_50 completeness_gpt bart_bk_zero_wp_50_completeness_gpt cuda:0 50 0
 
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_2 nextsentenceprediction-gpt bart_bk_2_nextsentenceprediction-gpt cuda:0 2 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_5 nextsentenceprediction_gpt bart_bk_zero_wp_5_nextsentenceprediction_gpt cuda:0 5 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_5 nextsentenceprediction-gpt bart_bk_5_nextsentenceprediction-gpt cuda:0 5 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_10 nextsentenceprediction_gpt bart_bk_zero_wp_10_nextsentenceprediction_gpt cuda:0 10 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_10 nextsentenceprediction-gpt bart_bk_10_nextsentenceprediction-gpt cuda:0 10 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_19 nextsentenceprediction_gpt bart_bk_zero_wp_19_nextsentenceprediction_gpt cuda:0 19 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_15 nextsentenceprediction-gpt bart_bk_15_nextsentenceprediction-gpt cuda:0 15 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_30 nextsentenceprediction_gpt bart_bk_zero_wp_30_nextsentenceprediction_gpt cuda:0 30 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_20 nextsentenceprediction-gpt bart_bk_20_nextsentenceprediction-gpt cuda:0 20 0
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_wp/test/generations_outputs_50 nextsentenceprediction_gpt bart_bk_zero_wp_50_nextsentenceprediction_gpt cuda:0 50 0
 
-python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk/test/generations_outputs_25 nextsentenceprediction-gpt bart_bk_25_nextsentenceprediction-gpt cuda:0 25 0
+
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_5 completeness_gpt bart_bk_zero_rd_5_completeness_gpt cuda:0 5 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_10 completeness_gpt bart_bk_zero_rd_10_completeness_gpt cuda:0 10 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_19 completeness_gpt bart_bk_zero_rd_19_completeness_gpt cuda:0 19 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_30 completeness_gpt bart_bk_zero_rd_30_completeness_gpt cuda:0 30 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_50 completeness_gpt bart_bk_zero_rd_50_completeness_gpt cuda:0 50 0
+
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_5 nextsentenceprediction_gpt bart_bk_zero_rd_5_nextsentenceprediction_gpt cuda:0 5 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_10 nextsentenceprediction_gpt bart_bk_zero_rd_10_nextsentenceprediction_gpt cuda:0 10 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_19 nextsentenceprediction_gpt bart_bk_zero_rd_19_nextsentenceprediction_gpt cuda:0 19 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_30 nextsentenceprediction_gpt bart_bk_zero_rd_30_nextsentenceprediction_gpt cuda:0 30 0
+
+python test_longformer_filename_savedir_logdir_gpu_debug.py bartGenerations/bart_bk_zero_rd/test/generations_outputs_50 nextsentenceprediction_gpt bart_bk_zero_rd_50_nextsentenceprediction_gpt cuda:0 50 0
