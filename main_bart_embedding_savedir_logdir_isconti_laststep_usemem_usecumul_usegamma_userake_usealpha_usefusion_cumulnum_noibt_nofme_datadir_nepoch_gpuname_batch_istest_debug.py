@@ -907,7 +907,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
             
             if len(batch_cumul_prev_predictions)>0:
                 batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
-                batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
+                #batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
 
             if use_cumulative and count>0:
                 length=len(batch_cumul_prev_predictions)
@@ -919,7 +919,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
                         #print(cumul_prev_predictions[j].shape)
                         break
                     batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
-                    batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
+                    #batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
             
             intro=False
             tail=False
@@ -978,7 +978,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
             if use_cumulative:
                 batch_cumul_prev_predictions.insert(0,batch_prev_predictions) # (b,250)
             
-            
+            """ 
             if use_cumulative:
                 texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
                 
@@ -1009,6 +1009,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
                     print(len(batch_keyword_prev_predictions))
                     print("keywords from last output:")
                     print(batch_keywordsSTR)
+            """
             if debug:    
                 input()
             optimizer.step()
@@ -1184,7 +1185,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             
             if len(batch_cumul_prev_predictions)>0:
                 batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
-                batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
+            #   batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
 
             if use_cumulative and count>0:
                 length=len(batch_cumul_prev_predictions)
@@ -1196,7 +1197,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                         #print(cumul_prev_predictions[j].shape)
                         break
                     batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
-                    batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
+            #        batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
             
             intro=False
             tail=False
@@ -1260,7 +1261,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             if use_cumulative:
                 batch_cumul_prev_predictions.insert(0,batch_prev_predictions) # (b,250)
             
-            
+            """ 
             if use_cumulative:
                 texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
                 
@@ -1286,7 +1287,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                 if debug:
                     print("keywords from last output:")
                     print(batch_keywordsSTR)
-            
+            """
             if debug:
                 print("-----------")
                 print("predictions")
@@ -1528,7 +1529,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
      
 eval_first=True
 if IS_TEST:
-    paragraphs=[2,5,10,15,20,25]
+    paragraphs=[5,10,19,30,50]
     #paragraphs=[]
     #for i in range(LAST_PARAG,20): # 최대 100개 문단까지 있다.
     for i in paragraphs:    
