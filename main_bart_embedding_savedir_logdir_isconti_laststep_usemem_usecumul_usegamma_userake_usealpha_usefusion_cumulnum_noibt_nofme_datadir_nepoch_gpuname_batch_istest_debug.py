@@ -905,21 +905,21 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
             # zero the parameter gradients
             optimizer.zero_grad()
             
-            # if len(batch_cumul_prev_predictions)>0:
-            #     batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
-            #     batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
+            if len(batch_cumul_prev_predictions)>0:
+                batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
+                batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
 
-            # if use_cumulative and count>0:
-            #     length=len(batch_cumul_prev_predictions)
-            #     #print("one step." + str(length))
-            #     for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
-            #         #print(prev_predictions.shape)
-            #         if batch_input_ids.shape[1]+(batch_cumul_prev_predictions[j].shape[1])+batch_conti_prev_predictions.shape[1]>1000:
-            #             #print("break")
-            #             #print(cumul_prev_predictions[j].shape)
-            #             break
-            #         batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
-            #         batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
+            if use_cumulative and count>0:
+                length=len(batch_cumul_prev_predictions)
+                #print("one step." + str(length))
+                for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
+                    #print(prev_predictions.shape)
+                    if batch_input_ids.shape[1]+(batch_cumul_prev_predictions[j].shape[1])+batch_conti_prev_predictions.shape[1]>1000:
+                        #print("break")
+                        #print(cumul_prev_predictions[j].shape)
+                        break
+                    batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
+                    batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
             
             intro=False
             tail=False
@@ -945,7 +945,7 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
             order=count+1 #order는 1부터 시작한다.
             whole=batch_num_decoder_input_ids.shape[0]
             batch_conti_prev_predictions=batch_conti_prev_predictions.to(gpu_name) #(b,~)
-            # batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
+            batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
             # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
             # print(batch_conti_prev_predictions.shape)
             # print(batch_conti_keyword_prev_predictions.shape)
@@ -976,45 +976,39 @@ def trainer(LAST_STEP,train_dataset,NumPar,lr_scheduler,progress_bar,epoch):
                 use_cumulative=True ## fusion ver.
 
             if use_cumulative:
-                last_sents=[]
-                lan_batch_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True) #(b)
-                for b in range(batch_size):
-                    last_sents.append(' '.join(sent_tokenize(lan_batch_prev_predictions[b])[-CUMUL_NUM:]))
-
-                batch_conti_prev_predictions=tokenizer(last_sents,max_length=250,padding="max_length",truncation=True,return_tensors="pt")['input_ids'] #(b,250)
-
-                
+                batch_cumul_prev_predictions.insert(0,batch_prev_predictions) # (b,250)
             
-            # if use_cumulative:
-            #     texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
+            
+            if use_cumulative:
+                texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
                 
-            #     batch_keywordsSTR=[]
-            #     for text in texts_prev_predictions:
-            #         # print("texts for rake")
-            #         # print(text)
-            #         r.extract_keywords_from_text(text)
-            #         top_features= r.get_ranked_phrases()
-            #         topK=5
+                batch_keywordsSTR=[]
+                for text in texts_prev_predictions:
+                    # print("texts for rake")
+                    # print(text)
+                    r.extract_keywords_from_text(text)
+                    top_features= r.get_ranked_phrases()
+                    topK=5
 
-            #         if len(top_features)==0:
-            #             keywordsSTR="[SEP]"
-            #         else:
-            #             top_features = clean_top_features(top_features, topK)
-            #             keywordsSTR = convert_keys_to_str(top_features)
-            #         # print("keywords STR")
-            #         # print(keywordsSTR)
-            #         batch_keywordsSTR.append(keywordsSTR)
+                    if len(top_features)==0:
+                        keywordsSTR="[SEP]"
+                    else:
+                        top_features = clean_top_features(top_features, topK)
+                        keywordsSTR = convert_keys_to_str(top_features)
+                    # print("keywords STR")
+                    # print(keywordsSTR)
+                    batch_keywordsSTR.append(keywordsSTR)
 
-            #     batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=50,padding="max_length",
-            # truncation=True,return_tensors='pt').input_ids.to(gpu_name))
+                batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=50,padding="max_length",
+            truncation=True,return_tensors='pt').input_ids.to(gpu_name))
                 
                 
 
-                # if debug:
-                #     print("batch_keyword_prev_predictions shape")
-                #     print(len(batch_keyword_prev_predictions))
-                #     print("keywords from last output:")
-                #     print(batch_keywordsSTR)
+                if debug:
+                    print("batch_keyword_prev_predictions shape")
+                    print(len(batch_keyword_prev_predictions))
+                    print("keywords from last output:")
+                    print(batch_keywordsSTR)
             if debug:    
                 input()
             optimizer.step()
@@ -1188,21 +1182,21 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             _batch_decoder_attention_masks=_batch_decoder_attention_masks[:,:-1] #(b,249)
 
             
-            # if len(batch_cumul_prev_predictions)>0:
-            #     batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
-            #     batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
+            if len(batch_cumul_prev_predictions)>0:
+                batch_conti_prev_predictions=batch_cumul_prev_predictions[0] #(b,~)
+                batch_conti_keyword_prev_predictions=batch_keyword_prev_predictions[0] #(b,~)
 
-            # if use_cumulative and count>0:
-            #     length=len(batch_cumul_prev_predictions)
-            #     #print("one step." + str(length))
-            #     for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
-            #         #print(prev_predictions.shape)
-            #         if batch_input_ids.shape[1]+(batch_cumul_prev_predictions[j].shape[1])+batch_conti_prev_predictions.shape[1]>1000:
-            #             #print("break")
-            #             #print(cumul_prev_predictions[j].shape)
-            #             break
-            #         batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
-            #         batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
+            if use_cumulative and count>0:
+                length=len(batch_cumul_prev_predictions)
+                #print("one step." + str(length))
+                for j in range(1,CUMUL_NUM if length>CUMUL_NUM else length):
+                    #print(prev_predictions.shape)
+                    if batch_input_ids.shape[1]+(batch_cumul_prev_predictions[j].shape[1])+batch_conti_prev_predictions.shape[1]>1000:
+                        #print("break")
+                        #print(cumul_prev_predictions[j].shape)
+                        break
+                    batch_conti_prev_predictions=torch.cat((batch_conti_prev_predictions,batch_sep_token_tensors,batch_cumul_prev_predictions[j]),1)       
+                    batch_conti_keyword_prev_predictions=torch.cat((batch_conti_keyword_prev_predictions,batch_sep_token_tensors,batch_keyword_prev_predictions[j]),1)
             
             intro=False
             tail=False
@@ -1228,7 +1222,7 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
             order=count+1 #order는 1부터 시작한다.
             whole=NumPar
             batch_conti_prev_predictions=batch_conti_prev_predictions.to(gpu_name) #(b,~)
-            # batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
+            batch_conti_keyword_prev_predictions=batch_conti_keyword_prev_predictions.to(gpu_name) #(b,~)
             # print("batch conti prev predction과 batch conti keyword prev prediction shape.")
             # print(batch_conti_prev_predictions.shape)
             # print(batch_conti_keyword_prev_predictions.shape)
@@ -1264,39 +1258,34 @@ def do_eval(steps,dataset,NumPar,eval_num,eval_first):
                 use_cumulative=True ## fusion ver.
 
             if use_cumulative:
-                last_sents=[]
-                lan_batch_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True) #(b)
-                for b in range(batch_size):
-                    last_sents.append(' '.join(sent_tokenize(lan_batch_prev_predictions[b])[-CUMUL_NUM:]))
-
-                batch_conti_prev_predictions=tokenizer(last_sents,max_length=250,padding="max_length",truncation=True,return_tensors="pt")['input_ids'] #(b,250)
-
+                batch_cumul_prev_predictions.insert(0,batch_prev_predictions) # (b,250)
             
-            # if use_cumulative:
-            #     texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
+            
+            if use_cumulative:
+                texts_prev_predictions=tokenizer.batch_decode(batch_prev_predictions,skip_special_tokens=True)
                 
-            #     batch_keywordsSTR=[]
-            #     for text in texts_prev_predictions:
-            #         r.extract_keywords_from_text(text)
-            #         top_features= r.get_ranked_phrases()
-            #         topK=5
+                batch_keywordsSTR=[]
+                for text in texts_prev_predictions:
+                    r.extract_keywords_from_text(text)
+                    top_features= r.get_ranked_phrases()
+                    topK=5
 
-            #         if len(top_features)==0:
-            #             keywordsSTR="[SEP]"
-            #         else:
-            #             top_features = clean_top_features(top_features, topK)
-            #             keywordsSTR = convert_keys_to_str(top_features)
+                    if len(top_features)==0:
+                        keywordsSTR="[SEP]"
+                    else:
+                        top_features = clean_top_features(top_features, topK)
+                        keywordsSTR = convert_keys_to_str(top_features)
                     
-            #         batch_keywordsSTR.append(keywordsSTR)
+                    batch_keywordsSTR.append(keywordsSTR)
 
-            #     batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=50,padding="max_length",
-            # truncation=True,return_tensors='pt').input_ids.to(gpu_name))
+                batch_keyword_prev_predictions.insert(0,tokenizer(batch_keywordsSTR,max_length=50,padding="max_length",
+            truncation=True,return_tensors='pt').input_ids.to(gpu_name))
                 
                 
 
-            #     if debug:
-            #         print("keywords from last output:")
-            #         print(batch_keywordsSTR)
+                if debug:
+                    print("keywords from last output:")
+                    print(batch_keywordsSTR)
             
             if debug:
                 print("-----------")
