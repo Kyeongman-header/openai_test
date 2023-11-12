@@ -52,11 +52,16 @@ for line in rdr:
     if first:
         first=False
         continue
-    
-    if line[1]!=prompts:
+    #print(count)
+    #print(line[2])
+    #input()
+    if count%num_para==0 and count!=0:
         document_fake.append(' '.join(one_fake))
         document_label.append(' '.join(one_label))
-    prompts=line[1]
+        #print(document_fake)
+        #print(document_label)
+        one_label=[]
+        one_fake=[]
     fake=line[4]
     real=line[3]
     label_len=len(tokenizer(real,return_tensors="pt")['input_ids'][0])
@@ -147,8 +152,8 @@ for line in rdr:
         fake_in_self_bleu_fif+=_in_self_bleu_fif/len(one_label)
         
         whole_num+=1
-        one_label=[]
-        one_fake=[]
+        #one_label=[]
+        #one_fake=[]
 
 print("whole texts")
 print(whole_num)
@@ -160,9 +165,12 @@ __document_labels=[]
 __whole_predictions_len=[]
 __whole_labels_len=[]
 for j,pred in enumerate(document_fake):
+    #print(pred)
+    #print(document_label[j])
+    #input()
     if len(pred)!=0 and len(document_label[j])!=0:
         __document_fake.append(pred)
-        __document_labels.append(whole_labels[j])
+        __document_labels.append(document_label[j])
         __whole_predictions_len.append(whole_predictions_len[j])
         __whole_labels_len.append(whole_labels_len[j])
 print("after remove empty hyp or ref")
